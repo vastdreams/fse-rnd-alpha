@@ -463,8 +463,10 @@ export function MainPaper() {
   }, [doubleSortData])
 
   const factorPremiumSeries = useMemo(() => {
+    const currentYear = new Date().getFullYear()
     return (factorPremiums || [])
-      .filter((f) => typeof f.year === "number")
+      // Exclude current year since data is incomplete
+      .filter((f) => typeof f.year === "number" && f.year < currentYear)
       .map((f) => ({
         year: f.year,
         rdPremium: f.rd_premium ?? null,
@@ -510,7 +512,11 @@ export function MainPaper() {
   }, [factorPremiumSeries])
 
   const sampleYearRange = useMemo(() => {
-    const years = (factorPremiumSeries || []).map((r) => r.year).filter((y): y is number => typeof y === "number")
+    const currentYear = new Date().getFullYear()
+    // Exclude current year since data is incomplete
+    const years = (factorPremiumSeries || [])
+      .map((r) => r.year)
+      .filter((y): y is number => typeof y === "number" && y < currentYear)
     if (years.length === 0) return undefined
     const min = Math.min(...years)
     const max = Math.max(...years)
