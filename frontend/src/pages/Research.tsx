@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -65,10 +65,16 @@ export function Research() {
     queryFn: () => api.getQuintilePerformance(selectedWindow),
   })
 
-  const { data: factorPremiums, isLoading: loadingPremiums } = useQuery({
+  const { data: factorPremiumsRaw, isLoading: loadingPremiums } = useQuery({
     queryKey: ["factorPremiums"],
     queryFn: api.getFactorPremiums,
   })
+
+  // Filter out current year (incomplete data)
+  const factorPremiums = useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    return (factorPremiumsRaw || []).filter((f: any) => f.year < currentYear)
+  }, [factorPremiumsRaw])
 
   const { data: aggregateAnova, isLoading: loadingAnova } = useQuery({
     queryKey: ["aggregateAnova"],
@@ -167,9 +173,10 @@ export function Research() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Research Analysis</h1>
           <p className="text-muted-foreground">
-            500-Company Cohort • Rolling Window Analysis • Statistical Tests
+            {cohortSummary?.total_companies || "~500"}-Company Cohort • Rolling Window Analysis • Statistical Tests
           </p>
           <p className="text-xs text-muted-foreground mt-1">
+            <span className="font-medium">Sample:</span> 1995-{new Date().getFullYear() - 1} •{" "}
             <span className="font-medium">Methodology:</span> July-June returns (Fama-French convention) • Delisting-adjusted • HAC standard errors
           </p>
         </div>
@@ -257,13 +264,13 @@ export function Research() {
 
       {/* Tabs for Analysis Views */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="quintiles">Quintile Analysis</TabsTrigger>
-          <TabsTrigger value="premium">Factor Premium</TabsTrigger>
-          <TabsTrigger value="anova">ANOVA Results</TabsTrigger>
-          <TabsTrigger value="companies">Cohort Companies</TabsTrigger>
-          <TabsTrigger value="papers">Papers</TabsTrigger>
-          <TabsTrigger value="methodology">Methodology</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="quintiles" className="flex-1 min-w-[120px]">Quintile Analysis</TabsTrigger>
+          <TabsTrigger value="premium" className="flex-1 min-w-[120px]">Factor Premium</TabsTrigger>
+          <TabsTrigger value="anova" className="flex-1 min-w-[120px]">ANOVA Results</TabsTrigger>
+          <TabsTrigger value="companies" className="flex-1 min-w-[120px]">Cohort Companies</TabsTrigger>
+          <TabsTrigger value="papers" className="flex-1 min-w-[80px]">Papers</TabsTrigger>
+          <TabsTrigger value="methodology" className="flex-1 min-w-[100px]">Methodology</TabsTrigger>
         </TabsList>
 
         {/* Quintile Analysis Tab */}
