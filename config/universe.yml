@@ -1,0 +1,44 @@
+# Universe definitions for company selection
+
+pilot_top10:
+  description: "10 popular companies for initial testing"
+  companies:
+    - ticker: "AAPL"
+      cik: "0000320193"
+      name: "Apple Inc."
+    - ticker: "WMT"
+      cik: "0000104169"
+      name: "Walmart Inc."
+    - ticker: "MSFT"
+      cik: "0000789019"
+      name: "Microsoft Corporation"
+    - ticker: "AMZN"
+      cik: "0001018724"
+      name: "Amazon.com Inc."
+    - ticker: "GOOGL"
+      cik: "0001652044"
+      name: "Alphabet Inc."
+    - ticker: "TSLA"
+      cik: "0001318605"
+      name: "Tesla Inc."
+    - ticker: "JPM"
+      cik: "0000019617"
+      name: "JPMorgan Chase & Co."
+    - ticker: "JNJ"
+      cik: "0000200406"
+      name: "Johnson & Johnson"
+    - ticker: "V"
+      cik: "0001403161"
+      name: "Visa Inc."
+    - ticker: "PG"
+      cik: "0000080424"
+      name: "Procter & Gamble Co."
+
+pilot_top50:
+  description: "Top 50 companies (to be expanded later)"
+  # Will be populated from S&P 500 or market cap filter
+
+top500:
+  description: "Full top 500 companies"
+  # Will be populated from S&P 500 or market cap filter
+

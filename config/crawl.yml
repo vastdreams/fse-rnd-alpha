@@ -1,0 +1,16 @@
+# SEC crawling configuration
+
+pilot:
+  max_companies: 10
+  requests_per_second: 0.5
+  timeout_seconds: 30
+  retry_attempts: 3
+
+full:
+  max_companies: 500
+  requests_per_second: 0.5
+  timeout_seconds: 30
+  retry_attempts: 3
+
+# User-Agent is set in settings.py
+

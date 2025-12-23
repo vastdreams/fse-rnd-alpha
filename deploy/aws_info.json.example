@@ -1,0 +1,8 @@
+{
+  "instance_id": "i-xxxxxxxxxxxxxxxxx",
+  "public_ip": "xxx.xxx.xxx.xxx",
+  "s3_bucket": "your-bucket-name",
+  "key_pair": "your-key-pair-name",
+  "region": "us-east-1"
+}
+

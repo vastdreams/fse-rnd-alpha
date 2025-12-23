@@ -1,0 +1,403 @@
+{"ticker": "AEP", "name": "American Electric Power", "cik": "0000004904", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AXP", "name": "American Express", "cik": "0000004962", "gics_sector": "Financials", "gics_sub_industry": "Consumer Finance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AIG", "name": "American International Group", "cik": "0000005272", "gics_sector": "Financials", "gics_sub_industry": "Multi-line Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AMT", "name": "American Tower", "cik": "0001053507", "gics_sector": "Real Estate", "gics_sub_industry": "Telecom Tower REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AWK", "name": "American Water Works", "cik": "0001410636", "gics_sector": "Utilities", "gics_sub_industry": "Water Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AMP", "name": "Ameriprise Financial", "cik": "0000820027", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AME", "name": "Ametek", "cik": "0001037868", "gics_sector": "Industrials", "gics_sub_industry": "Electrical Components & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AMGN", "name": "Amgen", "cik": "0000318154", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "APH", "name": "Amphenol", "cik": "0000820313", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ADI", "name": "Analog Devices", "cik": "0000006281", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AON", "name": "Aon plc", "cik": "0000315293", "gics_sector": "Financials", "gics_sub_industry": "Insurance Brokers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "APA", "name": "APA Corporation", "cik": "0001841666", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "APO", "name": "Apollo Global Management", "cik": "0001858681", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AAPL", "name": "Apple Inc.", "cik": "0000320193", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AMAT", "name": "Applied Materials", "cik": "0000006951", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductor Materials & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "APTV", "name": "Aptiv", "cik": "0001521332", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automotive Parts & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ACGL", "name": "Arch Capital Group", "cik": "0000947484", "gics_sector": "Financials", "gics_sub_industry": "Property & Casualty Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ADM", "name": "Archer Daniels Midland", "cik": "0000007084", "gics_sector": "Consumer Staples", "gics_sub_industry": "Agricultural Products & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ANET", "name": "Arista Networks", "cik": "0001596532", "gics_sector": "Information Technology", "gics_sub_industry": "Communications Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AJG", "name": "Arthur J. Gallagher & Co.", "cik": "0000354190", "gics_sector": "Financials", "gics_sub_industry": "Insurance Brokers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "AIZ", "name": "Assurant", "cik": "0001267238", "gics_sector": "Financials", "gics_sub_industry": "Multi-line Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "T", "name": "AT&T", "cik": "0000732717", "gics_sector": "Communication Services", "gics_sub_industry": "Integrated Telecommunication Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ATO", "name": "Atmos Energy", "cik": "0000731802", "gics_sector": "Utilities", "gics_sub_industry": "Gas Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ADSK", "name": "Autodesk", "cik": "0000769397", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ADP", "name": "Automatic Data Processing", "cik": "0000008670", "gics_sector": "Industrials", "gics_sub_industry": "Human Resource & Employment Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "BLDR", "name": "Builders FirstSource", "cik": "0001316835", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "BG", "name": "Bunge Global", "cik": "0001996862", "gics_sector": "Consumer Staples", "gics_sub_industry": "Agricultural Products & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "BXP", "name": "BXP, Inc.", "cik": "0001037540", "gics_sector": "Real Estate", "gics_sub_industry": "Office REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CHRW", "name": "C.H. Robinson", "cik": "0001043277", "gics_sector": "Industrials", "gics_sub_industry": "Air Freight & Logistics", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CDNS", "name": "Cadence Design Systems", "cik": "0000813672", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CZR", "name": "Caesars Entertainment", "cik": "0001590895", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Casinos & Gaming", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CPT", "name": "Camden Property Trust", "cik": "0000906345", "gics_sector": "Real Estate", "gics_sub_industry": "Multi-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CPB", "name": "Campbell's Company (The)", "cik": "0000016732", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "COF", "name": "Capital One", "cik": "0000927628", "gics_sector": "Financials", "gics_sub_industry": "Consumer Finance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CAH", "name": "Cardinal Health", "cik": "0000721371", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KMX", "name": "CarMax", "cik": "0001170010", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automotive Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CCL", "name": "Carnival", "cik": "0000815097", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CARR", "name": "Carrier Global", "cik": "0001783180", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CAT", "name": "Caterpillar Inc.", "cik": "0000018230", "gics_sector": "Industrials", "gics_sub_industry": "Construction Machinery & Heavy Transportation Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CBOE", "name": "Cboe Global Markets", "cik": "0001374310", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CBRE", "name": "CBRE Group", "cik": "0001138118", "gics_sector": "Real Estate", "gics_sub_industry": "Real Estate Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CDW", "name": "CDW Corporation", "cik": "0001402057", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "COR", "name": "Cencora", "cik": "0001140859", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CNC", "name": "Centene Corporation", "cik": "0001071739", "gics_sector": "Health Care", "gics_sub_industry": "Managed Health Care", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CNP", "name": "CenterPoint Energy", "cik": "0001130310", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CF", "name": "CF Industries", "cik": "0001324404", "gics_sector": "Materials", "gics_sub_industry": "Fertilizers & Agricultural Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CRL", "name": "Charles River Laboratories", "cik": "0001100682", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SCHW", "name": "Charles Schwab Corporation", "cik": "0000316709", "gics_sector": "Financials", "gics_sub_industry": "Investment Banking & Brokerage", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CHTR", "name": "Charter Communications", "cik": "0001091667", "gics_sector": "Communication Services", "gics_sub_industry": "Cable & Satellite", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CVX", "name": "Chevron Corporation", "cik": "0000093410", "gics_sector": "Energy", "gics_sub_industry": "Integrated Oil & Gas", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CPAY", "name": "Corpay", "cik": "0001175454", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CTVA", "name": "Corteva", "cik": "0001755672", "gics_sector": "Materials", "gics_sub_industry": "Fertilizers & Agricultural Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CSGP", "name": "CoStar Group", "cik": "0001057352", "gics_sector": "Real Estate", "gics_sub_industry": "Real Estate Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "COST", "name": "Costco", "cik": "0000909832", "gics_sector": "Consumer Staples", "gics_sub_industry": "Consumer Staples Merchandise Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CTRA", "name": "Coterra", "cik": "0000858470", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CRWD", "name": "CrowdStrike", "cik": "0001535527", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CCI", "name": "Crown Castle", "cik": "0001051470", "gics_sector": "Real Estate", "gics_sub_industry": "Telecom Tower REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CSX", "name": "CSX Corporation", "cik": "0000277948", "gics_sector": "Industrials", "gics_sub_industry": "Rail Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CMI", "name": "Cummins", "cik": "0000026172", "gics_sector": "Industrials", "gics_sub_industry": "Construction Machinery & Heavy Transportation Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CVS", "name": "CVS Health", "cik": "0000064803", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DHR", "name": "Danaher Corporation", "cik": "0000313616", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DRI", "name": "Darden Restaurants", "cik": "0000940944", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Restaurants", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DDOG", "name": "Datadog", "cik": "0001561550", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DVA", "name": "DaVita", "cik": "0000927066", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DAY", "name": "Dayforce", "cik": "0001725057", "gics_sector": "Industrials", "gics_sub_industry": "Human Resource & Employment Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DECK", "name": "Deckers Brands", "cik": "0000910521", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Footwear", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DE", "name": "Deere & Company", "cik": "0000315189", "gics_sector": "Industrials", "gics_sub_industry": "Agricultural & Farm Machinery", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DELL", "name": "Dell Technologies", "cik": "0001571996", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DAL", "name": "Delta Air Lines", "cik": "0000027904", "gics_sector": "Industrials", "gics_sub_industry": "Passenger Airlines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DVN", "name": "Devon Energy", "cik": "0001090012", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DXCM", "name": "Dexcom", "cik": "0001093557", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FANG", "name": "Diamondback Energy", "cik": "0001539838", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DLR", "name": "Digital Realty", "cik": "0001297996", "gics_sector": "Real Estate", "gics_sub_industry": "Data Center REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DG", "name": "Dollar General", "cik": "0000029534", "gics_sector": "Consumer Staples", "gics_sub_industry": "Consumer Staples Merchandise Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DLTR", "name": "Dollar Tree", "cik": "0000935703", "gics_sector": "Consumer Staples", "gics_sub_industry": "Consumer Staples Merchandise Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EQR", "name": "Equity Residential", "cik": "0000906107", "gics_sector": "Real Estate", "gics_sub_industry": "Multi-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ERIE", "name": "Erie Indemnity", "cik": "0000922621", "gics_sector": "Financials", "gics_sub_industry": "Insurance Brokers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ESS", "name": "Essex Property Trust", "cik": "0000920522", "gics_sector": "Real Estate", "gics_sub_industry": "Multi-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EL", "name": "Est\u00e9e Lauder Companies (The)", "cik": "0001001250", "gics_sector": "Consumer Staples", "gics_sub_industry": "Personal Care Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EG", "name": "Everest Group", "cik": "0001095073", "gics_sector": "Financials", "gics_sub_industry": "Reinsurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EVRG", "name": "Evergy", "cik": "0001711269", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ES", "name": "Eversource Energy", "cik": "0000072741", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EXC", "name": "Exelon", "cik": "0001109357", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EXE", "name": "Expand Energy", "cik": "0000895126", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EXPE", "name": "Expedia Group", "cik": "0001324424", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EXPD", "name": "Expeditors International", "cik": "0000746515", "gics_sector": "Industrials", "gics_sub_industry": "Air Freight & Logistics", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "EXR", "name": "Extra Space Storage", "cik": "0001289490", "gics_sector": "Real Estate", "gics_sub_industry": "Self-Storage REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "XOM", "name": "ExxonMobil", "cik": "0000034088", "gics_sector": "Energy", "gics_sub_industry": "Integrated Oil & Gas", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FFIV", "name": "F5, Inc.", "cik": "0001048695", "gics_sector": "Information Technology", "gics_sub_industry": "Communications Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FDS", "name": "FactSet", "cik": "0001013237", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FICO", "name": "Fair Isaac", "cik": "0000814547", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FAST", "name": "Fastenal", "cik": "0000815556", "gics_sector": "Industrials", "gics_sub_industry": "Trading Companies & Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FRT", "name": "Federal Realty Investment Trust", "cik": "0000034903", "gics_sector": "Real Estate", "gics_sub_industry": "Retail REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FDX", "name": "FedEx", "cik": "0001048911", "gics_sector": "Industrials", "gics_sub_industry": "Air Freight & Logistics", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FIS", "name": "Fidelity National Information Services", "cik": "0001136893", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FITB", "name": "Fifth Third Bancorp", "cik": "0000035527", "gics_sector": "Financials", "gics_sub_industry": "Regional Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FSLR", "name": "First Solar", "cik": "0001274494", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FE", "name": "FirstEnergy", "cik": "0001031296", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FI", "name": "Fiserv", "cik": "0000798354", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "F", "name": "Ford Motor Company", "cik": "0000037996", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automobile Manufacturers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FTNT", "name": "Fortinet", "cik": "0001262039", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FTV", "name": "Fortive", "cik": "0001659166", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FOXA", "name": "Fox Corporation (Class A)", "cik": "0001754301", "gics_sector": "Communication Services", "gics_sub_industry": "Broadcasting", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FOX", "name": "Fox Corporation (Class B)", "cik": "0001754301", "gics_sector": "Communication Services", "gics_sub_industry": "Broadcasting", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "BEN", "name": "Franklin Resources", "cik": "0000038777", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "FCX", "name": "Freeport-McMoRan", "cik": "0000831259", "gics_sector": "Materials", "gics_sub_industry": "Copper", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GRMN", "name": "Garmin", "cik": "0001121788", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Consumer Electronics", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IT", "name": "Gartner", "cik": "0000749251", "gics_sector": "Information Technology", "gics_sub_industry": "IT Consulting & Other Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GE", "name": "GE Aerospace", "cik": "0000040545", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GEHC", "name": "GE HealthCare", "cik": "0001932393", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GEV", "name": "GE Vernova", "cik": "0001996810", "gics_sector": "Industrials", "gics_sub_industry": "Heavy Electrical Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GEN", "name": "Gen Digital", "cik": "0000849399", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GNRC", "name": "Generac", "cik": "0001474735", "gics_sector": "Industrials", "gics_sub_industry": "Electrical Components & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GD", "name": "General Dynamics", "cik": "0000040533", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GIS", "name": "General Mills", "cik": "0000040704", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GM", "name": "General Motors", "cik": "0001467858", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automobile Manufacturers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GPC", "name": "Genuine Parts Company", "cik": "0000040987", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GILD", "name": "Gilead Sciences", "cik": "0000882095", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GPN", "name": "Global Payments", "cik": "0001123360", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GL", "name": "Globe Life", "cik": "0000320335", "gics_sector": "Financials", "gics_sub_industry": "Life & Health Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GDDY", "name": "GoDaddy", "cik": "0001609711", "gics_sector": "Information Technology", "gics_sub_industry": "Internet Services & Infrastructure", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GS", "name": "Goldman Sachs", "cik": "0000886982", "gics_sector": "Financials", "gics_sub_industry": "Investment Banking & Brokerage", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HAL", "name": "Halliburton", "cik": "0000045012", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Equipment & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HIG", "name": "Hartford (The)", "cik": "0000874766", "gics_sector": "Financials", "gics_sub_industry": "Property & Casualty Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HAS", "name": "Hasbro", "cik": "0000046080", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Leisure Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HCA", "name": "HCA Healthcare", "cik": "0000860730", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Facilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DOC", "name": "Healthpeak Properties", "cik": "0000765880", "gics_sector": "Real Estate", "gics_sub_industry": "Health Care REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HSIC", "name": "Henry Schein", "cik": "0001000228", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HSY", "name": "Hershey Company (The)", "cik": "0000047111", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HPE", "name": "Hewlett Packard Enterprise", "cik": "0001645590", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HLT", "name": "Hilton Worldwide", "cik": "0001585689", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HOLX", "name": "Hologic", "cik": "0000859737", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HD", "name": "Home Depot (The)", "cik": "0000354950", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Home Improvement Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HON", "name": "Honeywell", "cik": "0000773840", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Conglomerates", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HRL", "name": "Hormel Foods", "cik": "0000048465", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HST", "name": "Host Hotels & Resorts", "cik": "0001070750", "gics_sector": "Real Estate", "gics_sub_industry": "Hotel & Resort REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HWM", "name": "Howmet Aerospace", "cik": "0000004281", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HPQ", "name": "HP Inc.", "cik": "0000047217", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HUBB", "name": "Hubbell Incorporated", "cik": "0000048898", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HUM", "name": "Humana", "cik": "0000049071", "gics_sector": "Health Care", "gics_sub_industry": "Managed Health Care", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HBAN", "name": "Huntington Bancshares", "cik": "0000049196", "gics_sector": "Financials", "gics_sub_industry": "Regional Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "HII", "name": "Huntington Ingalls Industries", "cik": "0001501585", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IBM", "name": "IBM", "cik": "0000051143", "gics_sector": "Information Technology", "gics_sub_industry": "IT Consulting & Other Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IEX", "name": "IDEX Corporation", "cik": "0000832101", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IDXX", "name": "Idexx Laboratories", "cik": "0000874716", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ITW", "name": "Illinois Tool Works", "cik": "0000049826", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "INCY", "name": "Incyte", "cik": "0000879169", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IR", "name": "Ingersoll Rand", "cik": "0001699150", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PODD", "name": "Insulet Corporation", "cik": "0001145197", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "INTC", "name": "Intel", "cik": "0000050863", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ICE", "name": "Intercontinental Exchange", "cik": "0001571949", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IFF", "name": "International Flavors & Fragrances", "cik": "0000051253", "gics_sector": "Materials", "gics_sub_industry": "Specialty Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IP", "name": "International Paper", "cik": "0000051434", "gics_sector": "Materials", "gics_sub_industry": "Paper & Plastic Packaging Products & Materials", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IPG", "name": "Interpublic Group of Companies (The)", "cik": "0000051644", "gics_sector": "Communication Services", "gics_sub_industry": "Advertising", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "INTU", "name": "Intuit", "cik": "0000896878", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ISRG", "name": "Intuitive Surgical", "cik": "0001035267", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IVZ", "name": "Invesco", "cik": "0000914208", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "INVH", "name": "Invitation Homes", "cik": "0001687229", "gics_sector": "Real Estate", "gics_sub_industry": "Single-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IQV", "name": "IQVIA", "cik": "0001478242", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "IRM", "name": "Iron Mountain", "cik": "0001020569", "gics_sector": "Real Estate", "gics_sub_industry": "Other Specialized REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JBHT", "name": "J.B. Hunt", "cik": "0000728535", "gics_sector": "Industrials", "gics_sub_industry": "Cargo Ground Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JBL", "name": "Jabil", "cik": "0000898293", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Manufacturing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JKHY", "name": "Jack Henry & Associates", "cik": "0000779152", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "J", "name": "Jacobs Solutions", "cik": "0000052988", "gics_sector": "Industrials", "gics_sub_industry": "Construction & Engineering", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JNJ", "name": "Johnson & Johnson", "cik": "0000200406", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JCI", "name": "Johnson Controls", "cik": "0000833444", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "JPM", "name": "JPMorgan Chase", "cik": "0000019617", "gics_sector": "Financials", "gics_sub_industry": "Diversified Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "K", "name": "Kellanova", "cik": "0000055067", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KVUE", "name": "Kenvue", "cik": "0001944048", "gics_sector": "Consumer Staples", "gics_sub_industry": "Personal Care Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KDP", "name": "Keurig Dr Pepper", "cik": "0001418135", "gics_sector": "Consumer Staples", "gics_sub_industry": "Soft Drinks & Non-alcoholic Beverages", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KEY", "name": "KeyCorp", "cik": "0000091576", "gics_sector": "Financials", "gics_sub_industry": "Regional Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KEYS", "name": "Keysight Technologies", "cik": "0001601046", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Equipment & Instruments", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KMB", "name": "Kimberly-Clark", "cik": "0000055785", "gics_sector": "Consumer Staples", "gics_sub_industry": "Household Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KIM", "name": "Kimco Realty", "cik": "0000879101", "gics_sector": "Real Estate", "gics_sub_industry": "Retail REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KMI", "name": "Kinder Morgan", "cik": "0001506307", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Storage & Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KKR", "name": "KKR & Co.", "cik": "0001404912", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KLAC", "name": "KLA Corporation", "cik": "0000319201", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductor Materials & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KHC", "name": "Kraft Heinz", "cik": "0001637459", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "KR", "name": "Kroger", "cik": "0000056873", "gics_sector": "Consumer Staples", "gics_sub_industry": "Food Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LHX", "name": "L3Harris", "cik": "0000202058", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LH", "name": "Labcorp", "cik": "0000920148", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LRCX", "name": "Lam Research", "cik": "0000707549", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductor Materials & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LW", "name": "Lamb Weston", "cik": "0001679273", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LVS", "name": "Las Vegas Sands", "cik": "0001300514", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Casinos & Gaming", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LDOS", "name": "Leidos", "cik": "0001336920", "gics_sector": "Industrials", "gics_sub_industry": "Diversified Support Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LEN", "name": "Lennar", "cik": "0000920760", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Homebuilding", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LII", "name": "Lennox International", "cik": "0001069202", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LLY", "name": "Lilly (Eli)", "cik": "0000059478", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LIN", "name": "Linde plc", "cik": "0001707925", "gics_sector": "Materials", "gics_sub_industry": "Industrial Gases", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LYV", "name": "Live Nation Entertainment", "cik": "0001335258", "gics_sector": "Communication Services", "gics_sub_industry": "Movies & Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LKQ", "name": "LKQ Corporation", "cik": "0001065696", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LMT", "name": "Lockheed Martin", "cik": "0000936468", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "L", "name": "Loews Corporation", "cik": "0000060086", "gics_sector": "Financials", "gics_sub_industry": "Multi-line Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LOW", "name": "Lowe's", "cik": "0000060667", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Home Improvement Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LULU", "name": "Lululemon Athletica", "cik": "0001397187", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel, Accessories & Luxury Goods", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LYB", "name": "LyondellBasell", "cik": "0001489393", "gics_sector": "Materials", "gics_sub_industry": "Specialty Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MTB", "name": "M&T Bank", "cik": "0000036270", "gics_sector": "Financials", "gics_sub_industry": "Regional Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MPC", "name": "Marathon Petroleum", "cik": "0001510295", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Refining & Marketing", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MKTX", "name": "MarketAxess", "cik": "0001278021", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MAR", "name": "Marriott International", "cik": "0001048286", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MMC", "name": "Marsh McLennan", "cik": "0000062709", "gics_sector": "Financials", "gics_sub_industry": "Insurance Brokers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MLM", "name": "Martin Marietta Materials", "cik": "0000916076", "gics_sector": "Materials", "gics_sub_industry": "Construction Materials", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MAS", "name": "Masco", "cik": "0000062996", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MA", "name": "Mastercard", "cik": "0001141391", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MTCH", "name": "Match Group", "cik": "0000891103", "gics_sector": "Communication Services", "gics_sub_industry": "Interactive Media & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MKC", "name": "McCormick & Company", "cik": "0000063754", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MCD", "name": "McDonald's", "cik": "0000063908", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Restaurants", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MCK", "name": "McKesson Corporation", "cik": "0000927653", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MDT", "name": "Medtronic", "cik": "0001613103", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MRK", "name": "Merck & Co.", "cik": "0000310158", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "META", "name": "Meta Platforms", "cik": "0001326801", "gics_sector": "Communication Services", "gics_sub_industry": "Interactive Media & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MET", "name": "MetLife", "cik": "0001099219", "gics_sector": "Financials", "gics_sub_industry": "Life & Health Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MTD", "name": "Mettler Toledo", "cik": "0001037646", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MGM", "name": "MGM Resorts", "cik": "0000789570", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Casinos & Gaming", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MCHP", "name": "Microchip Technology", "cik": "0000827054", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MU", "name": "Micron Technology", "cik": "0000723125", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MSFT", "name": "Microsoft", "cik": "0000789019", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MAA", "name": "Mid-America Apartment Communities", "cik": "0000912595", "gics_sector": "Real Estate", "gics_sub_industry": "Multi-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MRNA", "name": "Moderna", "cik": "0001682852", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MHK", "name": "Mohawk Industries", "cik": "0000851968", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Home Furnishings", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MOH", "name": "Molina Healthcare", "cik": "0001179929", "gics_sector": "Health Care", "gics_sub_industry": "Managed Health Care", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TAP", "name": "Molson Coors Beverage Company", "cik": "0000024545", "gics_sector": "Consumer Staples", "gics_sub_industry": "Brewers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MDLZ", "name": "Mondelez International", "cik": "0001103982", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MPWR", "name": "Monolithic Power Systems", "cik": "0001280452", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MNST", "name": "Monster Beverage", "cik": "0000865752", "gics_sector": "Consumer Staples", "gics_sub_industry": "Soft Drinks & Non-alcoholic Beverages", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MCO", "name": "Moody's Corporation", "cik": "0001059556", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MS", "name": "Morgan Stanley", "cik": "0000895421", "gics_sector": "Financials", "gics_sub_industry": "Investment Banking & Brokerage", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MOS", "name": "Mosaic Company (The)", "cik": "0001285785", "gics_sector": "Materials", "gics_sub_industry": "Fertilizers & Agricultural Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MSI", "name": "Motorola Solutions", "cik": "0000068505", "gics_sector": "Information Technology", "gics_sub_industry": "Communications Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "MSCI", "name": "MSCI Inc.", "cik": "0001408198", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NDAQ", "name": "Nasdaq, Inc.", "cik": "0001120193", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NTAP", "name": "NetApp", "cik": "0001002047", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NFLX", "name": "Netflix", "cik": "0001065280", "gics_sector": "Communication Services", "gics_sub_industry": "Movies & Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NEM", "name": "Newmont", "cik": "0001164727", "gics_sector": "Materials", "gics_sub_industry": "Gold", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NWSA", "name": "News Corp (Class A)", "cik": "0001564708", "gics_sector": "Communication Services", "gics_sub_industry": "Publishing", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NWS", "name": "News Corp (Class B)", "cik": "0001564708", "gics_sector": "Communication Services", "gics_sub_industry": "Publishing", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NEE", "name": "NextEra Energy", "cik": "0000753308", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NKE", "name": "Nike, Inc.", "cik": "0000320187", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel, Accessories & Luxury Goods", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NI", "name": "NiSource", "cik": "0001111711", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NDSN", "name": "Nordson Corporation", "cik": "0000072331", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NSC", "name": "Norfolk Southern", "cik": "0000702165", "gics_sector": "Industrials", "gics_sub_industry": "Rail Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NTRS", "name": "Northern Trust", "cik": "0000073124", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NOC", "name": "Northrop Grumman", "cik": "0001133421", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NCLH", "name": "Norwegian Cruise Line Holdings", "cik": "0001513761", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NRG", "name": "NRG Energy", "cik": "0001013871", "gics_sector": "Utilities", "gics_sub_industry": "Independent Power Producers & Energy Traders", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NUE", "name": "Nucor", "cik": "0000073309", "gics_sector": "Materials", "gics_sub_industry": "Steel", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NVDA", "name": "Nvidia", "cik": "0001045810", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NVR", "name": "NVR, Inc.", "cik": "0000906163", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Homebuilding", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NXPI", "name": "NXP Semiconductors", "cik": "0001413447", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ORLY", "name": "O\u2019Reilly Automotive", "cik": "0000898173", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automotive Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "OXY", "name": "Occidental Petroleum", "cik": "0000797468", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ODFL", "name": "Old Dominion", "cik": "0000878927", "gics_sector": "Industrials", "gics_sub_industry": "Cargo Ground Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "OMC", "name": "Omnicom Group", "cik": "0000029989", "gics_sector": "Communication Services", "gics_sub_industry": "Advertising", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ON", "name": "ON Semiconductor", "cik": "0001097864", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "OKE", "name": "Oneok", "cik": "0001039684", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Storage & Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ORCL", "name": "Oracle Corporation", "cik": "0001341439", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "OTIS", "name": "Otis Worldwide", "cik": "0001781335", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PCAR", "name": "Paccar", "cik": "0000075362", "gics_sector": "Industrials", "gics_sub_industry": "Construction Machinery & Heavy Transportation Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PKG", "name": "Packaging Corporation of America", "cik": "0000075677", "gics_sector": "Materials", "gics_sub_industry": "Paper & Plastic Packaging Products & Materials", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PLTR", "name": "Palantir Technologies", "cik": "0001321655", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PANW", "name": "Palo Alto Networks", "cik": "0001327567", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PSKY", "name": "Paramount Skydance Corporation", "cik": "0002041610", "gics_sector": "Communication Services", "gics_sub_industry": "Movies & Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PH", "name": "Parker Hannifin", "cik": "0000076334", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PAYX", "name": "Paychex", "cik": "0000723531", "gics_sector": "Industrials", "gics_sub_industry": "Human Resource & Employment Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PAYC", "name": "Paycom", "cik": "0001590955", "gics_sector": "Industrials", "gics_sub_industry": "Human Resource & Employment Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PYPL", "name": "PayPal", "cik": "0001633917", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PNR", "name": "Pentair", "cik": "0000077360", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PEP", "name": "PepsiCo", "cik": "0000077476", "gics_sector": "Consumer Staples", "gics_sub_industry": "Soft Drinks & Non-alcoholic Beverages", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PFE", "name": "Pfizer", "cik": "0000078003", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PCG", "name": "PG&E Corporation", "cik": "0001004980", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PM", "name": "Philip Morris International", "cik": "0001413329", "gics_sector": "Consumer Staples", "gics_sub_industry": "Tobacco", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PSX", "name": "Phillips 66", "cik": "0001534701", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Refining & Marketing", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PNW", "name": "Pinnacle West Capital", "cik": "0000764622", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PNC", "name": "PNC Financial Services", "cik": "0000713676", "gics_sector": "Financials", "gics_sub_industry": "Diversified Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "POOL", "name": "Pool Corporation", "cik": "0000945841", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PPG", "name": "PPG Industries", "cik": "0000079879", "gics_sector": "Materials", "gics_sub_industry": "Specialty Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PPL", "name": "PPL Corporation", "cik": "0000922224", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PFG", "name": "Principal Financial Group", "cik": "0001126328", "gics_sector": "Financials", "gics_sub_industry": "Life & Health Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PG", "name": "Procter & Gamble", "cik": "0000080424", "gics_sector": "Consumer Staples", "gics_sub_industry": "Personal Care Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PGR", "name": "Progressive Corporation", "cik": "0000080661", "gics_sector": "Financials", "gics_sub_industry": "Property & Casualty Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PLD", "name": "Prologis", "cik": "0001045609", "gics_sector": "Real Estate", "gics_sub_industry": "Industrial REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PRU", "name": "Prudential Financial", "cik": "0001137774", "gics_sector": "Financials", "gics_sub_industry": "Life & Health Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PEG", "name": "Public Service Enterprise Group", "cik": "0000788784", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PTC", "name": "PTC Inc.", "cik": "0000857005", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PSA", "name": "Public Storage", "cik": "0001393311", "gics_sector": "Real Estate", "gics_sub_industry": "Self-Storage REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PHM", "name": "PulteGroup", "cik": "0000822416", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Homebuilding", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "PWR", "name": "Quanta Services", "cik": "0001050915", "gics_sector": "Industrials", "gics_sub_industry": "Construction & Engineering", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "QCOM", "name": "Qualcomm", "cik": "0000804328", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DGX", "name": "Quest Diagnostics", "cik": "0001022079", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RL", "name": "Ralph Lauren Corporation", "cik": "0001037038", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel, Accessories & Luxury Goods", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RJF", "name": "Raymond James Financial", "cik": "0000720005", "gics_sector": "Financials", "gics_sub_industry": "Investment Banking & Brokerage", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RTX", "name": "RTX Corporation", "cik": "0000101829", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "O", "name": "Realty Income", "cik": "0000726728", "gics_sector": "Real Estate", "gics_sub_industry": "Retail REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "REG", "name": "Regency Centers", "cik": "0000910606", "gics_sector": "Real Estate", "gics_sub_industry": "Retail REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "REGN", "name": "Regeneron Pharmaceuticals", "cik": "0000872589", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RF", "name": "Regions Financial Corporation", "cik": "0001281761", "gics_sector": "Financials", "gics_sub_industry": "Regional Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RSG", "name": "Republic Services", "cik": "0001060391", "gics_sector": "Industrials", "gics_sub_industry": "Environmental & Facilities Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RMD", "name": "ResMed", "cik": "0000943819", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RVTY", "name": "Revvity", "cik": "0000031791", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ROK", "name": "Rockwell Automation", "cik": "0001024478", "gics_sector": "Industrials", "gics_sub_industry": "Electrical Components & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ROL", "name": "Rollins, Inc.", "cik": "0000084839", "gics_sector": "Industrials", "gics_sub_industry": "Environmental & Facilities Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ROP", "name": "Roper Technologies", "cik": "0000882835", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Equipment & Instruments", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ROST", "name": "Ross Stores", "cik": "0000745732", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "RCL", "name": "Royal Caribbean Group", "cik": "0000884887", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Hotels, Resorts & Cruise Lines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SPGI", "name": "S&P Global", "cik": "0000064040", "gics_sector": "Financials", "gics_sub_industry": "Financial Exchanges & Data", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "CRM", "name": "Salesforce", "cik": "0001108524", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SBAC", "name": "SBA Communications", "cik": "0001034054", "gics_sector": "Real Estate", "gics_sub_industry": "Telecom Tower REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SLB", "name": "Schlumberger", "cik": "0000087347", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Equipment & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "STX", "name": "Seagate Technology", "cik": "0001137789", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SRE", "name": "Sempra", "cik": "0001032208", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "NOW", "name": "ServiceNow", "cik": "0001373715", "gics_sector": "Information Technology", "gics_sub_industry": "Systems Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SHW", "name": "Sherwin-Williams", "cik": "0000089800", "gics_sector": "Materials", "gics_sub_industry": "Specialty Chemicals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SPG", "name": "Simon Property Group", "cik": "0001063761", "gics_sector": "Real Estate", "gics_sub_industry": "Retail REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SWKS", "name": "Skyworks Solutions", "cik": "0000004127", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SJM", "name": "J.M. Smucker Company (The)", "cik": "0000091419", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SW", "name": "Smurfit Westrock", "cik": "0002005951", "gics_sector": "Materials", "gics_sub_industry": "Paper & Plastic Packaging Products & Materials", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SNA", "name": "Snap-on", "cik": "0000091440", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SOLV", "name": "Solventum", "cik": "0001964738", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Technology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SO", "name": "Southern Company", "cik": "0000092122", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "LUV", "name": "Southwest Airlines", "cik": "0000092380", "gics_sector": "Industrials", "gics_sub_industry": "Passenger Airlines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SWK", "name": "Stanley Black & Decker", "cik": "0000093556", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SBUX", "name": "Starbucks", "cik": "0000829224", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Restaurants", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "STT", "name": "State Street Corporation", "cik": "0000093751", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "STLD", "name": "Steel Dynamics", "cik": "0001022671", "gics_sector": "Materials", "gics_sub_industry": "Steel", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "STE", "name": "Steris", "cik": "0001757898", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SYK", "name": "Stryker Corporation", "cik": "0000310764", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SMCI", "name": "Supermicro", "cik": "0001375365", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SYF", "name": "Synchrony Financial", "cik": "0001601712", "gics_sector": "Financials", "gics_sub_industry": "Consumer Finance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SNPS", "name": "Synopsys", "cik": "0000883241", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "SYY", "name": "Sysco", "cik": "0000096021", "gics_sector": "Consumer Staples", "gics_sub_industry": "Food Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TMUS", "name": "T-Mobile US", "cik": "0001283699", "gics_sector": "Communication Services", "gics_sub_industry": "Wireless Telecommunication Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TROW", "name": "T. Rowe Price", "cik": "0001113169", "gics_sector": "Financials", "gics_sub_industry": "Asset Management & Custody Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TTWO", "name": "Take-Two Interactive", "cik": "0000946581", "gics_sector": "Communication Services", "gics_sub_industry": "Interactive Home Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TPR", "name": "Tapestry, Inc.", "cik": "0001116132", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel, Accessories & Luxury Goods", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TRGP", "name": "Targa Resources", "cik": "0001389170", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Storage & Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TGT", "name": "Target Corporation", "cik": "0000027419", "gics_sector": "Consumer Staples", "gics_sub_industry": "Consumer Staples Merchandise Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TEL", "name": "TE Connectivity", "cik": "0001385157", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Manufacturing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TDY", "name": "Teledyne Technologies", "cik": "0001094285", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Equipment & Instruments", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TER", "name": "Teradyne", "cik": "0000097210", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductor Materials & Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TSLA", "name": "Tesla, Inc.", "cik": "0001318605", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Automobile Manufacturers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TXN", "name": "Texas Instruments", "cik": "0000097476", "gics_sector": "Information Technology", "gics_sub_industry": "Semiconductors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TPL", "name": "Texas Pacific Land Corporation", "cik": "0001811074", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Exploration & Production", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TXT", "name": "Textron", "cik": "0000217346", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TMO", "name": "Thermo Fisher Scientific", "cik": "0000097745", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TJX", "name": "TJX Companies", "cik": "0000109198", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Apparel Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TKO", "name": "TKO Group Holdings", "cik": "0001973266", "gics_sector": "Communication Services", "gics_sub_industry": "Movies & Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TTD", "name": "Trade Desk (The)", "cik": "0001671933", "gics_sector": "Communication Services", "gics_sub_industry": "Advertising", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TSCO", "name": "Tractor Supply", "cik": "0000916365", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Other Specialty Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TT", "name": "Trane Technologies", "cik": "0001466258", "gics_sector": "Industrials", "gics_sub_industry": "Building Products", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TDG", "name": "TransDigm Group", "cik": "0001260221", "gics_sector": "Industrials", "gics_sub_industry": "Aerospace & Defense", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TRV", "name": "Travelers Companies (The)", "cik": "0000086312", "gics_sector": "Financials", "gics_sub_industry": "Property & Casualty Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TRMB", "name": "Trimble Inc.", "cik": "0000864749", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Equipment & Instruments", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TFC", "name": "Truist Financial", "cik": "0000092230", "gics_sector": "Financials", "gics_sub_industry": "Diversified Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TYL", "name": "Tyler Technologies", "cik": "0000860731", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "TSN", "name": "Tyson Foods", "cik": "0000100493", "gics_sector": "Consumer Staples", "gics_sub_industry": "Packaged Foods & Meats", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "USB", "name": "U.S. Bancorp", "cik": "0000036104", "gics_sector": "Financials", "gics_sub_industry": "Diversified Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UBER", "name": "Uber", "cik": "0001543151", "gics_sector": "Industrials", "gics_sub_industry": "Passenger Ground Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UDR", "name": "UDR, Inc.", "cik": "0000074208", "gics_sector": "Real Estate", "gics_sub_industry": "Multi-Family Residential REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ULTA", "name": "Ulta Beauty", "cik": "0001403568", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Other Specialty Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UNP", "name": "Union Pacific Corporation", "cik": "0000100885", "gics_sector": "Industrials", "gics_sub_industry": "Rail Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UAL", "name": "United Airlines Holdings", "cik": "0000100517", "gics_sector": "Industrials", "gics_sub_industry": "Passenger Airlines", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UPS", "name": "United Parcel Service", "cik": "0001090727", "gics_sector": "Industrials", "gics_sub_industry": "Air Freight & Logistics", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "URI", "name": "United Rentals", "cik": "0001067701", "gics_sector": "Industrials", "gics_sub_industry": "Trading Companies & Distributors", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UNH", "name": "UnitedHealth Group", "cik": "0000731766", "gics_sector": "Health Care", "gics_sub_industry": "Managed Health Care", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "UHS", "name": "Universal Health Services", "cik": "0000352915", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Facilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VLO", "name": "Valero Energy", "cik": "0001035002", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Refining & Marketing", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VTR", "name": "Ventas", "cik": "0000740260", "gics_sector": "Real Estate", "gics_sub_industry": "Health Care REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VLTO", "name": "Veralto", "cik": "0001967680", "gics_sector": "Industrials", "gics_sub_industry": "Environmental & Facilities Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VRSN", "name": "Verisign", "cik": "0001014473", "gics_sector": "Information Technology", "gics_sub_industry": "Internet Services & Infrastructure", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VRSK", "name": "Verisk Analytics", "cik": "0001442145", "gics_sector": "Industrials", "gics_sub_industry": "Research & Consulting Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VZ", "name": "Verizon", "cik": "0000732712", "gics_sector": "Communication Services", "gics_sub_industry": "Integrated Telecommunication Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VRTX", "name": "Vertex Pharmaceuticals", "cik": "0000875320", "gics_sector": "Health Care", "gics_sub_industry": "Biotechnology", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VTRS", "name": "Viatris", "cik": "0001792044", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VICI", "name": "Vici Properties", "cik": "0001705696", "gics_sector": "Real Estate", "gics_sub_industry": "Hotel & Resort REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "V", "name": "Visa Inc.", "cik": "0001403161", "gics_sector": "Financials", "gics_sub_industry": "Transaction & Payment Processing Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VST", "name": "Vistra Corp.", "cik": "0001692819", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "VMC", "name": "Vulcan Materials Company", "cik": "0001396009", "gics_sector": "Materials", "gics_sub_industry": "Construction Materials", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WRB", "name": "W. R. Berkley Corporation", "cik": "0000011544", "gics_sector": "Financials", "gics_sub_industry": "Property & Casualty Insurance", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "GWW", "name": "W. W. Grainger", "cik": "0000277135", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WAB", "name": "Wabtec", "cik": "0000943452", "gics_sector": "Industrials", "gics_sub_industry": "Construction Machinery & Heavy Transportation Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WBA", "name": "Walgreens Boots Alliance", "cik": "0001618921", "gics_sector": "Consumer Staples", "gics_sub_industry": "Drug Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WMT", "name": "Walmart", "cik": "0000104169", "gics_sector": "Consumer Staples", "gics_sub_industry": "Consumer Staples Merchandise Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "DIS", "name": "Walt Disney Company (The)", "cik": "0001744489", "gics_sector": "Communication Services", "gics_sub_industry": "Movies & Entertainment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WBD", "name": "Warner Bros. Discovery", "cik": "0001437107", "gics_sector": "Communication Services", "gics_sub_industry": "Broadcasting", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WM", "name": "Waste Management", "cik": "0000823768", "gics_sector": "Industrials", "gics_sub_industry": "Environmental & Facilities Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WAT", "name": "Waters Corporation", "cik": "0001000697", "gics_sector": "Health Care", "gics_sub_industry": "Life Sciences Tools & Services", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WEC", "name": "WEC Energy Group", "cik": "0000783325", "gics_sector": "Utilities", "gics_sub_industry": "Electric Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WFC", "name": "Wells Fargo", "cik": "0000072971", "gics_sector": "Financials", "gics_sub_industry": "Diversified Banks", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WELL", "name": "Welltower", "cik": "0000766704", "gics_sector": "Real Estate", "gics_sub_industry": "Health Care REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WST", "name": "West Pharmaceutical Services", "cik": "0000105770", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Supplies", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WDC", "name": "Western Digital", "cik": "0000106040", "gics_sector": "Information Technology", "gics_sub_industry": "Technology Hardware, Storage & Peripherals", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WY", "name": "Weyerhaeuser", "cik": "0000106535", "gics_sector": "Real Estate", "gics_sub_industry": "Timber REITs", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WSM", "name": "Williams-Sonoma, Inc.", "cik": "0000719955", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Homefurnishing Retail", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WMB", "name": "Williams Companies", "cik": "0000107263", "gics_sector": "Energy", "gics_sub_industry": "Oil & Gas Storage & Transportation", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WTW", "name": "Willis Towers Watson", "cik": "0001140536", "gics_sector": "Financials", "gics_sub_industry": "Insurance Brokers", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WDAY", "name": "Workday, Inc.", "cik": "0001327811", "gics_sector": "Information Technology", "gics_sub_industry": "Application Software", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "WYNN", "name": "Wynn Resorts", "cik": "0001174922", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Casinos & Gaming", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "XEL", "name": "Xcel Energy", "cik": "0000072903", "gics_sector": "Utilities", "gics_sub_industry": "Multi-Utilities", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "XYL", "name": "Xylem Inc.", "cik": "0001524472", "gics_sector": "Industrials", "gics_sub_industry": "Industrial Machinery & Supplies & Components", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "YUM", "name": "Yum! Brands", "cik": "0001041061", "gics_sector": "Consumer Discretionary", "gics_sub_industry": "Restaurants", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ZBRA", "name": "Zebra Technologies", "cik": "0000877212", "gics_sector": "Information Technology", "gics_sub_industry": "Electronic Equipment & Instruments", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ZBH", "name": "Zimmer Biomet", "cik": "0001136869", "gics_sector": "Health Care", "gics_sub_industry": "Health Care Equipment", "status": "done", "years_requested": "2005-2025"}
+{"ticker": "ZTS", "name": "Zoetis", "cik": "0001555280", "gics_sector": "Health Care", "gics_sub_industry": "Pharmaceuticals", "status": "done", "years_requested": "2005-2025"}

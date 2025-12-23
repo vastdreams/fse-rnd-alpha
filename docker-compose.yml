@@ -1,0 +1,88 @@
+# PATH: docker-compose.yml
+# PURPOSE: Production-ready Docker Compose for R&D Factor Analysis
+# USAGE:
+#   Development: docker-compose up -d
+#   Production:  docker-compose -f docker-compose.yml up -d
+#
+# ENVIRONMENT VARIABLES (create .env file or export):
+#   POSTGRES_PASSWORD=your-secure-password
+#   FMP_API_KEY=your-fmp-api-key
+#   SECRET_KEY=your-secret-key
+#
+# For full production deployment with SSL, see deploy/docker-compose.yml
+
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: rd_alpha_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rd_alpha
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rd_alpha_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/rd_alpha
+      FMP_API_KEY: ${FMP_API_KEY:-}
+      SECRET_KEY: ${SECRET_KEY:-change-in-production}
+      DEBUG: ${DEBUG:-false}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data:ro
+      - ./publication_tables:/app/publication_tables
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend (with Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rd_alpha_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pg_data:
+    name: rd_alpha_pg_data
+
+networks:
+  default:
+    name: rd_alpha_network
+
+

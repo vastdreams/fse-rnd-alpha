@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this research, please cite it as below."
+type: software
+title: "R&D Alpha: Innovation-Driven Investment Research"
+authors:
+  - family-names: "Sehgal"
+    given-names: "Abhishek"
+    orcid: ""
+repository-code: "https://github.com/vastdreams/fse-rnd-alpha"
+url: "https://research.finsoeasy.com"
+abstract: >-
+  Research platform investigating the relationship between 
+  R&D investment intensity and stock returns. Finds a statistically
+  significant annual premium of +7.55% for high R&D intensity firms
+  within the S&P 500 universe.
+keywords:
+  - R&D
+  - stock returns
+  - factor investing
+  - quantitative finance
+  - investment research
+license: MIT
+version: "1.0.0"
+date-released: "2024-12-23"
