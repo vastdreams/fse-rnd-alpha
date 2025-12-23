@@ -221,7 +221,7 @@ To verify replication, compare against canonical values:
 | T-statistic (NW) | >2.0 | - |
 | Win Rate | >65% | - |
 
-See `BASELINE_RESULTS_VERIFIED.md` for full canonical values.
+See `/api/research/publication-snapshot` for the frozen canonical values used by the on-site paper.
 
 ---
 

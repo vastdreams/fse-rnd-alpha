@@ -15,9 +15,9 @@ The consolidated Main Paper at `/papers/main` is the authoritative manuscript th
 
 ---
 
-## Canonical headline results (Tier-1, verified)
+## Canonical headline results (Tier-1, snapshot-pinned)
 
-The following rolling-window summary values are taken directly from `BASELINE_RESULTS_VERIFIED.md`.
+The canonical headline values are pinned by the frozen publication snapshot served at `/api/research/publication-snapshot`.
 
 | Horizon | Q5 Return | Q1 Return | HML Premium (Q5−Q1) | t-stat | p-value | Cohen's d | η² |
 |---------|-----------|-----------|---------------------|--------|---------|-----------|-----|

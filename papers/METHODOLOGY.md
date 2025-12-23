@@ -222,7 +222,7 @@ Range: 0-100, where higher = more complete data.
 
 ### 8.2 Data Retrieval Date
 
-- **Data Snapshot Date**: December 18, 2025 (see `BASELINE_RESULTS_VERIFIED.md`)
+- **Data Snapshot Date**: December 18, 2025 (see `/api/research/publication-snapshot` meta)
 - **Live Coverage Ranges**: Export from `/api/fmp/overview` and `/api/research/annual-hml-premium` in the running deployment
 
 ### 8.3 Code Repository

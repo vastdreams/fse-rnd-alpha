@@ -19,7 +19,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -133,6 +133,20 @@ export function Paper1() {
     queryFn: () => api.getCohortSummary(),
   })
 
+  const { data: factorPremiumSeries } = useQuery({
+    queryKey: ["factorPremiums"],
+    queryFn: () => api.getFactorPremiums(),
+  })
+
+  const sampleYearRange = useMemo(() => {
+    const years = (factorPremiumSeries || []).map((r) => r.year).filter((y): y is number => typeof y === "number")
+    if (years.length === 0) return undefined
+    const min = Math.min(...years)
+    const max = Math.max(...years)
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined
+    return `${min}-${max}`
+  }, [factorPremiumSeries])
+
   // Key metrics for the right sidebar - dynamically computed from API data
   const rdPremium20yr = aggregateAnova?.["20yr"]?.ttest_high_vs_low?.mean_difference;
   const etaSquared20yr = aggregateAnova?.["20yr"]?.anova?.eta_squared;
@@ -245,14 +259,14 @@ export function Paper1() {
               <span className="text-foreground">Investment Intensity and Long-Term Shareholder Returns</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl">
-              Evidence from S&P 500 Companies (1995-2024)
+              Evidence from S&amp;P 500 Companies ({sampleYearRange || "the sample period"})
             </p>
             
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
               <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
               <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || 503} Companies</span></div>
-              <div><span className="text-muted-foreground">Period:</span> <span className="text-foreground">1995-2024</span></div>
+              <div><span className="text-muted-foreground">Period:</span> <span className="text-foreground">{sampleYearRange || "-"}</span></div>
             </div>
           </div>
         </div>
@@ -267,21 +281,48 @@ export function Paper1() {
             <CardContent className="pt-6 prose prose-invert max-w-none">
               <p className="text-lg leading-relaxed text-muted-foreground">
                 This study examines the relationship between Research & Development (R&D) investment intensity 
-                and long-term shareholder returns among S&P 500 companies over a 30-year period (1995-2024). 
-                Using a quintile-based portfolio approach, we find that companies in the highest R&D intensity 
-                quintile (Q5) consistently outperform those in the lowest quintile (Q1) by <strong className="text-foreground">+2.6% to +7.1% annually</strong> depending on horizon. 
-                The effect strengthens with investment horizon, with η² increasing from 0.225 at 5-year windows 
-                to 0.458 at 20-year windows, indicating a very large effect size. Our findings suggest that 
+                and long-term shareholder returns among S&amp;P 500 companies over {sampleYearRange || "the sample period"}. 
+                Using a quintile-based portfolio approach, we find that companies in the highest R&amp;D intensity 
+                quintile (Q5) consistently outperform those in the lowest quintile (Q1). The horizon-by-horizon
+                magnitudes and effect sizes are reported from the research endpoints rendered on this page.
+                Our findings suggest that 
                 sustained R&D investment creates durable competitive advantages that translate into superior 
                 long-term shareholder returns.
               </p>
               <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg">
                 <p className="text-sm text-green-600 dark:text-emerald-400 font-medium mb-2">Key Findings:</p>
                 <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-1">
-                  <li>• Q5 (High R&D) outperforms Q1 (Low R&D) by +7.11% (5yr), +4.78% (10yr), +2.62% (20yr) annually</li>
-                  <li>• Effect size is very large (Cohen's d = 1.446 at 20-year windows)</li>
-                  <li>• Statistical significance: p {"<"} 0.001 across all time horizons</li>
-                  <li>• R&D premium persists through multiple market cycles</li>
+                  <li>
+                    • Q5 (High R&amp;D) outperforms Q1 (Low R&amp;D) by{" "}
+                    <strong className="text-foreground">
+                      {typeof aggregateAnova?.["5yr"]?.ttest_high_vs_low?.mean_difference === "number"
+                        ? `${aggregateAnova["5yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["5yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
+                        : "-"}
+                    </strong>{" "}
+                    (5yr),{" "}
+                    <strong className="text-foreground">
+                      {typeof aggregateAnova?.["10yr"]?.ttest_high_vs_low?.mean_difference === "number"
+                        ? `${aggregateAnova["10yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["10yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
+                        : "-"}
+                    </strong>{" "}
+                    (10yr),{" "}
+                    <strong className="text-foreground">
+                      {typeof aggregateAnova?.["20yr"]?.ttest_high_vs_low?.mean_difference === "number"
+                        ? `${aggregateAnova["20yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["20yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
+                        : "-"}
+                    </strong>{" "}
+                    (20yr) in annualized returns (Q5 − Q1).
+                  </li>
+                  <li>
+                    • Effect size (Cohen's d, 20yr):{" "}
+                    <strong className="text-foreground">
+                      {typeof aggregateAnova?.["20yr"]?.ttest_high_vs_low?.cohens_d === "number"
+                        ? aggregateAnova["20yr"].ttest_high_vs_low.cohens_d.toFixed(3)
+                        : "-"}
+                    </strong>
+                  </li>
+                  <li>• Statistical significance is assessed per horizon using ANOVA and high-vs-low t-tests (see Results).</li>
+                  <li>• The R&amp;D premium persists through multiple market cycles (descriptive).</li>
                 </ul>
               </div>
             </CardContent>
@@ -320,7 +361,7 @@ export function Paper1() {
               <p className="text-muted-foreground leading-relaxed">
                 This paper investigates whether companies with higher R&D intensity-measured as R&D expenditure 
                 as a percentage of revenue-deliver superior long-term returns to shareholders. We analyze 
-                all S&P 500 constituents over a 30-year period, creating quintile portfolios based on R&D 
+                all S&amp;P 500 constituents over {sampleYearRange || "the sample period"}, creating quintile portfolios based on R&amp;D 
                 intensity and tracking their performance across multiple time horizons.
               </p>
               <h3 className="text-lg font-semibold text-foreground mt-6">Research Questions</h3>
@@ -402,10 +443,9 @@ export function Paper1() {
                 <p className="text-sm text-green-600 dark:text-emerald-400 font-medium mb-2">Our Contribution:</p>
                 <p className="text-sm text-slate-700 dark:text-slate-200">
                   This study extends prior literature by examining the R&D-return relationship over an 
-                  extended 30-year period using a comprehensive S&P 500 sample, with particular attention to 
-                  how the relationship varies across investment horizons. In our baseline specification, the
-                  Q5-Q1 premium is positive and statistically significant across 5/10/20-year windows, while
-                  the premium magnitude declines as horizon increases and effect sizes increase.
+                  extended sample period ({sampleYearRange || "see header"}) using a comprehensive S&amp;P 500 sample, with particular attention to 
+                  how the relationship varies across investment horizons. We report horizon-specific Q5-Q1 premiums, p-values, and effect sizes for
+                  5/10/20-year windows using the platform’s research endpoints (rather than hardcoding static values in the prose).
                 </p>
               </div>
             </CardContent>
@@ -1009,7 +1049,7 @@ export function Paper1() {
                   <ul className="text-xs text-muted-foreground space-y-1">
                     <li>• All calculations use standard statistical methods</li>
                     <li>• Code is fully open source</li>
-                    <li>• Canonical values are documented in <code>BASELINE_RESULTS_VERIFIED.md</code></li>
+                    <li>• Canonical values are pinned by the publication snapshot (see <code>/api/research/publication-snapshot</code>)</li>
                   </ul>
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">

@@ -243,7 +243,7 @@ export function Paper3() {
                 factor inputs; when those inputs are unavailable, this page documents the premium but does not
                 claim distinct factor status.</strong> 
                 We construct a long-short portfolio (Q5 minus Q1 based on R&D intensity) and analyze 
-                its performance characteristics over a 30-year sample period. Our findings reveal a 
+                its performance characteristics over the full sample period. Our findings reveal a 
                 statistically significant <strong className="text-foreground">mean annual R&D premium of
                 {typeof rdPremiumStats?.mean === "number" ? ` ${rdPremiumStats.mean.toFixed(1)}%` : " -"} </strong>,
                 with a t-statistic of {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "-"}
@@ -844,7 +844,9 @@ export function Paper3() {
 
               <h3 className="text-lg font-semibold text-foreground mt-6">6.3 Limitations and Biases</h3>
               <ul className="text-muted-foreground space-y-2">
-                <li>• <strong>Survivorship Bias (Addressed):</strong> Our analysis incorporates historical S&P 500 constituents and applies delisting returns (-30% for distress) to ensure the R&D premium is robust across the full historical universe.</li>
+                <li>
+                  • <strong>Survivorship Bias (Mitigated):</strong> Our analysis incorporates historical S&amp;P 500 constituents and applies delisting-return adjustments when exits occur. Where direct delisting inputs are unavailable, results are framed with explicit sensitivity analysis rather than a single hardcoded assumption.
+                </li>
                 <li>• <strong>Look-Ahead Bias (Addressed):</strong> We mitigate timing issues by using the Fama-French July-June return convention, ensuring financial data is publicly available before portfolios are formed.</li>
                 <li>• <strong>Overlapping windows:</strong> Dependency between rolling 5/10/20-year analysis periods can inflate t-statistics. We apply Newey-West HAC standard errors to mitigate this, but results should be interpreted with appropriate caution.</li>
                 <li>• <strong>Factor spanning (Completed):</strong> We have now performed formal spanning tests against FF3, FF5, and Momentum factors. The significant alphas confirm that R&D represents a distinct source of return.</li>

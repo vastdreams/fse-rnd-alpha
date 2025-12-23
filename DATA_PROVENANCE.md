@@ -204,7 +204,7 @@ Based on academic literature (Shumway 2003, Bessembinder 2018), unaddressed surv
 |------|-------------|
 | `publication_tables/all_tables.json` | All statistical tables |
 | `publication_tables/delisting_sensitivity.txt` | Sensitivity analysis |
-| `BASELINE_RESULTS_VERIFIED.md` | Canonical values for validation |
+| Publication snapshot (`/api/research/publication-snapshot`) | Frozen canonical values used by the on-site paper |
 
 ### Version Control
 

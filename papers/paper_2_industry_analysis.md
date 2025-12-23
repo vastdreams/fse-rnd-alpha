@@ -33,7 +33,7 @@ Use these endpoints (Tier-1) for all sector-level numeric outputs:
 - `/api/research/cohort-summary`  
   (eligibility counts by sector across 5/10/20-year windows)
 
-Also see `BASELINE_RESULTS_VERIFIED.md` (Table 4) for the canonical Tier-1 sector summary used for publication.
+Also see `/api/research/publication-snapshot` for the frozen sector summary used by the on-site Main Paper.
 
 ---
 

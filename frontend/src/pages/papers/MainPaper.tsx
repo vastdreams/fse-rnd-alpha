@@ -17,7 +17,7 @@
  * NOTES:
  *   - No hard-coded numeric claims in prose. Any numeric claim must be sourced from:
  *     - live API responses, or
- *     - canonical verification docs (e.g., BASELINE_RESULTS_VERIFIED.md) surfaced via API.
+ *     - the frozen publication snapshot served by the backend.
  *   - Prefer rendering values dynamically from endpoints; avoid hard-coded result numbers in prose.
  *   - Keep "Sub-Research" pages as deep dives; the Main Paper should remain coherent and citable.
  */
@@ -3086,9 +3086,7 @@ export function MainPaper() {
                 <li>
                   <code>DATA_AVAILABILITY.md</code> (licensing + replication)
                 </li>
-                <li>
-                  <code>BASELINE_RESULTS_VERIFIED.md</code> (canonical values)
-                </li>
+                <li>Snapshot meta (ID + commit hash) is the canonical anchor for all displayed numbers.</li>
               </ul>
             </CardContent>
           </Card>

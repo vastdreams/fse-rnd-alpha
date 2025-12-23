@@ -8,7 +8,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -116,6 +116,20 @@ export function Paper2() {
     queryKey: ["rdLeaders"],
     queryFn: () => api.getRDLeaderboard(100),
   })
+
+  const { data: rdTrends } = useQuery({
+    queryKey: ["rdTrends"],
+    queryFn: () => api.getRDTrends(),
+  })
+
+  const rdSampleYearRange = useMemo(() => {
+    const years = (rdTrends || []).map((r) => r.year).filter((y): y is number => typeof y === "number")
+    if (years.length === 0) return undefined
+    const min = Math.min(...years)
+    const max = Math.max(...years)
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined
+    return `${min}-${max}`
+  }, [rdTrends])
 
   // Format sector data for charts
   const sectorData = (rdBySector || []).map(s => ({
@@ -246,7 +260,7 @@ export function Paper2() {
             <CardContent className="pt-6 prose prose-invert max-w-none">
               <p className="text-lg leading-relaxed text-muted-foreground">
                 This study examines industry-specific patterns in R&D investment across S&P 500 companies 
-                over a 30-year period (1995-2024). Using GICS sector classifications, we analyze how R&D 
+                over {rdSampleYearRange || "the sample period"}. Using GICS sector classifications, we analyze how R&D 
                 intensity varies across 11 major industry sectors and identify sector-specific factors 
                 that influence the relationship between R&D investment and firm performance. Our findings 
                 reveal substantial heterogeneity in R&D practices, with <strong className="text-foreground">Healthcare</strong> and 
@@ -258,7 +272,7 @@ export function Paper2() {
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-2">Key Findings:</p>
                 <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-1">
                   <li>• {sectorData[0]?.sector || "Healthcare"} leads in R&D intensity at {sectorData[0]?.avg_rd_intensity?.toFixed(1) || "15"}%</li>
-                  <li>• Total S&P 500 R&D spend: ${sectorData.reduce((acc, s) => acc + s.totalRdB, 0).toFixed(0)}B cumulative (1995-2024)</li>
+                  <li>• Total S&P 500 R&D spend: ${sectorData.reduce((acc, s) => acc + s.totalRdB, 0).toFixed(0)}B cumulative ({rdSampleYearRange || "all years"})</li>
                   <li>• R&D-return relationship holds within sectors</li>
                   <li>• Sector context essential for cross-company comparisons</li>
                 </ul>
@@ -366,7 +380,7 @@ export function Paper2() {
                 <p className="text-muted-foreground">
                   Our sample comprises {cohortSummary?.total_companies || 503} S&P 500 companies 
                   classified into {sectorData.length} GICS sectors. We collect annual R&D expenditure 
-                  and revenue data from company financial statements for the period 1995-2024.
+                  and revenue data from company financial statements for the period {rdSampleYearRange || "shown above"}.
                 </p>
               </div>
 

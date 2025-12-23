@@ -144,6 +144,23 @@ export function Portfolio() {
     return `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`
   }
 
+  // Chart-safe series (explicitly use S&P 500 fields for benchmark/alpha displays)
+  const yearlyDataForCharts = useMemo(() => {
+    const rows = backtest?.yearly_data || []
+    return rows.map((d) => ({
+      ...d,
+      sp500_return: typeof d.sp500_return === "number" ? d.sp500_return : null,
+      excess_vs_sp500: typeof d.excess_vs_sp500 === "number" ? d.excess_vs_sp500 : null,
+    }))
+  }, [backtest?.yearly_data])
+
+  const cumulativeExcessVsSp500 = useMemo(() => {
+    const port = backtest?.portfolio_performance?.total_return
+    const sp = backtest?.sp500_performance?.total_return
+    if (typeof port !== "number" || typeof sp !== "number") return null
+    return port - sp
+  }, [backtest?.portfolio_performance?.total_return, backtest?.sp500_performance?.total_return])
+
   // Export holdings to CSV
   const handleExportHoldings = () => {
     if (!holdings || holdings.length === 0) return
@@ -236,7 +253,7 @@ export function Portfolio() {
     // Use S&P 500 return for benchmark when available, fallback to cohort EW benchmark
     backtest.yearly_data.forEach((d) => {
       portfolioCumulative *= (1 + (d.portfolio_return || 0) / 100)
-      const benchmarkReturn = d.sp500_return ?? d.benchmark_return ?? 0
+      const benchmarkReturn = typeof d.sp500_return === "number" ? d.sp500_return : 0
       benchmarkCumulative *= (1 + benchmarkReturn / 100)
       
       // Track the value at selection year
@@ -476,9 +493,7 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-blue-500">
               {backtest?.sp500_performance?.total_return 
                 ? `+${backtest.sp500_performance.total_return.toFixed(0)}%`
-                : backtest?.benchmark_performance?.total_return 
-                  ? `+${backtest.benchmark_performance.total_return.toFixed(0)}%`
-                  : "-"}
+                : "-"}
             </p>
             <p className="text-xs text-muted-foreground">Market benchmark</p>
           </CardContent>
@@ -494,9 +509,7 @@ export function Portfolio() {
             <p className="text-xs text-muted-foreground">
               vs S&P 500: {backtest?.sp500_performance?.annualized_return 
                 ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
-                : backtest?.benchmark_performance?.annualized_return 
-                  ? `+${backtest.benchmark_performance.annualized_return.toFixed(1)}%`
-                  : "-"}
+                : "-"}
             </p>
           </CardContent>
         </Card>
@@ -506,9 +519,7 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-amber-500">
               {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
                 ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
-                : backtest?.excess_return 
-                  ? `+${backtest.excess_return.toFixed(1)}%`
-                  : "-"}
+                : "-"}
             </p>
             <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
           </CardContent>
@@ -901,14 +912,23 @@ export function Portfolio() {
               <p className="text-xs text-muted-foreground/70">(S&P 500)</p>
             </div>
             <div className={`text-center p-4 rounded-lg ${
-              (backtest?.excess_return || 0) >= 0 ? 'bg-green-50 dark:bg-green-500/10' : 'bg-red-50 dark:bg-red-500/10'
+              cumulativeExcessVsSp500 === null
+                ? 'bg-slate-100 dark:bg-slate-800'
+                : cumulativeExcessVsSp500 >= 0
+                  ? 'bg-green-50 dark:bg-green-500/10'
+                  : 'bg-red-50 dark:bg-red-500/10'
             }`}>
               <p className={`text-3xl font-bold ${
-                (backtest?.excess_return || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                cumulativeExcessVsSp500 === null
+                  ? 'text-slate-600 dark:text-slate-300'
+                  : cumulativeExcessVsSp500 >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
               }`}>
-                {formatPercent(backtest?.excess_return)}
+                {formatPercent(cumulativeExcessVsSp500)}
               </p>
-              <p className="text-sm text-muted-foreground">Cumulative Alpha</p>
+              <p className="text-sm text-muted-foreground">Cumulative Excess vs S&P 500</p>
+              <p className="text-xs text-muted-foreground/70">(pp difference in total return)</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10">
               <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
@@ -944,7 +964,7 @@ export function Portfolio() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-400">
-              {formatPercent(backtest?.sp500_performance?.annualized_return ?? backtest?.benchmark_performance?.annualized_return)}
+              {formatPercent(backtest?.sp500_performance?.annualized_return)}
             </div>
             <p className="text-xs text-muted-foreground">
               Market benchmark
@@ -955,18 +975,18 @@ export function Portfolio() {
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-colors">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Alpha Generated</CardTitle>
-            {(backtest?.excess_return || 0) >= 0 ? (
+            {(backtest?.excess_vs_sp500 || 0) >= 0 ? (
               <TrendingUp className="h-4 w-4 text-purple-500" />
             ) : (
               <TrendingDown className="h-4 w-4 text-red-500" />
             )}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${(backtest?.excess_return || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
-              {formatPercent(backtest?.excess_return)}
+            <div className={`text-2xl font-bold ${(backtest?.excess_vs_sp500 || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
+              {formatPercent(backtest?.excess_vs_sp500)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Excess over benchmark
+              Annualized excess vs S&P 500
             </p>
           </CardContent>
         </Card>
@@ -1078,13 +1098,13 @@ export function Portfolio() {
         <TabsContent value="performance" className="space-y-4">
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>Portfolio vs Benchmark ({backtestStart}-{asOfYear})</CardTitle>
+              <CardTitle>Portfolio vs S&P 500 ({backtestStart}-{asOfYear})</CardTitle>
               <CardDescription>Year-over-year comparison of R&D ETF vs S&P 500</CardDescription>
             </CardHeader>
             <CardContent style={{ height: 384, minHeight: 384 }}>
-              {chartsReady && activeTab === "performance" && backtest?.yearly_data && backtest.yearly_data.length > 0 ? (
+              {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (
               <ResponsiveContainer key={`perf-chart-${activeTab}`} width="100%" height="100%" minHeight={360} debounce={100}>
-                <LineChart data={backtest?.yearly_data || []}>
+                <LineChart data={yearlyDataForCharts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
                   <YAxis tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
@@ -1108,8 +1128,8 @@ export function Portfolio() {
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="benchmark_return" 
-                    name="Benchmark" 
+                    dataKey="sp500_return" 
+                    name="S&P 500" 
                     stroke="#3b82f6" 
                     strokeWidth={2}
                     strokeDasharray="5 5"
@@ -1126,17 +1146,17 @@ export function Portfolio() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle>Annual Excess Return (Alpha)</CardTitle>
-              <CardDescription>R&D ETF outperformance vs benchmark each year</CardDescription>
+              <CardDescription>R&D ETF outperformance vs S&P 500 each year</CardDescription>
             </CardHeader>
             <CardContent style={{ height: 256, minHeight: 256 }}>
-              {chartsReady && activeTab === "performance" && backtest?.yearly_data && backtest.yearly_data.length > 0 ? (
+              {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (
               <ResponsiveContainer key={`alpha-chart-${activeTab}`} width="100%" height="100%" minHeight={240} debounce={100}>
-                <BarChart data={backtest?.yearly_data || []}>
+                <BarChart data={yearlyDataForCharts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
                   <YAxis tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
                   <RechartsTooltip
-                    formatter={(value) => [`${(value as number)?.toFixed(1)}%`, "Excess Return"]}
+                    formatter={(value) => [`${(value as number)?.toFixed(1)}%`, "Excess vs S&P 500"]}
                     contentStyle={{ 
                       backgroundColor: "hsl(var(--popover))", 
                       border: "1px solid hsl(var(--border))",
@@ -1144,9 +1164,12 @@ export function Portfolio() {
                     }}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-                  <Bar dataKey="excess_return" name="Excess Return" radius={[4, 4, 0, 0]}>
-                    {(backtest?.yearly_data || []).map((entry, index) => (
-                      <Cell key={index} fill={entry.excess_return >= 0 ? "#22c55e" : "#ef4444"} />
+                  <Bar dataKey="excess_vs_sp500" name="Excess vs S&P 500" radius={[4, 4, 0, 0]}>
+                    {(yearlyDataForCharts || []).map((entry, index) => (
+                      <Cell
+                        key={index}
+                        fill={(entry.excess_vs_sp500 ?? 0) >= 0 ? "#22c55e" : "#ef4444"}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
