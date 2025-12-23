@@ -574,10 +574,10 @@ export function MainPaper() {
   }, [investableBacktest])
 
   return (
-    <div className="flex gap-8">
+    <div className="flex gap-8 min-h-0">
       <div
         className={cn(
-          "flex-1 space-y-12 pb-24 transition-all duration-300",
+          "flex-1 min-w-0 space-y-12 pb-24 transition-all duration-300",
           rightNavCollapsed ? "max-w-none" : "max-w-4xl"
         )}
       >

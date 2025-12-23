@@ -84,7 +84,7 @@ export function RightTableOfContents({
       )}
     >
       {/* Sticky container for the navigation */}
-      <div className="sticky top-24 h-fit w-full">
+      <div className="sticky top-24 w-full max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {/* Collapse Toggle Button */}
         <div className="relative">
           <TooltipProvider>
