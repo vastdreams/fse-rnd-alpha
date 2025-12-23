@@ -22,7 +22,7 @@ export function Subscribe() {
 
   const benefits = [
     { icon: FileText, title: "Research Updates", description: "Get notified when we publish new research findings and papers" },
-    { icon: TrendingUp, title: "Market Insights", description: "Weekly analysis of R&D factor performance and market trends" },
+    { icon: TrendingUp, title: "Market Insights", description: "Analysis of R&D factor performance and market trends" },
     { icon: Bell, title: "Early Access", description: "Be the first to know about new features and data updates" },
     { icon: Shield, title: "No Spam", description: "We respect your inbox - only valuable research content" },
   ]
@@ -127,7 +127,7 @@ export function Subscribe() {
       {/* Trust indicators */}
       <div className="text-center pt-4 border-t">
         <p className="text-sm text-muted-foreground">
-          Join researchers and investors who rely on R&D Alpha for factor insights
+          Join researchers and investors seeking asymmetric factors with comprehensive, evidence-backed insights into portfolio and investment strategies
         </p>
       </div>
     </div>

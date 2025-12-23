@@ -588,8 +588,8 @@ export function MainPaper() {
         )}
       >
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-card to-card dark:from-slate-900 dark:via-slate-950 dark:to-slate-950 border border-slate-200 dark:border-slate-800 p-8">
-          <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02]" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border border-slate-200 dark:border-zinc-700 p-8">
+          <div className="absolute inset-0 bg-grid-slate-100/[0.04] dark:bg-grid-zinc-500/[0.02]" />
           <div className="relative z-10">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
               <Link
@@ -1304,17 +1304,34 @@ export function MainPaper() {
                 </Table>
               </div>
 
-              <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
-                <ul className="list-disc list-inside space-y-1">
+              <div className="mt-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+                <p className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Why does the 20-year premium appear lower?
+                </p>
+                <p className="text-muted-foreground mb-3">
+                  <strong className="text-foreground">Critical methodology note:</strong> Rolling windows sort stocks into quintiles <em>once at window start</em> and 
+                  hold those assignments for the entire period. They do <strong>not</strong> re-sort annually based on updated R&D data.
+                </p>
+                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                  <div className="p-3 rounded bg-green-500/10 border border-green-500/20">
+                    <p className="font-semibold text-green-700 dark:text-green-400 text-xs uppercase tracking-wide mb-1">Annual Premium (7.55%)</p>
+                    <p className="text-xs text-muted-foreground">Re-sorts every year using current R&D intensity. This is the <strong>investable</strong> premium with annual rebalancing.</p>
+                  </div>
+                  <div className="p-3 rounded bg-slate-500/10 border border-slate-500/20">
+                    <p className="font-semibold text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wide mb-1">20-Year Rolling (1.7%)</p>
+                    <p className="text-xs text-muted-foreground">Sorts once in year 1, holds for 20 years. Shows what happens if you <strong>never update</strong> the signal.</p>
+                  </div>
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>
-                    Horizon summaries typically shrink at longer horizons because the sort is formed once at the window start and the signal can become stale.
+                    <strong className="text-foreground">Signal staleness:</strong> A company's R&D intensity changes over 20 years. A "high R&D" firm in 2000 may be "low R&D" by 2020.
                   </li>
                   <li>
-                    Long horizons also mix multiple market regimes; a single 20-year window can include boom and bust episodes that dominate compounded outcomes.
+                    <strong className="text-foreground">Competitive diffusion:</strong> R&D advantages erode through imitation, patent expiration, and market evolution.
                   </li>
                   <li>
-                    We treat these horizon aggregates as descriptive context and explain the horizon pattern explicitly (Section 8).
+                    <strong className="text-foreground">Implication for investors:</strong> To capture the full premium, you must rebalance annually. The R&D ETF (Section 9) does exactly this.
                   </li>
                 </ul>
               </div>
@@ -1342,10 +1359,10 @@ export function MainPaper() {
                   <strong className="text-foreground">Time variation matters:</strong> rolling windows illustrate regime dependence; they are used for context, not as independent observations.
                 </li>
                 <li>
-                  <strong className="text-foreground">Horizon dependence is informative:</strong>{" "}
+                  <strong className="text-foreground">Horizon decay reflects signal staleness, not strategy failure:</strong>{" "}
                   {headlinePremiums.some((h) => typeof h.premiumPct === "number")
-                    ? `the premium is largest in shorter horizons and smaller in 20-year windows, consistent with signal decay and regime mixing.`
-                    : "horizon summaries provide context on persistence and regime mixing."}
+                    ? `the 20-year rolling premium (~1.7%) is lower because quintile assignments are fixed at window start and never updated. An investable strategy with annual rebalancing captures the full annual premium (~7.55%).`
+                    : "long-horizon rolling windows show lower premiums because the sort is never updated; investable strategies with annual rebalancing capture the full annual premium."}
                 </li>
               </ul>
               <p className="text-xs text-muted-foreground">
@@ -2390,27 +2407,54 @@ export function MainPaper() {
 
               <div>
                 <h3 className="text-lg font-semibold text-foreground">8.2 Horizon dependence and event/regime context</h3>
+                
+                <div className="not-prose mb-4 p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5">
+                  <p className="font-semibold text-foreground mb-2">Key insight: Rolling windows do NOT rebalance</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    The declining premium at longer horizons is a <strong>methodological artifact</strong>, not evidence that R&D stops working. 
+                    Rolling window analysis sorts stocks into quintiles <em>once at the window start</em> and holds those assignments for the entire period 
+                    without updating. A company classified as "high R&D" in 2000 stays in Q5 even if its R&D intensity drops by 2010.
+                  </p>
+                  <div className="grid md:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-green-500/10 border border-green-500/20 text-center">
+                      <p className="font-bold text-green-700 dark:text-green-400">Annual (7.55%)</p>
+                      <p className="text-muted-foreground">Re-sort every year</p>
+                    </div>
+                    <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-center">
+                      <p className="font-bold text-amber-700 dark:text-amber-400">5-Year (5.37%)</p>
+                      <p className="text-muted-foreground">Sort once, hold 5 years</p>
+                    </div>
+                    <div className="p-2 rounded bg-slate-500/10 border border-slate-500/20 text-center">
+                      <p className="font-bold text-slate-700 dark:text-slate-400">20-Year (1.66%)</p>
+                      <p className="text-muted-foreground">Sort once, hold 20 years</p>
+                    </div>
+                  </div>
+                </div>
+
                 <p className="text-muted-foreground">
-                  A frequent question is why the premium appears smaller in 20-year rolling windows than in shorter horizons. This pattern is expected and
-                  informative rather than contradictory: long horizons mix multiple market regimes and the R&amp;D intensity signal can become stale when a
-                  window is formed once and held for many years.
+                  Why does this matter? Because R&D intensity is <strong>not a permanent firm characteristic</strong>. Over 20 years, companies pivot, 
+                  mature, face new competition, and change their R&D strategies. A "high R&D" classification from 2000 becomes increasingly meaningless by 2020.
                 </p>
                 <ul className="text-muted-foreground list-disc list-inside space-y-2">
                   <li>
                     <strong className="text-foreground">Signal staleness:</strong> rolling windows form the sort at the window start; over long horizons firms
-                    change business models, R&amp;D policy, and competitive position.
+                    change business models, R&amp;D policy, and competitive position. Microsoft in 2000 vs 2020 is effectively a different company.
                   </li>
                   <li>
-                    <strong className="text-foreground">Competitive diffusion:</strong> R&amp;D advantages can diffuse over time through imitation, spillovers,
-                    and finite patent lives, reducing long-run separation between Q5 and Q1.
+                    <strong className="text-foreground">Competitive diffusion:</strong> R&amp;D advantages erode through imitation, patent expiration, and market evolution.
+                    A 20-year horizon captures the full lifecycle of most competitive advantages.
                   </li>
                   <li>
-                    <strong className="text-foreground">Selection and survivorship:</strong> long horizons naturally filter firms via delistings and index
-                    turnover, and long-horizon coverage is uneven across sectors.
+                    <strong className="text-foreground">Selection and survivorship:</strong> long horizons filter firms via delistings and index turnover.
+                    The Q5 cohort from 2000 may have few survivors by 2020.
                   </li>
                   <li>
-                    <strong className="text-foreground">Regime mixing:</strong> major episodes (e.g., 2000-2002, 2008-2009) can dominate compounded outcomes,
-                    so reporting regime splits is a useful diagnostic.
+                    <strong className="text-foreground">Regime mixing:</strong> a 20-year window starting in 2000 includes dot-com bust, GFC, and recovery,
+                    which can dominate compounded outcomes.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Implication for investors:</strong> to capture the full R&D premium, you must rebalance annually.
+                    The R&D ETF strategy (Section 9) implements exactly this approach.
                   </li>
                 </ul>
 

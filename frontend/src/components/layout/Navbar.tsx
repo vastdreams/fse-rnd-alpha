@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react"
-import { Search, RefreshCw, Menu, X, Mail, Heart } from "lucide-react"
+import { Search, Menu, X, Mail, Heart } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/store/appStore"
-import { useQueryClient, useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useSidebar } from "@/components/sidebar-context"
 import { useNavigate, useLocation } from "react-router-dom"
 import { api } from "@/lib/api"
@@ -18,7 +18,6 @@ import {
 
 export function Navbar() {
   const { searchQuery, setSearchQuery } = useAppStore()
-  const queryClient = useQueryClient()
   const { isMobile, toggleMobile } = useSidebar()
   const navigate = useNavigate()
   const location = useLocation()
@@ -104,10 +103,6 @@ export function Navbar() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
-
-  const handleRefresh = () => {
-    queryClient.invalidateQueries()
-  }
 
   const clearSearch = () => {
     setLocalSearch("")
@@ -273,24 +268,6 @@ export function Navbar() {
             </Tooltip>
           </TooltipProvider>
 
-          {/* Refresh Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Refresh all data from the server</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
     </header>

@@ -63,18 +63,24 @@ export function Donate() {
                   className={cn(
                     "p-4 rounded-xl border-2 transition-all text-left",
                     selectedAmount === tier.amount && !customAmount
-                      ? "border-pink-500 bg-pink-50 dark:bg-pink-900/20"
-                      : "border-border hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-900/10"
+                      ? "border-pink-500 bg-pink-100 dark:bg-pink-950 dark:border-pink-400"
+                      : "border-border hover:border-pink-300 dark:hover:border-pink-600 hover:bg-pink-50/50 dark:hover:bg-pink-900/20"
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <tier.icon className={cn(
                       "w-4 h-4",
-                      selectedAmount === tier.amount && !customAmount ? "text-pink-500" : "text-muted-foreground"
+                      selectedAmount === tier.amount && !customAmount ? "text-pink-500 dark:text-pink-400" : "text-muted-foreground"
                     )} />
-                    <span className="font-bold text-lg">${tier.amount}</span>
+                    <span className={cn(
+                      "font-bold text-lg",
+                      selectedAmount === tier.amount && !customAmount ? "text-foreground" : ""
+                    )}>${tier.amount}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{tier.description}</p>
+                  <p className={cn(
+                    "text-xs",
+                    selectedAmount === tier.amount && !customAmount ? "text-pink-700 dark:text-pink-300" : "text-muted-foreground"
+                  )}>{tier.description}</p>
                 </button>
               ))}
             </div>
@@ -132,20 +138,20 @@ export function Donate() {
       </div>
 
       {/* Future plans */}
-      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50">
+      <Card className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border dark:border-slate-700">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/20 dark:bg-emerald-500/10 flex items-center justify-center">
               <Zap className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <h3 className="font-semibold mb-1">Roadmap: More Asymmetric Alphas</h3>
+              <h3 className="font-semibold mb-1 text-foreground">Roadmap: More Asymmetric Alphas</h3>
               <p className="text-sm text-muted-foreground mb-3">
                 With your support, we plan to expand research into additional evidence-based factor strategies:
               </p>
               <div className="flex flex-wrap gap-2">
                 {["Quality Factor", "Momentum Anomalies", "Patent Alpha", "ESG Integration", "Global Markets"].map((item) => (
-                  <span key={item} className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                  <span key={item} className="px-2 py-1 rounded-full bg-emerald-500/20 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium border border-emerald-200 dark:border-emerald-800">
                     {item}
                   </span>
                 ))}

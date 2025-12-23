@@ -167,7 +167,7 @@ export function RightTableOfContents({
                       className={cn(
                         "block w-full text-left px-3 py-2 text-sm rounded-lg transition-all duration-200 cursor-pointer relative",
                         activeSection === id
-                          ? "bg-gradient-to-r from-primary/15 to-primary/5 text-primary font-medium border-l-2 border-primary pl-2.5"
+                          ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 pl-2.5"
                           : "text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:pl-3.5"
                       )}
                     >

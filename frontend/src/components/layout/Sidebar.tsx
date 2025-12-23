@@ -215,8 +215,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm relative group font-medium",
                 location.pathname === mainPaperItem.path
-                  ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-300/50 dark:border-emerald-500/30 shadow-sm" 
-                  : "bg-slate-50 dark:bg-slate-800/40 text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200/50 dark:border-slate-700/50"
+                  ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-sm" 
+                  : "bg-slate-100 dark:bg-slate-800 text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700"
               )}
             >
               {location.pathname === mainPaperItem.path && (

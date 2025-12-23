@@ -365,6 +365,9 @@ export function Research() {
             <CardHeader>
               <CardTitle>R&D Premium Over Time ({selectedWindow} Windows)</CardTitle>
               <CardDescription>High R&D (Q5) minus Low R&D (Q1) return differential</CardDescription>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Note: Rolling windows sort stocks once at window start and do not rebalance. Longer horizons show lower premiums due to signal staleness, not strategy failure. See Main Paper Section 8.2.
+              </p>
             </CardHeader>
             <CardContent style={{ height: 256, minHeight: 256 }}>
               {chartsReady && rollingWindows && rollingWindows.length > 0 ? (
