@@ -2,7 +2,7 @@
 
 **Status:** Archived markdown mirror (December 2025)  
 **Authoritative website page:** `/papers/3`  
-**Main manuscript for submission:** `papers/JPM_FAJ_MAIN.md`  
+**Main Paper:** View the consolidated publication-ready paper at `/papers/main`  
 
 ---
 
@@ -40,5 +40,5 @@ website’s Sub-Research 3 implementation.
 
 ## Tier-1 disclosure
 
-Spanning/control tests are **diagnostic** under Tier-1. Definitive top-journal factor certification requires Tier-2
+Spanning/control tests are **diagnostic** under Tier-1. Definitive academic factor certification requires Tier-2
 (CRSP/Compustat) replication and identifier-quality mapping (PERMNO/GVKEY).

@@ -68,6 +68,7 @@ class QuintileResult:
     annualized_return: float
     volatility: float
     sharpe_ratio: float
+    max_drawdown: float  # Maximum drawdown in percent (e.g., -25.0 means -25%)
 
 
 class RollingWindowAnalyzer:
@@ -378,7 +379,7 @@ class RollingWindowAnalyzer:
                 avg_rd_intensity=safe_float(np.mean(rd_intensities)),
                 median_rd_intensity=safe_float(np.median(rd_intensities)),
                 avg_return=0, median_return=0, total_return=0, annualized_return=0,
-                volatility=0, sharpe_ratio=0
+                volatility=0, sharpe_ratio=0, max_drawdown=0
             )
             
         # Time-series statistics
@@ -399,6 +400,12 @@ class RollingWindowAnalyzer:
         excess_return = annualized_return - avg_rf
         sharpe = excess_return / volatility if volatility > 0 else 0
         
+        # Max drawdown calculation
+        cumulative = np.cumprod([1 + r for r in portfolio_returns])
+        running_max = np.maximum.accumulate(cumulative)
+        drawdowns = cumulative / running_max - 1
+        max_drawdown = float(np.min(drawdowns)) if len(drawdowns) else 0.0
+        
         return QuintileResult(
             quintile=quintile,
             n_companies=len(companies),
@@ -410,7 +417,8 @@ class RollingWindowAnalyzer:
             total_return=total_return * 100,
             annualized_return=annualized_return * 100,
             volatility=volatility * 100,
-            sharpe_ratio=sharpe
+            sharpe_ratio=sharpe,
+            max_drawdown=max_drawdown * 100  # Store as percent
         )
     
     async def compute_quintile_returns(
@@ -547,6 +555,7 @@ class RollingWindowAnalyzer:
                         existing.annualized_return = r.annualized_return
                         existing.volatility = r.volatility
                         existing.sharpe_ratio = r.sharpe_ratio
+                        existing.max_drawdown = r.max_drawdown
                     else:
                         db_result = RollingWindowResult(
                             window_type=window_type,
@@ -567,6 +576,7 @@ class RollingWindowAnalyzer:
                             annualized_return=r.annualized_return,
                             volatility=r.volatility,
                             sharpe_ratio=r.sharpe_ratio,
+                            max_drawdown=r.max_drawdown,
                         )
                         self.session.add(db_result)
                         existing_by_key[natural_key] = db_result

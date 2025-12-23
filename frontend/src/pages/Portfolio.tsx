@@ -94,10 +94,11 @@ export function Portfolio() {
     queryFn: () => portfolioApi.getForecastVsActual(asOfYear, nHoldings, "rd_alpha", selectedSector),
   })
 
-  // Backtest from 2005 to current year (post dot-com recovery for cleaner signal)
+  // Backtest from 2005 to last complete year (post dot-com recovery for cleaner signal)
   // Starting in 2000-2002 would include dot-com bubble burst which distorts results
+  // CURRENT_YEAR - 1 ensures we only use complete fiscal years (2025 data is incomplete)
   const backtestStart = 2005
-  const backtestEnd = CURRENT_YEAR
+  const backtestEnd = CURRENT_YEAR - 1
   const { data: backtest, isLoading: loadingBacktest } = useQuery({
     queryKey: ["backtest", backtestStart, backtestEnd, nHoldings, selectedSector],
     queryFn: () => portfolioApi.backtest(backtestStart, backtestEnd, nHoldings, "rd_alpha", selectedSector),
@@ -232,9 +233,11 @@ export function Portfolio() {
     })
     
     // Process historical data through all available years
+    // Use S&P 500 return for benchmark when available, fallback to cohort EW benchmark
     backtest.yearly_data.forEach((d) => {
       portfolioCumulative *= (1 + (d.portfolio_return || 0) / 100)
-      benchmarkCumulative *= (1 + (d.benchmark_return || 0) / 100)
+      const benchmarkReturn = d.sp500_return ?? d.benchmark_return ?? 0
+      benchmarkCumulative *= (1 + benchmarkReturn / 100)
       
       // Track the value at selection year
       if (d.year === asOfYear) {
@@ -464,18 +467,20 @@ export function Portfolio() {
                 ? `+${backtest.portfolio_performance.total_return.toFixed(0)}%`
                 : "-"}
             </p>
-            <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd - 1} ({backtestEnd - backtestStart - 1} years)</p>
+            <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart + 1} years)</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Cumulative Return (S&P 500)</p>
             <p className="text-3xl font-bold text-blue-500">
-              {backtest?.benchmark_performance?.total_return 
-                ? `+${backtest.benchmark_performance.total_return.toFixed(0)}%`
-                : "-"}
+              {backtest?.sp500_performance?.total_return 
+                ? `+${backtest.sp500_performance.total_return.toFixed(0)}%`
+                : backtest?.benchmark_performance?.total_return 
+                  ? `+${backtest.benchmark_performance.total_return.toFixed(0)}%`
+                  : "-"}
             </p>
-            <p className="text-xs text-muted-foreground">Same period benchmark</p>
+            <p className="text-xs text-muted-foreground">Market benchmark</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
@@ -487,9 +492,11 @@ export function Portfolio() {
                 : "-"}
             </p>
             <p className="text-xs text-muted-foreground">
-              vs S&P 500: {backtest?.benchmark_performance?.annualized_return 
-                ? `+${backtest.benchmark_performance.annualized_return.toFixed(1)}%`
-                : "-"}
+              vs S&P 500: {backtest?.sp500_performance?.annualized_return 
+                ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
+                : backtest?.benchmark_performance?.annualized_return 
+                  ? `+${backtest.benchmark_performance.annualized_return.toFixed(1)}%`
+                  : "-"}
             </p>
           </CardContent>
         </Card>
@@ -497,11 +504,13 @@ export function Portfolio() {
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Excess Return (Annual)</p>
             <p className="text-3xl font-bold text-amber-500">
-              {backtest?.excess_return 
-                ? `+${backtest.excess_return.toFixed(1)}%`
-                : "-"}
+              {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
+                ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
+                : backtest?.excess_return 
+                  ? `+${backtest.excess_return.toFixed(1)}%`
+                  : "-"}
             </p>
-            <p className="text-xs text-muted-foreground">R&D premium over benchmark</p>
+            <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
           </CardContent>
         </Card>
       </div>
@@ -923,7 +932,7 @@ export function Portfolio() {
               {formatPercent(backtest?.portfolio_performance?.annualized_return)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {backtestStart}-{backtestEnd - 1} average
+              {backtestStart}-{backtestEnd} average
             </p>
           </CardContent>
         </Card>
@@ -935,10 +944,10 @@ export function Portfolio() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-400">
-              {formatPercent(backtest?.benchmark_performance?.annualized_return)}
+              {formatPercent(backtest?.sp500_performance?.annualized_return ?? backtest?.benchmark_performance?.annualized_return)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Benchmark comparison
+              Market benchmark
             </p>
           </CardContent>
         </Card>

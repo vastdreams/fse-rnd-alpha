@@ -2,11 +2,11 @@
 
 **Status:** Archived markdown mirror (December 2025)  
 **Authoritative website page:** `/papers/4`  
-**Main manuscript for submission:** `papers/JPM_FAJ_MAIN.md`  
+**Main Paper:** View the consolidated publication-ready paper at `/papers/main`  
 
 ---
 
-## Publication safeguard: “0 hallucinations”
+## Publication safeguard: "0 hallucinations"
 
 This sub-research is intentionally **qualitative**: it discusses plausible mechanisms linking R&D investment to long-run
 performance and why accounting treatment can create slow-moving information.
@@ -27,5 +27,4 @@ could not be guaranteed factual. Those have been removed.
 ## Authoritative sources
 
 - Website qualitative discussion: `/papers/4`
-- Canonical return-sort results: `BASELINE_RESULTS_VERIFIED.md`
-- Main manuscript: `papers/JPM_FAJ_MAIN.md`
+- Main Paper: `/papers/main` (consolidated publication-ready manuscript)

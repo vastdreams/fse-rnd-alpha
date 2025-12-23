@@ -2,7 +2,7 @@
 
 **Status:** Archived markdown mirror (December 2025)  
 **Authoritative website page:** `/papers/2`  
-**Main manuscript for submission:** `papers/JPM_FAJ_MAIN.md`  
+**Main Paper:** View the consolidated publication-ready paper at `/papers/main`  
 
 ---
 

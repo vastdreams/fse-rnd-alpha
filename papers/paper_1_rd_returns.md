@@ -2,20 +2,16 @@
 
 **Status:** Archived markdown mirror (December 2025)  
 **Authoritative website page:** `/papers/1`  
-**Main manuscript for submission:** `papers/JPM_FAJ_MAIN.md`  
+**Main Paper:** View the consolidated publication-ready paper at `/papers/main`  
 
 ---
 
-## Publication safeguard: “0 hallucinations”
+## Publication safeguard: "0 hallucinations"
 
 This markdown file previously contained evolving draft tables and placeholder figures. To prevent drift and accidental
 misstatement, it is now an **archived pointer** to the canonical sources of truth.
 
-If you are preparing a journal submission (JPM/FAJ), use:
-
-- `papers/JPM_FAJ_MAIN.md` (single main paper)
-- `papers/JPM_FAJ_APPENDIX.md` (online appendix; generated from endpoints)
-- `BASELINE_RESULTS_VERIFIED.md` (canonical Tier-1 numbers)
+The consolidated Main Paper at `/papers/main` is the authoritative manuscript that integrates all sub-research findings.
 
 ---
 

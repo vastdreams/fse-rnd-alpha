@@ -916,7 +916,9 @@ export interface YearlyData {
   year: number
   portfolio_return: number
   benchmark_return: number
+  sp500_return?: number | null
   excess_return: number
+  excess_vs_sp500?: number | null
   turnover_pct?: number
   portfolio_return_net?: number
   benchmark_return_net?: number
@@ -930,7 +932,9 @@ export interface BacktestResult {
   holdings_by_year?: Record<string, PortfolioHolding[]>
   portfolio_performance: PortfolioPerformance
   benchmark_performance: PortfolioPerformance
+  sp500_performance?: PortfolioPerformance
   excess_return: number
+  excess_vs_sp500?: number | null
   portfolio_performance_net?: PortfolioPerformance
   benchmark_performance_net?: PortfolioPerformance
   excess_return_net?: number

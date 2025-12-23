@@ -478,7 +478,7 @@ export function MainPaper() {
     if (rows.length === 0) return []
 
     const years = rows.map((r) => r.year).filter((y): y is number => typeof y === "number")
-    const maxYear = years.length ? Math.max(...years) : 2025
+    const maxYear = years.length ? Math.max(...years) : new Date().getFullYear() - 1
     const bins = [
       { label: "1995-1999", start: 1995, end: 1999, event: "Late 1990s" },
       { label: "2000-2002", start: 2000, end: 2002, event: "Dot-com bust" },
@@ -659,7 +659,7 @@ export function MainPaper() {
               <p className="text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Method:</strong> Each year we sort S&amp;P 500 firms (N ≈ {cohortSummary?.total_companies || 500} with
                 R&amp;D data) into quintiles by R&amp;D intensity (R&amp;D expense / revenue) and measure subsequent July-June returns
-                over {snapshot?.meta?.data_tier === "tier1" ? "1995-2025" : "the sample period"}.
+                over {sampleYearRange || "the sample period"}.
                 This timing convention aligns with Fama-French methodology to avoid look-ahead bias. We incorporate historical index membership
                 and delisting adjustments to mitigate survivorship bias.
               </p>
@@ -846,7 +846,7 @@ export function MainPaper() {
                 <p className="text-sm text-muted-foreground">
                   Consistent R&amp;D reporting in the U.S. began with <strong>FASB Statement No. 2</strong> (SFAS 2), issued in October 1974.
                   This standard requires that R&amp;D expenditures be expensed as incurred due to the uncertainty of future economic benefits.
-                  SFAS 2 is now codified as <strong>ASC Topic 730</strong>. Our 1995-2025 sample period falls entirely within this standardized
+                  SFAS 2 is now codified as <strong>ASC Topic 730</strong>. Our sample period ({sampleYearRange || "see header"}) falls entirely within this standardized
                   reporting era, ensuring consistent R&amp;D disclosure across firms and years.
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
