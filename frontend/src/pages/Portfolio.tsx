@@ -474,43 +474,28 @@ export function Portfolio() {
         </div>
       </div>
 
-      {/* KEY METRICS - Cumulative Returns Front and Center */}
+      {/* KEY METRICS - Annualized Returns Front and Center */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Cumulative Return (Portfolio)</p>
-            <p className="text-3xl font-bold text-emerald-500">
-              {backtest?.portfolio_performance?.total_return 
-                ? `+${backtest.portfolio_performance.total_return.toFixed(0)}%`
-                : "-"}
-            </p>
-            <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart + 1} years)</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Cumulative Return (S&P 500)</p>
-            <p className="text-3xl font-bold text-blue-500">
-              {backtest?.sp500_performance?.total_return 
-                ? `+${backtest.sp500_performance.total_return.toFixed(0)}%`
-                : "-"}
-            </p>
-            <p className="text-xs text-muted-foreground">Market benchmark</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-          <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Annualized Return</p>
-            <p className="text-3xl font-bold text-purple-500">
+            <p className="text-3xl font-bold text-emerald-500">
               {backtest?.portfolio_performance?.annualized_return 
                 ? `+${backtest.portfolio_performance.annualized_return.toFixed(1)}%`
                 : "-"}
             </p>
-            <p className="text-xs text-muted-foreground">
-              vs S&P 500: {backtest?.sp500_performance?.annualized_return 
+            <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart} years)</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">S&P 500 (Annualized)</p>
+            <p className="text-3xl font-bold text-blue-500">
+              {backtest?.sp500_performance?.annualized_return 
                 ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
                 : "-"}
             </p>
+            <p className="text-xs text-muted-foreground">Market benchmark</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
@@ -522,6 +507,21 @@ export function Portfolio() {
                 : "-"}
             </p>
             <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">$100 Becomes</p>
+            <p className="text-3xl font-bold text-purple-500">
+              {backtest?.portfolio_performance?.total_return 
+                ? `$${((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                : "-"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              vs S&P 500: {backtest?.sp500_performance?.total_return 
+                ? `$${((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                : "-"}
+            </p>
           </CardContent>
         </Card>
       </div>
