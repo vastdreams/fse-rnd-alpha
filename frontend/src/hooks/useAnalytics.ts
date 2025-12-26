@@ -65,7 +65,7 @@ export function trackConversion(conversionName: string, value?: number) {
  * Track outbound link clicks
  */
 export function trackOutboundLink(url: string, label: string) {
-  trackEvent('click', 'outbound_link', label)
+  trackEvent('click', 'outbound_link', `${label} (${url})`)
 }
 
 /**
