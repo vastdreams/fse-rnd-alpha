@@ -1,0 +1,86 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#020617"/>
+      <stop offset="50%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#34d399"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#34d399"/>
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#fff" stroke-width="0.5"/>
+    </pattern>
+    <rect width="1200" height="630" fill="url(#grid)"/>
+  </g>
+  
+  <!-- Chart visualization hint -->
+  <g opacity="0.15" transform="translate(800, 200)">
+    <polyline points="0,150 50,140 100,100 150,120 200,60 250,80 300,20" fill="none" stroke="#10b981" stroke-width="3"/>
+    <circle cx="300" cy="20" r="6" fill="#10b981"/>
+  </g>
+  
+  <!-- Corner accents -->
+  <path d="M0 0 L100 0 L100 3 L3 3 L3 100 L0 100 Z" fill="url(#greenGrad)" opacity="0.5"/>
+  <path d="M1200 630 L1100 630 L1100 627 L1197 627 L1197 530 L1200 530 Z" fill="url(#greenGrad)" opacity="0.5"/>
+  
+  <!-- Top accent line -->
+  <rect x="100" y="130" width="500" height="2" fill="url(#accentLine)" opacity="0.4"/>
+  
+  <!-- Platform name -->
+  <text x="100" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" fill="#f8fafc" letter-spacing="2">
+    R&amp;D Alpha
+  </text>
+  
+  <!-- Tagline -->
+  <text x="100" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="400" fill="#94a3b8" letter-spacing="1">
+    Factor Analysis Platform
+  </text>
+  
+  <!-- Key stats -->
+  <g transform="translate(100, 340)">
+    <rect x="0" y="0" width="180" height="90" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="90" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="700" fill="#10b981">+7.55%</text>
+    <text x="90" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">R&amp;D Premium</text>
+  </g>
+  
+  <g transform="translate(300, 340)">
+    <rect x="0" y="0" width="180" height="90" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="90" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="700" fill="#10b981">71%</text>
+    <text x="90" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">Win Rate</text>
+  </g>
+  
+  <g transform="translate(500, 340)">
+    <rect x="0" y="0" width="180" height="90" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="90" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="700" fill="#f59e0b">t=2.78</text>
+    <text x="90" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">Newey-West</text>
+  </g>
+  
+  <!-- Bottom accent line -->
+  <rect x="100" y="480" width="500" height="2" fill="url(#accentLine)" opacity="0.4"/>
+  
+  <!-- Attribution -->
+  <text x="100" y="540" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="400" fill="#475569" letter-spacing="2">
+    S&amp;P 500 · 2000-2024 · BY FSE RESEARCH
+  </text>
+  
+  <!-- URL -->
+  <text x="100" y="580" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="400" fill="#64748b">
+    research.finsoeasy.com
+  </text>
+</svg>
+
