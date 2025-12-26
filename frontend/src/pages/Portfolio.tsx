@@ -528,17 +528,20 @@ export function Portfolio() {
       </div>
 
       {/* METHODOLOGY NOTE - Important disclaimer about backtest methodology */}
-      <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-card">
+      <Card className="border border-red-500/30 bg-gradient-to-br from-red-500/5 to-card">
         <CardContent className="pt-4 pb-3">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Backtest Methodology Note</p>
+              <p className="font-medium text-red-600">⚠️ Backtest Survivorship Bias Warning</p>
               <p>
-                Historical performance uses <strong>point-in-time S&P 500 constituents</strong> to avoid 
-                survivorship bias. Only companies that were in the index at the time of selection are included.
-                Past performance does not guarantee future results. The R&D premium may be smaller going forward
-                as the factor becomes more widely known.
+                <strong>These returns are inflated</strong> due to survivorship bias. The backtest includes 
+                companies (like HOOD, COIN, MRNA) that were not in the S&P 500 during historical periods 
+                but had extraordinary post-IPO returns. This artificially boosts historical performance.
+              </p>
+              <p>
+                <strong>Realistic expectation:</strong> Based on academic research, the R&D premium is typically 
+                +5-8% annually over the market, not +17%. Use these numbers as directional indicators only.
               </p>
               <p className="text-xs">
                 Returns use July-June fiscal year convention per Fama-French methodology. 
