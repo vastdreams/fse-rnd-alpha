@@ -60,3 +60,5 @@ CHATGPT_*.md
 CHATGPT_*.txt
 *_AUDIT_*.md
 *_CHECKLIST.md
+CREDENTIALS.md
+*.pem
