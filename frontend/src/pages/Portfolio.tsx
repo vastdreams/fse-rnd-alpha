@@ -42,6 +42,7 @@ import { exportToCSV } from "@/lib/export"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "react-router-dom"
 import { SafeChart } from "@/components/SafeChart"
+import { AuditableValue } from "@/components/AuditableValue"
 
 // Colors that work well in both light and dark modes
 const SECTOR_COLORS = [
@@ -476,48 +477,104 @@ export function Portfolio() {
       </div>
 
       {/* KEY METRICS - Annualized Returns Front and Center */}
+      {/* Right-click any value to audit and see calculation details */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Annualized Return</p>
-            <p className="text-3xl font-bold text-emerald-500">
-              {backtest?.portfolio_performance?.annualized_return 
-                ? `+${backtest.portfolio_performance.annualized_return.toFixed(1)}%`
-                : "..."}
-            </p>
+            <AuditableValue
+              metricId="annualized_return"
+              metricLabel="Annualized Return"
+              value={backtest?.portfolio_performance?.annualized_return?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd, 
+                nHoldings,
+                value: backtest?.portfolio_performance?.annualized_return?.toFixed(1)
+              }}
+            >
+              <p className="text-3xl font-bold text-emerald-500">
+                {backtest?.portfolio_performance?.annualized_return 
+                  ? `+${backtest.portfolio_performance.annualized_return.toFixed(1)}%`
+                  : "..."}
+              </p>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart} years)</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">S&P 500 (Annualized)</p>
-            <p className="text-3xl font-bold text-blue-500">
-              {backtest?.sp500_performance?.annualized_return 
-                ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
-                : "..."}
-            </p>
+            <AuditableValue
+              metricId="sp500_return"
+              metricLabel="S&P 500 (Annualized)"
+              value={backtest?.sp500_performance?.annualized_return?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+              }}
+            >
+              <p className="text-3xl font-bold text-blue-500">
+                {backtest?.sp500_performance?.annualized_return 
+                  ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
+                  : "..."}
+              </p>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">Market benchmark</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Excess Return (Annual)</p>
-            <p className="text-3xl font-bold text-amber-500">
-              {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
-                ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
-                : "..."}
-            </p>
+            <AuditableValue
+              metricId="excess_return"
+              metricLabel="Excess Return (Annual)"
+              value={backtest?.excess_vs_sp500?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.excess_vs_sp500?.toFixed(1),
+                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
+                benchmarkReturn: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+              }}
+            >
+              <p className="text-3xl font-bold text-amber-500">
+                {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
+                  ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
+                  : "..."}
+              </p>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">$100 Becomes</p>
-            <p className="text-3xl font-bold text-purple-500">
-              {backtest?.portfolio_performance?.total_return 
-                ? `$${((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+            <AuditableValue
+              metricId="total_value"
+              metricLabel="$100 Becomes"
+              value={backtest?.portfolio_performance?.total_return 
+                ? ((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
                 : "..."}
-            </p>
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.portfolio_performance?.total_return 
+                  ? ((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
+                  : "...",
+                totalReturn: backtest?.portfolio_performance?.total_return?.toFixed(2),
+                sp500Value: backtest?.sp500_performance?.total_return 
+                  ? ((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
+                  : "..."
+              }}
+            >
+              <p className="text-3xl font-bold text-purple-500">
+                {backtest?.portfolio_performance?.total_return 
+                  ? `$${((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                  : "..."}
+              </p>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">
               vs S&P 500: {backtest?.sp500_performance?.total_return 
                 ? `$${((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
@@ -970,7 +1027,7 @@ export function Portfolio() {
         </CardContent>
       </Card>
 
-      {/* Summary Stats Cards */}
+      {/* Summary Stats Cards - Right-click any value to audit */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -978,9 +1035,22 @@ export function Portfolio() {
             <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">
-              {formatPercent(backtest?.portfolio_performance?.annualized_return)}
-            </div>
+            <AuditableValue
+              metricId="annualized_return"
+              metricLabel="Annualized Portfolio"
+              value={backtest?.portfolio_performance?.annualized_return?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd, 
+                nHoldings,
+                value: backtest?.portfolio_performance?.annualized_return?.toFixed(1)
+              }}
+              showHoverIndicator={false}
+            >
+              <div className="text-2xl font-bold text-emerald-400">
+                {formatPercent(backtest?.portfolio_performance?.annualized_return)}
+              </div>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">
               {backtestStart}-{backtestEnd} average
             </p>
@@ -993,9 +1063,21 @@ export function Portfolio() {
             <BarChart3 className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-400">
-              {formatPercent(backtest?.sp500_performance?.annualized_return)}
-            </div>
+            <AuditableValue
+              metricId="sp500_return"
+              metricLabel="Annualized S&P 500"
+              value={backtest?.sp500_performance?.annualized_return?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+              }}
+              showHoverIndicator={false}
+            >
+              <div className="text-2xl font-bold text-blue-400">
+                {formatPercent(backtest?.sp500_performance?.annualized_return)}
+              </div>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">
               Market benchmark
             </p>
@@ -1012,9 +1094,23 @@ export function Portfolio() {
             )}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${(backtest?.excess_vs_sp500 || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
-              {formatPercent(backtest?.excess_vs_sp500)}
-            </div>
+            <AuditableValue
+              metricId="excess_return"
+              metricLabel="Alpha Generated"
+              value={backtest?.excess_vs_sp500?.toFixed(1) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.excess_vs_sp500?.toFixed(1),
+                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
+                benchmarkReturn: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+              }}
+              showHoverIndicator={false}
+            >
+              <div className={`text-2xl font-bold ${(backtest?.excess_vs_sp500 || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
+                {formatPercent(backtest?.excess_vs_sp500)}
+              </div>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">
               Annualized excess vs S&P 500
             </p>
@@ -1027,9 +1123,23 @@ export function Portfolio() {
             <Target className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-400">
-              {backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
-            </div>
+            <AuditableValue
+              metricId="sharpe_ratio"
+              metricLabel="Sharpe Ratio"
+              value={backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
+              auditParams={{ 
+                startYear: backtestStart, 
+                endYear: backtestEnd,
+                value: backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2),
+                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
+                volatility: backtest?.portfolio_performance?.volatility?.toFixed(1)
+              }}
+              showHoverIndicator={false}
+            >
+              <div className="text-2xl font-bold text-amber-400">
+                {backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
+              </div>
+            </AuditableValue>
             <p className="text-xs text-muted-foreground">
               Risk-adjusted return
             </p>
