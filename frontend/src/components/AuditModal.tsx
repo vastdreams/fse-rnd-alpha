@@ -43,15 +43,6 @@ interface AuditModalProps {
   data: AuditData | null
 }
 
-const stepTypeIcons: Record<AuditStep["type"], string> = {
-  source: "📊",
-  computation: "🔢",
-  filter: "🔍",
-  aggregation: "📈",
-  formula: "📐",
-  info: "ℹ️",
-}
-
 const stepTypeColors: Record<AuditStep["type"], string> = {
   source: "bg-blue-500/10 border-blue-500/30 text-blue-400",
   computation: "bg-purple-500/10 border-purple-500/30 text-purple-400",
@@ -353,8 +344,11 @@ export function AuditContextMenu({
   onAudit,
   onCopyValue,
   onCopyWithLabel,
-  metricName,
-  value,
+  // metricName and value are passed for potential future use (e.g., showing in menu)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  metricName: _metricName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  value: _value,
 }: AuditContextMenuProps) {
   return (
     <>
