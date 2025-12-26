@@ -217,8 +217,14 @@ class RDAlphaScorer:
             
         Returns:
             List of RDAlphaScore objects, sorted by final_score descending
+            
+        SURVIVORSHIP BIAS FIX (Dec 2025):
+            When as_of_year is provided, filters by historical S&P 500 constituents
+            to ensure only companies that were in the index at that time are included.
+            This prevents look-ahead bias from including future IPOs like HOOD, COIN, MRNA.
         """
         import time
+        from datetime import date
         start_time = time.perf_counter()
         
         logger.log_step(
@@ -228,11 +234,43 @@ class RDAlphaScorer:
             data={"universe": universe, "as_of_year": as_of_year}
         )
         
+        # SURVIVORSHIP BIAS FIX: Get point-in-time S&P 500 constituents
+        # This prevents including companies like HOOD, COIN, MRNA in historical backtests
+        # when they weren't public/in the index yet
+        historical_constituents: Optional[set] = None
+        if as_of_year is not None:
+            from app.db.models import SP500HistoricalConstituent
+            point_in_time_date = date(as_of_year, 7, 1)  # July 1 of selection year (Fama-French convention)
+            try:
+                hist_result = await self.session.execute(
+                    select(SP500HistoricalConstituent.symbol)
+                    .where(
+                        SP500HistoricalConstituent.added_date <= point_in_time_date,
+                        (SP500HistoricalConstituent.removed_date == None) | 
+                        (SP500HistoricalConstituent.removed_date >= point_in_time_date)
+                    )
+                )
+                historical_constituents = {r[0] for r in hist_result.fetchall() if r[0]}
+                
+                if historical_constituents:
+                    logger.info(f"Point-in-time filter: {len(historical_constituents)} S&P 500 constituents as of {as_of_year}")
+                else:
+                    # No historical data - fall back to using all companies but log warning
+                    logger.warning(f"No historical S&P 500 data for {as_of_year} - backtest may have survivorship bias")
+                    historical_constituents = None
+            except Exception as e:
+                logger.warning(f"Could not load historical constituents: {e} - backtest may have survivorship bias")
+                historical_constituents = None
+        
         # Get eligible companies from research cohort
         query = select(ResearchCohort).where(
             ResearchCohort.years_with_data >= min_years_data,
             ResearchCohort.avg_rd_intensity > 0
         )
+        
+        # Apply historical constituent filter if available
+        if historical_constituents:
+            query = query.where(ResearchCohort.symbol.in_(historical_constituents))
         
         result = await self.session.execute(query)
         cohort_companies = result.scalars().all()

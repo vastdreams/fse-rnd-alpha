@@ -94,11 +94,12 @@ export function Portfolio() {
     queryFn: () => portfolioApi.getForecastVsActual(asOfYear, nHoldings, "rd_alpha", selectedSector),
   })
 
-  // Backtest from 2005 to last complete year (post dot-com recovery for cleaner signal)
+  // Backtest from 2005 to the selected year (or last complete year for "Current ETF")
   // Starting in 2000-2002 would include dot-com bubble burst which distorts results
-  // CURRENT_YEAR - 1 ensures we only use complete fiscal years (2025 data is incomplete)
+  // IMPORTANT: Use asOfYear as the end date so metrics CHANGE with year selection
   const backtestStart = 2005
-  const backtestEnd = CURRENT_YEAR - 1
+  // Cap end year to CURRENT_YEAR - 1 (incomplete data for current year)
+  const backtestEnd = Math.min(asOfYear, CURRENT_YEAR - 1)
   const { data: backtest, isLoading: loadingBacktest } = useQuery({
     queryKey: ["backtest", backtestStart, backtestEnd, nHoldings, selectedSector],
     queryFn: () => portfolioApi.backtest(backtestStart, backtestEnd, nHoldings, "rd_alpha", selectedSector),
@@ -525,6 +526,32 @@ export function Portfolio() {
           </CardContent>
         </Card>
       </div>
+
+      {/* METHODOLOGY NOTE - Important disclaimer about backtest methodology */}
+      <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-card">
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Backtest Methodology Note</p>
+              <p>
+                Historical performance uses <strong>point-in-time S&P 500 constituents</strong> to avoid 
+                survivorship bias. Only companies that were in the index at the time of selection are included.
+                Past performance does not guarantee future results. The R&D premium may be smaller going forward
+                as the factor becomes more widely known.
+              </p>
+              <p className="text-xs">
+                Returns use July-June fiscal year convention per Fama-French methodology. 
+                {asOfYear < CURRENT_YEAR - 1 && (
+                  <span className="text-amber-600 ml-1">
+                    Viewing historical ({asOfYear}) — metrics reflect performance through that year only.
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* HOW TO USE THIS TOOL - Investment Instructions */}
       <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-card">
