@@ -42,10 +42,10 @@ export function Overview() {
 
   const returnPeriodLabel = useMemo(() => {
     const rows = annualHml?.annual_premiums
-    if (!rows || rows.length === 0) return "-"
+    if (!rows || rows.length === 0) return "..."
     const first = rows[0]?.year
     const last = rows[rows.length - 1]?.year
-    if (!first || !last) return "-"
+    if (!first || !last) return "..."
     return `${first} to ${last}`
   }, [annualHml])
 
@@ -84,7 +84,7 @@ export function Overview() {
   })
 
   const formatNumber = (num: number | null | undefined) => {
-    if (num === null || num === undefined) return "-"
+    if (num === null || num === undefined) return "..."
     if (num >= 1e12) return `$${(num / 1e12).toFixed(1)}T`
     if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`
     if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`
@@ -113,25 +113,25 @@ export function Overview() {
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl mb-6">
             Investigating the relationship between Research & Development investment and 
-            long-term stock returns across S&P 500 companies (statements: {overview?.year_range?.min ?? "-"}-{overview?.year_range?.max ?? "-"}; returns: {returnPeriodLabel}).
+            long-term stock returns across S&P 500 companies (statements: {overview?.year_range?.min ?? "..."}{overview?.year_range?.max ? `-${overview.year_range.max}` : ""}; returns: {returnPeriodLabel}).
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
               <div className="text-2xl font-bold text-emerald-400">
-                {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "-"}
+                {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "..."}
               </div>
               <div className="text-sm text-slate-400">5-Year R&D Premium (Q5-Q1)</div>
             </div>
             <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
               <div className="text-2xl font-bold text-blue-400">
-                {premium10yr !== undefined ? `${premium10yr >= 0 ? "+" : ""}${premium10yr.toFixed(2)}%` : "-"}
+                {premium10yr !== undefined ? `${premium10yr >= 0 ? "+" : ""}${premium10yr.toFixed(2)}%` : "..."}
               </div>
               <div className="text-sm text-slate-400">10-Year R&D Premium</div>
             </div>
             <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
               <div className="text-2xl font-bold text-purple-400">
-                {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "-"}
+                {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "..."}
               </div>
               <div className="text-sm text-slate-400">20-Year R&D Premium</div>
             </div>
@@ -166,11 +166,11 @@ export function Overview() {
                   Companies that invest heavily in R&D tend to outperform over the long term. 
                   In this dataset, the average Q5-Q1 premium is{" "}
                   <strong className="text-emerald-600 dark:text-emerald-400">
-                    {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "-"}
+                    {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "..."}
                   </strong>{" "}
                   per year over 5-year windows (and{" "}
                   <strong className="text-emerald-600 dark:text-emerald-400">
-                    {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "-"}
+                    {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "..."}
                   </strong>{" "}
                   over 20-year windows).
                 </p>
@@ -208,8 +208,8 @@ export function Overview() {
                 <ul className="text-slate-600 dark:text-slate-300 text-sm space-y-1">
                   <li>• Past performance ≠ future results</li>
                   <li>
-                    • Premium varies by horizon (e.g., {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "-"} at 5yr to{" "}
-                    {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "-"} at 20yr), and is not guaranteed
+                    • Premium varies by horizon (e.g., {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "..."} at 5yr to{" "}
+                    {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "..."} at 20yr), and is not guaranteed
                   </li>
                   <li>• High R&D often means higher volatility</li>
                   <li>• Tier-1 survivorship bias is substantially mitigated but not CRSP/Compustat-grade</li>

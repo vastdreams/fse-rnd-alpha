@@ -232,11 +232,100 @@ body {
   background-color: hsl(var(--stat-card-bg)) !important;
 }
 
-/* Print styles for whitepaper PDF export */
+/* ============================================
+   WHITEPAPER SLIDE DECK PRINT STYLES
+   ============================================ */
+
+/* Print view styling when visible (during print prep) */
+.whitepaper-print-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 9999;
+  overflow: auto;
+}
+
+.whitepaper-print-view .whitepaper-print-slide {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: white;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+}
+
 @media print {
-  /* Hide everything except print view when printing */
-  body > *:not(.print-view) {
+  /* Page setup - must come first */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* Hide everything except print view */
+  body > *:not(.whitepaper-print-view) {
     display: none !important;
+  }
+
+  /* Hide UI elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show and style print view */
+  .whitepaper-print-view {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  /* Whitepaper slide pages */
+  .whitepaper-print-slide {
+    page-break-after: always;
+    page-break-inside: avoid;
+    display: block;
+    width: 210mm;
+    height: 297mm;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .whitepaper-print-slide:last-child {
+    page-break-after: auto;
+  }
+
+  /* Ensure slide pages render with correct dimensions and colors */
+  .whitepaper-print-slide .slide-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+  }
+
+  /* Force all colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* Legacy print view support */
+.print-view {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-view):not(.whitepaper-print-view) {
+    /* Don't hide when printing whitepaper */
   }
   
   .print-view {
@@ -259,150 +348,353 @@ body {
   .print-slide:last-child {
     page-break-after: auto;
   }
-  
-  @page {
-    size: landscape;
-    margin: 0;
-  }
-}
-
-/* Hide print view when not printing */
-.print-view {
-  display: none;
-}
-
-@media print {
-  .no-print {
-    display: none !important;
-  }
 }
 
 /* ============================================
    ACADEMIC PAPER PRINT STYLES
    ============================================ */
-body.printing-paper {
-  background: white !important;
-}
 
 @media print {
-  /* When printing academic papers */
-  body.printing-paper {
-    background: white !important;
-    color: black !important;
-    font-size: 11pt !important;
-    line-height: 1.5 !important;
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
   }
 
-  body.printing-paper * {
-    color: black !important;
-    background: white !important;
-    border-color: #ddd !important;
-  }
-
-  /* Page setup for A4 paper */
-  body.printing-paper {
-    @page {
-      size: A4 portrait;
-      margin: 2.5cm 2cm 2.5cm 2cm;
-    }
+  /* Force colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Hide navigation and UI elements */
   body.printing-paper nav,
   body.printing-paper aside,
-  body.printing-paper header,
-  body.printing-paper footer,
+  body.printing-paper header:not(.print-header),
+  body.printing-paper footer:not(.print-footer),
   body.printing-paper .no-print,
   body.printing-paper button,
   body.printing-paper [class*="sidebar"],
   body.printing-paper [class*="Sidebar"],
   body.printing-paper [class*="navbar"],
-  body.printing-paper [class*="Navbar"] {
+  body.printing-paper [class*="Navbar"],
+  body.printing-paper [class*="RightTableOfContents"],
+  body.printing-paper [data-pdf-hide="true"],
+  body.printing-paper .search-bar,
+  body.printing-paper [role="search"],
+  body.printing-paper [class*="SearchCommand"],
+  body.printing-paper [class*="fixed"][class*="top-0"],
+  body.printing-paper [class*="sticky"][class*="top-0"]:not(.print-content) {
     display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
   }
 
-  /* Make main content full width */
-  body.printing-paper main,
-  body.printing-paper article,
-  body.printing-paper .paper-content {
-    width: 100% !important;
-    max-width: 100% !important;
+  /* Base styles */
+  body.printing-paper {
+    background: white !important;
+    color: #1a1a1a !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* Card styling for print */
-  body.printing-paper [class*="Card"] {
-    border: 1px solid #ddd !important;
-    box-shadow: none !important;
-    page-break-inside: avoid;
-    margin-bottom: 1rem !important;
+  /* Reset all containers to block layout for print */
+  body.printing-paper #root,
+  body.printing-paper #root > div,
+  body.printing-paper #root > div > div,
+  body.printing-paper #root > div > div > div,
+  body.printing-paper main,
+  body.printing-paper [class*="flex"][class*="gap"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
   }
 
-  /* Charts and figures */
-  body.printing-paper .recharts-wrapper,
-  body.printing-paper svg {
-    page-break-inside: avoid;
+  /* Make main content full width */
+  body.printing-paper .print-content {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure main element is visible and full width */
+  body.printing-paper main {
+    display: block !important;
+    width: 100% !important;
+    visibility: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide the right ToC container completely */
+  body.printing-paper .print-content + div,
+  body.printing-paper [class*="sticky"][class*="top-24"] {
+    display: none !important;
+  }
+
+  /* Text colors for print */
+  body.printing-paper h1,
+  body.printing-paper h2,
+  body.printing-paper h3,
+  body.printing-paper h4 {
+    color: #000 !important;
+  }
+
+  body.printing-paper p,
+  body.printing-paper li,
+  body.printing-paper span,
+  body.printing-paper td,
+  body.printing-paper th {
+    color: #333 !important;
   }
 
   /* Headings */
   body.printing-paper h1 {
-    font-size: 18pt !important;
-    page-break-after: avoid;
+    font-size: 16pt !important;
+    margin-bottom: 0.5rem !important;
   }
 
   body.printing-paper h2 {
-    font-size: 14pt !important;
-    page-break-after: avoid;
-    margin-top: 1.5rem !important;
+    font-size: 13pt !important;
+    margin-top: 1rem !important;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
   }
 
   body.printing-paper h3 {
-    font-size: 12pt !important;
-    page-break-after: avoid;
+    font-size: 11pt !important;
+  }
+
+  /* Card styling for print */
+  body.printing-paper [class*="Card"] {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    margin-bottom: 0.5rem !important;
+    background: #fafafa !important;
   }
 
   /* Tables */
   body.printing-paper table {
-    page-break-inside: avoid;
     border-collapse: collapse !important;
-  }
-
-  body.printing-paper th,
-  body.printing-paper td {
-    border: 1px solid #ddd !important;
-    padding: 0.5rem !important;
-  }
-
-  /* Code blocks and formulas */
-  body.printing-paper code,
-  body.printing-paper pre,
-  body.printing-paper [class*="font-mono"] {
-    background: #f5f5f5 !important;
-    border: 1px solid #ddd !important;
+    width: 100% !important;
     font-size: 9pt !important;
   }
 
-  /* Badges */
+  body.printing-paper th {
+    background: #f0f0f0 !important;
+    border: 1px solid #ccc !important;
+    padding: 0.4rem !important;
+    font-weight: bold !important;
+  }
+
+  body.printing-paper td {
+    border: 1px solid #ccc !important;
+    padding: 0.4rem !important;
+  }
+
+  /* Charts - preserve colors */
+  body.printing-paper .recharts-wrapper {
+    /* Allow charts to flow naturally */
+  }
+
+  body.printing-paper .recharts-surface {
+    background: white !important;
+  }
+
+  /* Keep chart colors visible */
+  body.printing-paper .recharts-bar-rectangle,
+  body.printing-paper .recharts-line,
+  body.printing-paper .recharts-area {
+    /* Don't override chart colors */
+  }
+
+  /* Code blocks */
+  body.printing-paper code,
+  body.printing-paper pre {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+    font-size: 8pt !important;
+    color: #333 !important;
+  }
+
+  /* Badges - keep some color */
   body.printing-paper [class*="Badge"] {
     border: 1px solid #999 !important;
-    background: #f0f0f0 !important;
+    padding: 0.1rem 0.4rem !important;
+    font-size: 8pt !important;
   }
 
   /* Links */
   body.printing-paper a {
+    color: #0066cc !important;
     text-decoration: underline !important;
   }
 
-  /* Page breaks */
+  /* Section breaks - allow content to flow without forced breaks */
   body.printing-paper section {
-    page-break-inside: avoid;
+    margin-bottom: 0.5rem !important;
   }
 
-  /* Force colors to print */
-  body.printing-paper {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* Metric cards - keep colored backgrounds */
+  body.printing-paper .bg-emerald-100,
+  body.printing-paper .bg-blue-100,
+  body.printing-paper .bg-amber-100,
+  body.printing-paper .bg-red-100 {
+    /* Preserve these backgrounds */
+  }
+
+  /* Stat values - keep colored */
+  body.printing-paper .text-emerald-600,
+  body.printing-paper .text-emerald-700 {
+    color: #059669 !important;
+  }
+
+  body.printing-paper .text-blue-600,
+  body.printing-paper .text-blue-700 {
+    color: #2563eb !important;
+  }
+
+  body.printing-paper .text-red-600,
+  body.printing-paper .text-red-700 {
+    color: #dc2626 !important;
+  }
+
+  /* Reduce spacing */
+  body.printing-paper .space-y-12 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  body.printing-paper .space-y-6 > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  body.printing-paper .space-y-4 > * + * {
+    margin-top: 0.4rem !important;
+  }
+
+  /* Grid layouts - PRESERVE multi-column for efficient space use */
+  body.printing-paper .grid {
+    display: grid !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Ensure grid columns work in print */
+  body.printing-paper .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+  body.printing-paper .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  body.printing-paper .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  body.printing-paper .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  body.printing-paper .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  body.printing-paper .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  body.printing-paper .md\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  body.printing-paper .md\\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+
+  body.printing-paper .grid > * {
+    margin-bottom: 0 !important;
+  }
+
+  /* Ensure overflow content is visible */
+  body.printing-paper [class*="overflow-hidden"],
+  body.printing-paper [class*="overflow-x-auto"],
+  body.printing-paper [class*="overflow-y-auto"] {
+    overflow: visible !important;
+  }
+
+  /* Remove rounded corners for cleaner print */
+  body.printing-paper [class*="rounded"] {
+    border-radius: 4px !important;
+  }
+
+  /* Ensure proper visibility */
+  body.printing-paper .print-content,
+  body.printing-paper .print-content * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Charts should be visible */
+  body.printing-paper svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Prevent empty first page - ensure content starts at top */
+  body.printing-paper .print-content > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Fix for gradient backgrounds in print */
+  body.printing-paper [class*="bg-gradient"] {
+    background: #f8fafc !important;
+  }
+
+  /* Ensure text is visible on print */
+  body.printing-paper .text-muted-foreground {
+    color: #4a5568 !important;
+  }
+
+  body.printing-paper .text-foreground {
+    color: #1a202c !important;
+  }
+
+  /* Header area adjustments */
+  body.printing-paper .print-content > div:first-child {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+  }
+
+  /* Hide interactive elements that don't make sense in print */
+  body.printing-paper [class*="hover:"],
+  body.printing-paper [class*="cursor-pointer"] {
+    cursor: default !important;
+  }
+
+  /* Compact spacing for print */
+  body.printing-paper .pb-24 {
+    padding-bottom: 1rem !important;
+  }
+
+  body.printing-paper .mb-6 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  body.printing-paper .mb-4 {
+    margin-bottom: 0.35rem !important;
+  }
+
+  body.printing-paper .gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  body.printing-paper .gap-6 {
+    gap: 0.5rem !important;
+  }
+
+  body.printing-paper .gap-8 {
+    gap: 0.5rem !important;
+  }
+
+  body.printing-paper .p-6 {
+    padding: 0.75rem !important;
+  }
+
+  body.printing-paper .p-8 {
+    padding: 1rem !important;
   }
 }
 

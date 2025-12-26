@@ -26,7 +26,7 @@ export function Companies() {
   })
 
   const formatNumber = (num: number | null | undefined) => {
-    if (num === null || num === undefined) return "-"
+    if (num === null || num === undefined) return "..."
     if (num >= 1e12) return `$${(num / 1e12).toFixed(1)}T`
     if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`
     if (num >= 1e6) return `$${(num / 1e6).toFixed(0)}M`
@@ -206,42 +206,42 @@ export function Companies() {
                 </TableRow>
               ) : (
                 filteredCompanies?.map((company) => (
-                  <TableRow key={company.symbol} className="hover:bg-muted/50">
-                    <TableCell>
-                      <Link 
-                        to={`/companies/${company.symbol}`} 
-                        className="font-mono font-bold text-primary hover:underline"
-                      >
-                        {company.symbol}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {company.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getSectorColor(company.sector)} variant="outline">
-                        {company.sector || "-"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatNumber(company.latest_revenue)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatNumber(company.latest_rd_expense)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {company.rd_intensity !== null ? (
-                        <span className={`font-bold ${company.rd_intensity > 10 ? 'text-green-600 dark:text-green-400' : company.rd_intensity > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                          {company.rd_intensity.toFixed(1)}%
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {company.years_data}
-                    </TableCell>
-                  </TableRow>
+                <TableRow key={company.symbol} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Link 
+                      to={`/companies/${company.symbol}`} 
+                      className="font-mono font-bold text-primary hover:underline"
+                    >
+                      {company.symbol}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate">
+                    {company.name}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getSectorColor(company.sector)} variant="outline">
+                        {company.sector || "..."}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatNumber(company.latest_revenue)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatNumber(company.latest_rd_expense)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {company.rd_intensity !== null ? (
+                      <span className={`font-bold ${company.rd_intensity > 10 ? 'text-green-600 dark:text-green-400' : company.rd_intensity > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                        {company.rd_intensity.toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {company.years_data}
+                  </TableCell>
+                </TableRow>
                 ))
               )}
             </TableBody>

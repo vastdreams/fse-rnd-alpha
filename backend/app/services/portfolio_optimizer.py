@@ -419,12 +419,12 @@ class PortfolioOptimizer:
             bench_raw = bench_result.scalar()
             benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
         else:
-            bench_result = await self.session.execute(
-                select(func.avg(FMPAnnualReturn.annual_return))
-                .where(FMPAnnualReturn.year == as_of_year)
-            )
-            bench_raw = bench_result.scalar()
-            benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
+        bench_result = await self.session.execute(
+            select(func.avg(FMPAnnualReturn.annual_return))
+            .where(FMPAnnualReturn.year == as_of_year)
+        )
+        bench_raw = bench_result.scalar()
+        benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
         
         # Projection (NOT a prediction): benchmark + baseline premium.
         forecast_return = benchmark_return + premium
@@ -445,14 +445,14 @@ class PortfolioOptimizer:
                 )
                 r = result.scalar()
             else:
-                result = await self.session.execute(
-                    select(FMPAnnualReturn.annual_return)
-                    .where(
-                        FMPAnnualReturn.symbol == symbol,
-                        FMPAnnualReturn.year == as_of_year
-                    )
+            result = await self.session.execute(
+                select(FMPAnnualReturn.annual_return)
+                .where(
+                    FMPAnnualReturn.symbol == symbol,
+                    FMPAnnualReturn.year == as_of_year
                 )
-                r = result.scalar()
+            )
+            r = result.scalar()
             if r is not None:
                 actual_return += float(r) * weight
                 valid_w += weight
@@ -585,13 +585,13 @@ class PortfolioOptimizer:
                     ret = result.scalar()
                 else:
                     # Calendar year returns
-                    result = await self.session.execute(
-                        select(FMPAnnualReturn.annual_return)
-                        .where(
-                            FMPAnnualReturn.symbol == symbol,
-                            FMPAnnualReturn.year == year
-                        )
+                result = await self.session.execute(
+                    select(FMPAnnualReturn.annual_return)
+                    .where(
+                        FMPAnnualReturn.symbol == symbol,
+                        FMPAnnualReturn.year == year
                     )
+                )
                     ret = result.scalar()
                 
                 if ret is not None:
@@ -701,18 +701,18 @@ class PortfolioOptimizer:
         universe_portfolio_symbols: set[str] = set()
 
         for year in years:
-            if use_point_in_time:
+        if use_point_in_time:
                 year_holdings = await self.select_top_rd_companies_for_year(
                     as_of_year=year,
-                    n=n_holdings,
-                    method=selection_method,
+                n=n_holdings,
+                method=selection_method,
                     sectors=sectors,
-                )
-            else:
+            )
+        else:
                 year_holdings = await self.select_top_rd_companies(
-                    n=n_holdings,
-                    method=selection_method,
-                    sectors=sectors,
+                n=n_holdings,
+                method=selection_method,
+                sectors=sectors,
                     min_years=5,
                 )
 

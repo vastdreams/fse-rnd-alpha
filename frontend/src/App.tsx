@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { ThemeProvider } from "@/components/theme-provider"
@@ -83,6 +83,7 @@ function App() {
                   <Route path="/backtests" element={<Backtests />} />
                   <Route path="/statistics" element={<Statistics />} />
                   <Route path="/research" element={<Research />} />
+                  <Route path="/analysis" element={<Navigate to="/research" replace />} />
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="/methodology" element={<Methodology />} />

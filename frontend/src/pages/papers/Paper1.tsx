@@ -24,6 +24,7 @@ import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SafeChart } from "@/components/SafeChart"
 import {
   BarChart,
   Bar,
@@ -31,7 +32,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Cell,
   AreaChart,
   Area,
@@ -155,20 +155,20 @@ export function Paper1() {
   const keyMetrics = [
     { 
       label: "R&D Premium", 
-      value: rdPremium20yr ? `${rdPremium20yr >= 0 ? "+" : ""}${rdPremium20yr.toFixed(1)}%` : "-", 
+      value: rdPremium20yr ? `${rdPremium20yr >= 0 ? "+" : ""}${rdPremium20yr.toFixed(1)}%` : "...", 
       color: "text-green-600 dark:text-emerald-400" 
     },
     { 
       label: "Effect Size (η²)", 
-      value: etaSquared20yr ? etaSquared20yr.toFixed(3) : "-", 
+      value: etaSquared20yr ? etaSquared20yr.toFixed(3) : "...", 
       color: "text-blue-600 dark:text-blue-400" 
     },
     { 
       label: "Significance", 
-      value: pValue20yr !== undefined ? (pValue20yr < 0.001 ? "p < 0.001" : `p = ${pValue20yr.toFixed(4)}`) : "-", 
+      value: pValue20yr !== undefined ? (pValue20yr < 0.001 ? "p < 0.001" : `p = ${pValue20yr.toFixed(4)}`) : "...", 
       color: "text-green-600 dark:text-emerald-400" 
     },
-    { label: "Sample Size", value: `${cohortSummary?.total_companies || "-"}`, color: "text-foreground" },
+    { label: "Sample Size", value: `${cohortSummary?.total_companies || "..."}`, color: "text-foreground" },
   ]
 
   const { data: rollingWindows5yr } = useQuery({
@@ -213,7 +213,7 @@ export function Paper1() {
         rightNavCollapsed ? "max-w-none" : "max-w-4xl"
       )}>
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-emerald-700 p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-600/50 p-8">
           <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02]" />
           <div className="relative z-10">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
@@ -266,7 +266,7 @@ export function Paper1() {
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
               <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
               <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || 503} Companies</span></div>
-              <div><span className="text-muted-foreground">Period:</span> <span className="text-foreground">{sampleYearRange || "-"}</span></div>
+              <div><span className="text-muted-foreground">Period:</span> <span className="text-foreground">{sampleYearRange || "..."}</span></div>
             </div>
           </div>
         </div>
@@ -297,19 +297,19 @@ export function Paper1() {
                     <strong className="text-foreground">
                       {typeof aggregateAnova?.["5yr"]?.ttest_high_vs_low?.mean_difference === "number"
                         ? `${aggregateAnova["5yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["5yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
-                        : "-"}
+                        : "..."}
                     </strong>{" "}
                     (5yr),{" "}
                     <strong className="text-foreground">
                       {typeof aggregateAnova?.["10yr"]?.ttest_high_vs_low?.mean_difference === "number"
                         ? `${aggregateAnova["10yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["10yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
-                        : "-"}
+                        : "..."}
                     </strong>{" "}
                     (10yr),{" "}
                     <strong className="text-foreground">
                       {typeof aggregateAnova?.["20yr"]?.ttest_high_vs_low?.mean_difference === "number"
                         ? `${aggregateAnova["20yr"].ttest_high_vs_low.mean_difference >= 0 ? "+" : ""}${aggregateAnova["20yr"].ttest_high_vs_low.mean_difference.toFixed(2)}%`
-                        : "-"}
+                        : "..."}
                     </strong>{" "}
                     (20yr) in annualized returns (Q5 − Q1).
                   </li>
@@ -318,7 +318,7 @@ export function Paper1() {
                     <strong className="text-foreground">
                       {typeof aggregateAnova?.["20yr"]?.ttest_high_vs_low?.cohens_d === "number"
                         ? aggregateAnova["20yr"].ttest_high_vs_low.cohens_d.toFixed(3)
-                        : "-"}
+                        : "..."}
                     </strong>
                   </li>
                   <li>• Statistical significance is assessed per horizon using ANOVA and high-vs-low t-tests (see Results).</li>
@@ -475,11 +475,11 @@ export function Paper1() {
                   <p className="text-sm text-muted-foreground">Total Companies</p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                  <p className="text-2xl font-bold text-primary">{annualHmlData?.n_years ?? "-"}</p>
+                  <p className="text-2xl font-bold text-primary">{annualHmlData?.n_years ?? "..."}</p>
                   <p className="text-sm text-muted-foreground">Annual HML Observations</p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                  <p className="text-2xl font-bold text-primary">{rollingWindows5yr?.length ?? "-"}</p>
+                  <p className="text-2xl font-bold text-primary">{rollingWindows5yr?.length ?? "..."}</p>
                   <p className="text-sm text-muted-foreground">5-Year Rolling Windows</p>
                 </div>
               </div>
@@ -764,7 +764,7 @@ export function Paper1() {
               </CardHeader>
               <CardContent style={{ height: 320, minHeight: 320 }}>
                 {formatQuintileData(quintilePerf5yr).length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={320} minHeight={300}>
                     <BarChart data={formatQuintileData(quintilePerf5yr)}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="quintile" stroke="hsl(var(--muted-foreground))" />
@@ -779,7 +779,7 @@ export function Paper1() {
                         ))}
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">
                     Loading chart data...
@@ -796,7 +796,7 @@ export function Paper1() {
               </CardHeader>
               <CardContent style={{ height: 320, minHeight: 320 }}>
                 {rollingWindowData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={320} minHeight={300}>
                     <AreaChart data={rollingWindowData}>
                       <defs>
                         <linearGradient id="premiumGradient" x1="0" y1="0" x2="0" y2="1">
@@ -814,7 +814,7 @@ export function Paper1() {
                         <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
                       <Area type="monotone" dataKey="rdPremium" stroke="#10b981" fill="url(#premiumGradient)" name="R&D Premium" />
                     </AreaChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">
                     Loading chart data...
@@ -852,32 +852,32 @@ export function Paper1() {
                     <tbody className="text-muted-foreground">
                       <tr className="border-b border-border/50">
                         <td className="py-3">5-Year</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.f_statistic?.toFixed(2) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.p_value !== undefined && aggregateAnova?.["5yr"]?.anova?.p_value !== null ? (aggregateAnova["5yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["5yr"].anova.p_value.toFixed(4)) : "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.eta_squared?.toFixed(3) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "-"}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.f_statistic?.toFixed(2) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.p_value !== undefined && aggregateAnova?.["5yr"]?.anova?.p_value !== null ? (aggregateAnova["5yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["5yr"].anova.p_value.toFixed(4)) : "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.anova?.eta_squared?.toFixed(3) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["5yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "..."}</td>
                         <td className="text-right"><Badge variant="outline" className={aggregateAnova?.["5yr"]?.anova?.significant_001 ? "text-green-600 dark:text-emerald-400 border-green-500/30 dark:border-emerald-500/30" : "text-muted-foreground border-border"}>
-                          {aggregateAnova?.["5yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["5yr"]?.anova?.significant_005 ? "**" : "-"}
+                          {aggregateAnova?.["5yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["5yr"]?.anova?.significant_005 ? "**" : "..."}
                         </Badge></td>
                       </tr>
                       <tr className="border-b border-border/50">
                         <td className="py-3">10-Year</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.f_statistic?.toFixed(2) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.p_value !== undefined && aggregateAnova?.["10yr"]?.anova?.p_value !== null ? (aggregateAnova["10yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["10yr"].anova.p_value.toFixed(4)) : "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.eta_squared?.toFixed(3) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "-"}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.f_statistic?.toFixed(2) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.p_value !== undefined && aggregateAnova?.["10yr"]?.anova?.p_value !== null ? (aggregateAnova["10yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["10yr"].anova.p_value.toFixed(4)) : "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.anova?.eta_squared?.toFixed(3) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["10yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "..."}</td>
                         <td className="text-right"><Badge variant="outline" className={aggregateAnova?.["10yr"]?.anova?.significant_001 ? "text-green-600 dark:text-emerald-400 border-green-500/30 dark:border-emerald-500/30" : "text-muted-foreground border-border"}>
-                          {aggregateAnova?.["10yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["10yr"]?.anova?.significant_005 ? "**" : "-"}
+                          {aggregateAnova?.["10yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["10yr"]?.anova?.significant_005 ? "**" : "..."}
                         </Badge></td>
                       </tr>
                       <tr className="border-b border-border/50">
                         <td className="py-3">20-Year</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.f_statistic?.toFixed(2) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.p_value !== undefined && aggregateAnova?.["20yr"]?.anova?.p_value !== null ? (aggregateAnova["20yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["20yr"].anova.p_value.toFixed(4)) : "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.eta_squared?.toFixed(3) || "-"}</td>
-                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "-"}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.f_statistic?.toFixed(2) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.p_value !== undefined && aggregateAnova?.["20yr"]?.anova?.p_value !== null ? (aggregateAnova["20yr"].anova.p_value < 0.001 ? "< 0.001" : aggregateAnova["20yr"].anova.p_value.toFixed(4)) : "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.anova?.eta_squared?.toFixed(3) || "..."}</td>
+                        <td className="text-right font-mono">{aggregateAnova?.["20yr"]?.ttest_high_vs_low?.cohens_d?.toFixed(2) || "..."}</td>
                         <td className="text-right"><Badge variant="outline" className={aggregateAnova?.["20yr"]?.anova?.significant_001 ? "text-green-600 dark:text-emerald-400 border-green-500/30 dark:border-emerald-500/30" : "text-muted-foreground border-border"}>
-                          {aggregateAnova?.["20yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["20yr"]?.anova?.significant_005 ? "**" : "-"}
+                          {aggregateAnova?.["20yr"]?.anova?.significant_001 ? "***" : aggregateAnova?.["20yr"]?.anova?.significant_005 ? "**" : "..."}
                         </Badge></td>
                       </tr>
                     </tbody>

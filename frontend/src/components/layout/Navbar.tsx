@@ -252,14 +252,14 @@ export function Navbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/donate">
-                  <Button
-                    variant="ghost"
+          <Button
+            variant="ghost"
                     size="sm"
                     className="hidden sm:flex items-center gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400"
-                  >
+          >
                     <Heart className="w-4 h-4" />
                     <span className="hidden md:inline">Donate</span>
-                  </Button>
+          </Button>
                 </Link>
               </TooltipTrigger>
               <TooltipContent>

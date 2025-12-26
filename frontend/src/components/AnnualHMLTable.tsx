@@ -123,7 +123,7 @@ export function AnnualHMLTable({ data, isLoading, title, description }: AnnualHM
             <div className="p-4 rounded-lg bg-background border">
               <div className="text-sm text-muted-foreground">t-Statistic</div>
               <div className="text-2xl font-bold">
-                {t_statistic !== undefined ? t_statistic.toFixed(2) : "-"}
+                {t_statistic !== undefined ? t_statistic.toFixed(2) : "..."}
               </div>
               <div className="text-xs text-muted-foreground">
                 {data.hac_adjusted ? "Newey-West (lag=1)" : "Non-overlapping"}
@@ -135,7 +135,7 @@ export function AnnualHMLTable({ data, isLoading, title, description }: AnnualHM
                 "text-2xl font-bold",
                 p_value !== undefined && p_value < 0.05 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600"
               )}>
-                {p_value === undefined ? "-" : p_value < 0.001 ? "<0.001" : p_value.toFixed(4)}
+                {p_value === undefined ? "..." : p_value < 0.001 ? "<0.001" : p_value.toFixed(4)}
               </div>
             </div>
             <div className="p-4 rounded-lg bg-background border">

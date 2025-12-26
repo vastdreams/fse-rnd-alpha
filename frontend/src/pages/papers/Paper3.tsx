@@ -13,12 +13,12 @@ import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SafeChart } from "@/components/SafeChart"
 import {
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Legend,
   Cell,
   LineChart,
@@ -149,9 +149,9 @@ export function Paper3() {
 
   // Key metrics for the right sidebar
   const keyMetrics = [
-    { label: "Mean Premium (annual)", value: rdPremiumStats?.mean !== undefined ? `${rdPremiumStats.mean.toFixed(1)}%` : "-", color: "text-purple-600 dark:text-purple-400" },
-    { label: "t-Statistic", value: rdPremiumStats?.t_statistic !== undefined ? rdPremiumStats.t_statistic.toFixed(2) : "-", color: "text-blue-600 dark:text-blue-400" },
-    { label: "Win Rate", value: rdPremiumStats ? `${Math.round((rdPremiumStats.positive_years / rdPremiumStats.n_years) * 100)}%` : "-", color: "text-green-600 dark:text-emerald-400" },
+    { label: "Mean Premium (annual)", value: rdPremiumStats?.mean !== undefined ? `${rdPremiumStats.mean.toFixed(1)}%` : "...", color: "text-purple-600 dark:text-purple-400" },
+    { label: "t-Statistic", value: rdPremiumStats?.t_statistic !== undefined ? rdPremiumStats.t_statistic.toFixed(2) : "...", color: "text-blue-600 dark:text-blue-400" },
+    { label: "Win Rate", value: rdPremiumStats ? `${Math.round((rdPremiumStats.positive_years / rdPremiumStats.n_years) * 100)}%` : "...", color: "text-green-600 dark:text-emerald-400" },
     { label: "Years Analyzed", value: `${premiumData.length}`, color: "text-foreground" },
   ]
 
@@ -171,7 +171,7 @@ export function Paper3() {
         rightNavCollapsed ? "max-w-none" : "max-w-4xl"
       )}>
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-purple-50 dark:bg-slate-900 border border-purple-200 dark:border-purple-700 p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-purple-50 dark:bg-zinc-900 border border-purple-200 dark:border-purple-600/50 p-8">
           <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02]" />
           <div className="relative z-10">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
@@ -246,15 +246,15 @@ export function Paper3() {
                 its performance characteristics over the full sample period. Our findings reveal a 
                 statistically significant <strong className="text-foreground">mean annual R&D premium of
                 {typeof rdPremiumStats?.mean === "number" ? ` ${rdPremiumStats.mean.toFixed(1)}%` : " -"} </strong>,
-                with a t-statistic of {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "-"}
+                with a t-statistic of {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "..."}
                 {typeof rdPremiumStats?.p_value === "number" ? ` (p = ${rdPremiumStats.p_value.toFixed(4)})` : ""}.
               </p>
               <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
                 <p className="text-sm text-purple-400 font-medium mb-2">Key Findings:</p>
                 <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-1">
-                  <li>• Mean annual R&D premium: {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "-"}</li>
-                  <li>• Premium positive in {rdPremiumStats ? `${rdPremiumStats.positive_years} of ${rdPremiumStats.n_years}` : "-"} ({rdPremiumStats ? `${Math.round((rdPremiumStats.positive_years / rdPremiumStats.n_years) * 100)}%` : "-"} win rate)</li>
-                  <li>• t-statistic: {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "-"}</li>
+                  <li>• Mean annual R&D premium: {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "..."}</li>
+                  <li>• Premium positive in {rdPremiumStats ? `${rdPremiumStats.positive_years} of ${rdPremiumStats.n_years}` : "..."} ({rdPremiumStats ? `${Math.round((rdPremiumStats.positive_years / rdPremiumStats.n_years) * 100)}%` : "..."} win rate)</li>
+                  <li>• t-statistic: {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "..."}</li>
                   <li>• Factor spanning tests are shown below when factor inputs are available</li>
                 </ul>
               </div>
@@ -370,11 +370,11 @@ export function Paper3() {
                   <div className="text-sm text-slate-700 dark:text-slate-200">Years</div>
                 </div>
                 <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 text-center">
-                  <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.positive_years === "number" ? rdPremiumStats.positive_years : "-"}</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.positive_years === "number" ? rdPremiumStats.positive_years : "..."}</div>
                   <div className="text-sm text-slate-700 dark:text-slate-200">Positive Years</div>
                 </div>
                 <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-center">
-                  <div className="text-2xl font-bold text-red-400">{typeof rdPremiumStats?.negative_years === "number" ? rdPremiumStats.negative_years : "-"}</div>
+                  <div className="text-2xl font-bold text-red-400">{typeof rdPremiumStats?.negative_years === "number" ? rdPremiumStats.negative_years : "..."}</div>
                   <div className="text-sm text-slate-700 dark:text-slate-200">Negative Years</div>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 text-center">
@@ -449,7 +449,7 @@ export function Paper3() {
                 <CardDescription>Q5 (High R&D) minus Q1 (Low R&D) returns by year</CardDescription>
               </CardHeader>
               <CardContent className="h-96">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={384} minHeight={300}>
                   <ComposedChart data={premiumData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -473,7 +473,7 @@ export function Paper3() {
                       ))}
                     </Bar>
                   </ComposedChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 
@@ -484,7 +484,7 @@ export function Paper3() {
                 <CardDescription>Annual returns for Q1 (Low R&D) vs Q5 (High R&D)</CardDescription>
               </CardHeader>
               <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={320} minHeight={300}>
                   <LineChart data={premiumData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -498,7 +498,7 @@ export function Paper3() {
                     <Line type="monotone" dataKey="q1" name="Q1 (Low R&D)" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
                     <Line type="monotone" dataKey="q5" name="Q5 (High R&D)" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 
@@ -509,7 +509,7 @@ export function Paper3() {
                 <CardDescription>Growth of $1 invested in each quintile portfolio</CardDescription>
               </CardHeader>
               <CardContent className="h-96">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={384} minHeight={300}>
                   <AreaChart data={cumulativeData}>
                     <defs>
                       <linearGradient id="q5Gradient" x1="0" y1="0" x2="0" y2="1">
@@ -535,7 +535,7 @@ export function Paper3() {
                     <Area type="monotone" dataKey="q5Cumulative" name="Q5 (High R&D)" stroke="#22c55e" fill="url(#q5Gradient)" strokeWidth={2} />
                     <Area type="monotone" dataKey="q1Cumulative" name="Q1 (Low R&D)" stroke="#ef4444" fill="url(#q1Gradient)" strokeWidth={2} />
                   </AreaChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 
@@ -550,37 +550,37 @@ export function Paper3() {
                     <h4 className="font-semibold text-slate-900 dark:text-white">Premium Statistics</h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">Mean</span>
-                      <span className="font-mono text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(2)}%` : "-"}</span>
+                      <span className="font-mono text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(2)}%` : "..."}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">Std Dev</span>
-                      <span className="font-mono text-slate-900 dark:text-slate-200">{typeof rdPremiumStats?.std === "number" ? `${rdPremiumStats.std.toFixed(2)}%` : "-"}</span>
+                      <span className="font-mono text-slate-900 dark:text-slate-200">{typeof rdPremiumStats?.std === "number" ? `${rdPremiumStats.std.toFixed(2)}%` : "..."}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">Sharpe Ratio</span>
-                      <span className="font-mono text-blue-600 dark:text-blue-400">{rdPremiumStats?.mean && rdPremiumStats?.std ? (rdPremiumStats.mean / rdPremiumStats.std).toFixed(2) : "-"}</span>
+                      <span className="font-mono text-blue-600 dark:text-blue-400">{rdPremiumStats?.mean && rdPremiumStats?.std ? (rdPremiumStats.mean / rdPremiumStats.std).toFixed(2) : "..."}</span>
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3">
                     <h4 className="font-semibold text-slate-900 dark:text-white">Range</h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">Minimum</span>
-                      <span className="font-mono text-red-600 dark:text-red-400">{typeof rdPremiumStats?.min === "number" ? `${rdPremiumStats.min.toFixed(1)}%` : "-"}</span>
+                      <span className="font-mono text-red-600 dark:text-red-400">{typeof rdPremiumStats?.min === "number" ? `${rdPremiumStats.min.toFixed(1)}%` : "..."}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">Maximum</span>
-                      <span className="font-mono text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.max === "number" ? `${rdPremiumStats.max.toFixed(1)}%` : "-"}</span>
+                      <span className="font-mono text-green-600 dark:text-emerald-400">{typeof rdPremiumStats?.max === "number" ? `${rdPremiumStats.max.toFixed(1)}%` : "..."}</span>
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3">
                     <h4 className="font-semibold text-slate-900 dark:text-white">Significance</h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">t-Statistic</span>
-                      <span className="font-mono text-blue-600 dark:text-blue-400">{typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(3) : "-"}</span>
+                      <span className="font-mono text-blue-600 dark:text-blue-400">{typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(3) : "..."}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-400">p-Value</span>
-                      <span className="font-mono text-purple-400">{typeof rdPremiumStats?.p_value === "number" ? rdPremiumStats.p_value.toFixed(4) : "-"}</span>
+                      <span className="font-mono text-purple-400">{typeof rdPremiumStats?.p_value === "number" ? rdPremiumStats.p_value.toFixed(4) : "..."}</span>
                     </div>
                   </div>
                 </div>
@@ -667,7 +667,7 @@ export function Paper3() {
                           <div key={size} className="flex justify-between text-sm py-1">
                             <span className="text-slate-600 dark:text-slate-400">{size}</span>
                             <span className="font-mono text-slate-900 dark:text-white">
-                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "-"}
+                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "..."}
                             </span>
                           </div>
                         ))}
@@ -679,7 +679,7 @@ export function Paper3() {
                           <div key={vol} className="flex justify-between text-sm py-1">
                             <span className="text-slate-600 dark:text-slate-400">{vol}</span>
                             <span className="font-mono text-slate-900 dark:text-white">
-                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "-"}
+                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "..."}
                             </span>
                           </div>
                         ))}
@@ -691,7 +691,7 @@ export function Paper3() {
                           <div key={cov} className="flex justify-between text-sm py-1">
                             <span className="text-slate-600 dark:text-slate-400">{cov}</span>
                             <span className="font-mono text-slate-900 dark:text-white">
-                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "-"}
+                              {data.premium !== null ? `${data.premium.toFixed(1)}%` : "..."}
                             </span>
                           </div>
                         ))}
@@ -789,7 +789,7 @@ export function Paper3() {
                 <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg">
                   <h4 className="text-green-600 dark:text-emerald-400 font-semibold mb-2">Statistically Significant</h4>
                   <p className="text-sm text-slate-700 dark:text-slate-200">
-                    With a t-statistic of {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "-"}
+                    With a t-statistic of {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "..."}
                     {typeof rdPremiumStats?.p_value === "number" ? ` (p = ${rdPremiumStats.p_value.toFixed(4)})` : ""}, the premium is statistically
                     distinguishable from zero in the available sample, consistent with prior literature on R&D-sorted portfolios.
                   </p>
@@ -798,7 +798,7 @@ export function Paper3() {
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                   <h4 className="text-blue-600 dark:text-blue-400 font-semibold mb-2">Economically Meaningful</h4>
                   <p className="text-sm text-slate-700 dark:text-slate-200">
-                    An annual premium of {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "-"} is economically meaningful
+                    An annual premium of {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "..."} is economically meaningful
                     in a large-cap universe and motivates implementability checks (costs, turnover, and risk exposures).
                   </p>
                 </div>
@@ -806,7 +806,7 @@ export function Paper3() {
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
                   <h4 className="text-purple-700 dark:text-purple-400 font-semibold mb-2">Persistent Over Time</h4>
                   <p className="text-sm text-slate-700 dark:text-slate-200">
-                    The premium is positive in {rdPremiumStats ? `${rdPremiumStats.positive_years} of ${rdPremiumStats.n_years}` : "-"} years,
+                    The premium is positive in {rdPremiumStats ? `${rdPremiumStats.positive_years} of ${rdPremiumStats.n_years}` : "..."} years,
                     indicating a positive win rate over the sample. Like most factor-style effects, the premium can be negative in some years.
                   </p>
                 </div>
@@ -877,8 +877,8 @@ export function Paper3() {
                 Key conclusions:
               </p>
               <ul className="text-muted-foreground space-y-2">
-                <li>• The R&D premium averages {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "-"} annually</li>
-                <li>• Premium significance: t = {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "-"}{typeof rdPremiumStats?.p_value === "number" ? ` (p = ${rdPremiumStats.p_value.toFixed(4)})` : ""}</li>
+                <li>• The R&D premium averages {typeof rdPremiumStats?.mean === "number" ? `${rdPremiumStats.mean.toFixed(1)}%` : "..."} annually</li>
+                <li>• Premium significance: t = {typeof rdPremiumStats?.t_statistic === "number" ? rdPremiumStats.t_statistic.toFixed(2) : "..."}{typeof rdPremiumStats?.p_value === "number" ? ` (p = ${rdPremiumStats.p_value.toFixed(4)})` : ""}</li>
                 <li>• Persistence across {premiumData.length} years suggests structural rather than anomalous pattern</li>
                 <li>• Spanning-test results should be interpreted in the context of available factor inputs and data tier</li>
               </ul>

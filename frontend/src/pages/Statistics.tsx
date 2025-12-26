@@ -157,16 +157,16 @@ export function Statistics() {
                     <TableRow key={filing.company_year_id}>
                       <TableCell className="font-medium">{filing.ticker}</TableCell>
                       <TableCell className="max-w-[200px] truncate">
-                        {filing.name || "-"}
+                        {filing.name || "..."}
                       </TableCell>
                       <TableCell>{filing.cik}</TableCell>
                       <TableCell>{filing.fiscal_year}</TableCell>
-                      <TableCell>{filing.filing_date || "-"}</TableCell>
-                      <TableCell>{filing.file_format || "-"}</TableCell>
+                      <TableCell>{filing.filing_date || "..."}</TableCell>
+                      <TableCell>{filing.file_format || "..."}</TableCell>
                       <TableCell className="text-right">
                         {filing.file_size_bytes
                           ? `${(filing.file_size_bytes / 1024 / 1024).toFixed(1)} MB`
-                          : "-"}
+                          : "..."}
                       </TableCell>
                       <TableCell>
                         <span
@@ -178,7 +178,7 @@ export function Statistics() {
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {filing.extraction_status || "-"}
+                          {filing.extraction_status || "..."}
                         </span>
                       </TableCell>
                     </TableRow>

@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Building2, TrendingUp, FlaskConical, DollarSign, FileText, ExternalLink, MessageSquare, TrendingDown } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, BarChart, Bar, Cell } from "recharts"
+import { SafeChart } from "@/components/SafeChart"
 import { Button } from "@/components/ui/button"
 
 export function CompanyDetail() {
@@ -31,7 +32,7 @@ export function CompanyDetail() {
   })
 
   const formatNumber = (num: number | null | undefined) => {
-    if (num === null || num === undefined) return "-"
+    if (num === null || num === undefined) return "..."
     if (Math.abs(num) >= 1e12) return `$${(num / 1e12).toFixed(1)}T`
     if (Math.abs(num) >= 1e9) return `$${(num / 1e9).toFixed(1)}B`
     if (Math.abs(num) >= 1e6) return `$${(num / 1e6).toFixed(0)}M`
@@ -39,7 +40,7 @@ export function CompanyDetail() {
   }
 
   const formatPercent = (num: number | null | undefined) => {
-    if (num === null || num === undefined) return "-"
+    if (num === null || num === undefined) return "..."
     return `${num >= 0 ? '+' : ''}${num.toFixed(1)}%`
   }
 
@@ -152,7 +153,7 @@ export function CompanyDetail() {
                 <CardTitle>Revenue & Net Income</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300} minHeight={300}>
+                <SafeChart height={300} minHeight={300}>
                   <BarChart data={[...company.income_statements].reverse()}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="fiscal_year" stroke="#888" fontSize={12} />
@@ -164,7 +165,7 @@ export function CompanyDetail() {
                     <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
                     <Bar dataKey="net_income" fill="#10b981" name="Net Income" />
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 
@@ -174,7 +175,7 @@ export function CompanyDetail() {
                 <CardTitle>Assets vs Liabilities</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300} minHeight={300}>
+                <SafeChart height={300} minHeight={300}>
                   <AreaChart data={[...company.balance_sheets].reverse()}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="fiscal_year" stroke="#888" fontSize={12} />
@@ -186,7 +187,7 @@ export function CompanyDetail() {
                     <Area type="monotone" dataKey="total_assets" fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" name="Assets" />
                     <Area type="monotone" dataKey="total_liabilities" fill="#ef4444" fillOpacity={0.3} stroke="#ef4444" name="Liabilities" />
                   </AreaChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
           </div>
@@ -264,7 +265,7 @@ export function CompanyDetail() {
               <CardTitle>R&D Intensity Over Time</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300} minHeight={300}>
+              <SafeChart height={300} minHeight={300}>
                 <LineChart data={[...company.rd_analysis.rd_by_year].reverse()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="year" stroke="#888" fontSize={12} />
@@ -275,7 +276,7 @@ export function CompanyDetail() {
                   />
                   <Line type="monotone" dataKey="rd_intensity" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} />
                 </LineChart>
-              </ResponsiveContainer>
+              </SafeChart>
             </CardContent>
           </Card>
         </TabsContent>
@@ -287,7 +288,7 @@ export function CompanyDetail() {
               <CardTitle>Annual Returns & Volatility</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300} minHeight={300}>
+              <SafeChart height={300} minHeight={300}>
                 <BarChart data={[...company.annual_returns].reverse()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="year" stroke="#888" fontSize={12} />
@@ -298,7 +299,7 @@ export function CompanyDetail() {
                   />
                   <Bar dataKey="annual_return" fill="#3b82f6" name="Return" />
                 </BarChart>
-              </ResponsiveContainer>
+              </SafeChart>
             </CardContent>
           </Card>
 
@@ -340,7 +341,7 @@ export function CompanyDetail() {
               <CardTitle>Stock Price (5 Years)</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400} minHeight={400}>
+              <SafeChart height={400} minHeight={400}>
                 <AreaChart data={prices}>
                   <defs>
                     <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -358,7 +359,7 @@ export function CompanyDetail() {
                   />
                   <Area type="monotone" dataKey="adj_close" stroke="#3b82f6" fill="url(#priceGradient)" strokeWidth={2} />
                 </AreaChart>
-              </ResponsiveContainer>
+              </SafeChart>
             </CardContent>
           </Card>
         </TabsContent>
@@ -448,7 +449,7 @@ export function CompanyDetail() {
                     ? 'text-emerald-400' 
                     : 'text-red-400'
                 }`}>
-                  {annualReports?.rd_analysis_summary?.avg_rd_tone?.toFixed(3) || "-"}
+                  {annualReports?.rd_analysis_summary?.avg_rd_tone?.toFixed(3) || "..."}
                 </div>
                 <p className="text-xs text-muted-foreground">Sentiment score</p>
               </CardContent>
@@ -463,7 +464,7 @@ export function CompanyDetail() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-amber-400 capitalize">
-                  {annualReports?.rd_analysis_summary?.trend || "-"}
+                  {annualReports?.rd_analysis_summary?.trend || "..."}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {annualReports?.rd_analysis_summary?.years_with_rd_analysis || 0} years analyzed
@@ -480,7 +481,7 @@ export function CompanyDetail() {
                 <CardDescription>Number of R&D references in each annual report</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={250} minHeight={250}>
+                <SafeChart height={250} minHeight={250}>
                   <BarChart data={[...annualReports.filings].reverse().filter(f => f.rd_mentions)}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="fiscal_year" stroke="hsl(var(--muted-foreground))" />
@@ -495,7 +496,7 @@ export function CompanyDetail() {
                       ))}
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
           )}
@@ -526,7 +527,7 @@ export function CompanyDetail() {
                     <TableRow key={filing.fiscal_year}>
                       <TableCell className="font-medium">{filing.fiscal_year}</TableCell>
                       <TableCell className="text-slate-500 dark:text-slate-400">
-                        {filing.filing_date || "-"}
+                        {filing.filing_date || "..."}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
@@ -534,7 +535,7 @@ export function CompanyDetail() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {filing.rd_mentions ?? "-"}
+                        {filing.rd_mentions ?? "..."}
                       </TableCell>
                       <TableCell className={`text-right font-mono ${
                         filing.rd_tone_score === null || filing.rd_tone_score === undefined
@@ -543,10 +544,10 @@ export function CompanyDetail() {
                             ? 'text-emerald-600 dark:text-emerald-400' 
                             : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {filing.rd_tone_score?.toFixed(3) ?? "-"}
+                        {filing.rd_tone_score?.toFixed(3) ?? "..."}
                       </TableCell>
                       <TableCell className="text-right text-slate-500 dark:text-slate-400">
-                        {filing.file_size_mb ? `${filing.file_size_mb} MB` : "-"}
+                        {filing.file_size_mb ? `${filing.file_size_mb} MB` : "..."}
                       </TableCell>
                       <TableCell className="text-right">
                         {filing.sec_url && (

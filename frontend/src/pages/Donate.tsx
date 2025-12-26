@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Coffee, Globe, BookOpen, Shield, Zap, ExternalLink } from "lucide-react"
+import { Heart, Coffee, Globe, BookOpen, Shield, Zap, ExternalLink, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const donationTiers = [
@@ -14,12 +14,14 @@ const donationTiers = [
 export function Donate() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(25)
   const [customAmount, setCustomAmount] = useState("")
+  const [isRecurring, setIsRecurring] = useState(false)
 
   const finalAmount = customAmount ? parseInt(customAmount) : selectedAmount
 
   const handleDonate = () => {
     // In production, this would redirect to Stripe
-    alert(`Thank you for your ${finalAmount ? `$${finalAmount}` : ''} donation intent! Stripe integration coming soon.`)
+    const donationType = isRecurring ? "monthly recurring" : "one-time"
+    alert(`Thank you for your ${finalAmount ? `$${finalAmount}` : ''} ${donationType} donation intent! Stripe integration coming soon.`)
   }
 
   const impactAreas = [
@@ -104,6 +106,31 @@ export function Donate() {
               </div>
             </div>
 
+            {/* Recurring toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <RefreshCw className={cn("w-5 h-5", isRecurring ? "text-pink-500" : "text-muted-foreground")} />
+                <div>
+                  <p className="font-medium text-sm">Make it monthly</p>
+                  <p className="text-xs text-muted-foreground">Support ongoing research</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRecurring(!isRecurring)}
+                className={cn(
+                  "relative w-12 h-7 rounded-full transition-colors duration-200",
+                  isRecurring ? "bg-pink-500" : "bg-slate-300 dark:bg-slate-600"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                    isRecurring && "translate-x-5"
+                  )}
+                />
+              </button>
+            </div>
+
             {/* Donate button */}
             <Button 
               onClick={handleDonate}
@@ -111,11 +138,13 @@ export function Donate() {
               className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
             >
               <Heart className="w-5 h-5 mr-2" />
-              Donate {finalAmount ? `$${finalAmount}` : ""}
+              {isRecurring ? "Donate " : "Donate "}
+              {finalAmount ? `$${finalAmount}` : ""}
+              {isRecurring && "/month"}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Secure payment via Stripe. One-time donation.
+              Secure payment via Stripe. {isRecurring ? "Cancel anytime." : "One-time donation."}
             </p>
           </CardContent>
         </Card>

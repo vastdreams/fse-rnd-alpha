@@ -23,7 +23,8 @@ import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, TrendingUp, FlaskConical, Database, Target, Layers, Award, FileText } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { BarChart3, TrendingUp, FlaskConical, Database, Target, Layers, Award, FileText, Presentation, ArrowRight, Clock } from "lucide-react"
 import { Formulas } from "@/components/Formula"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
@@ -136,10 +137,10 @@ export function Documentation() {
 
   const periodLabel = useMemo(() => {
     const rows = annualHml?.annual_premiums
-    if (!rows || rows.length === 0) return "-"
+    if (!rows || rows.length === 0) return "..."
     const first = rows[0]?.year
     const last = rows[rows.length - 1]?.year
-    if (!first || !last) return "-"
+    if (!first || !last) return "..."
     return `${first} to ${last}`
   }, [annualHml])
 
@@ -177,6 +178,74 @@ export function Documentation() {
         
         {/* Papers Tab */}
         <TabsContent value="papers" className="space-y-6">
+          {/* Start Here: Whitepaper */}
+          <div className="rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-blue-500/10 border-2 border-emerald-500/30 p-6">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="p-3 rounded-xl bg-emerald-500/20">
+                <Presentation className="h-8 w-8 text-emerald-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Start Here</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">
+                    <Clock className="h-3 w-3 mr-1" />
+                    ~5 min read
+                  </Badge>
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Whitepaper Slide Deck</h3>
+                <p className="text-muted-foreground mb-4">
+                  A practitioner-friendly 12-slide deck covering key findings, definitions, methodology, and implementation guidance. 
+                  Perfect for getting up to speed quickly or sharing with colleagues.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/whitepaper">
+                    <Button className="bg-emerald-600 hover:bg-emerald-700">
+                      View Slide Deck
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/papers/main">
+                    <Button variant="outline">
+                      Or read the full Main Paper
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Reading Path Guide */}
+          <Card className="border-slate-700/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Reading Path</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <span className="font-bold text-emerald-500">1</span>
+                  <div>
+                    <p className="font-medium text-sm">Quick Overview</p>
+                    <p className="text-xs text-muted-foreground">Whitepaper (12 slides)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                  <span className="font-bold text-blue-500">2</span>
+                  <div>
+                    <p className="font-medium text-sm">Full Methods & Results</p>
+                    <p className="text-xs text-muted-foreground">Main Paper</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                  <span className="font-bold text-purple-500">3</span>
+                  <div>
+                    <p className="font-medium text-sm">Deep Dives</p>
+                    <p className="text-xs text-muted-foreground">Sub-Research 1-4</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Paper Cards */}
           <div className="grid gap-4 md:grid-cols-2">
             {PAPERS.map((paper) => {
@@ -222,9 +291,9 @@ export function Documentation() {
                   <p className="text-sm text-muted-foreground">
                     High-R&D (Q5) outperforms low-R&D (Q1) by{" "}
                     <strong>
-                      {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "-"} (5yr)
+                      {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "..."} (5yr)
                       {" "}to{" "}
-                      {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "-"} (20yr)
+                      {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "..."} (20yr)
                     </strong>
                     {" "}per year (rolling-window averages).
                   </p>
@@ -234,9 +303,9 @@ export function Documentation() {
                   <p className="text-sm text-muted-foreground">
                     Premium magnitude declines with horizon:{" "}
                     <strong>
-                      {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "-"} (5yr),{" "}
-                      {premium10yr !== undefined ? `${premium10yr.toFixed(2)}%` : "-"} (10yr),{" "}
-                      {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "-"} (20yr)
+                      {premium5yr !== undefined ? `${premium5yr.toFixed(2)}%` : "..."} (5yr),{" "}
+                      {premium10yr !== undefined ? `${premium10yr.toFixed(2)}%` : "..."} (10yr),{" "}
+                      {premium20yr !== undefined ? `${premium20yr.toFixed(2)}%` : "..."} (20yr)
                     </strong>.
                   </p>
                 </div>
@@ -245,7 +314,7 @@ export function Documentation() {
                   <p className="text-sm text-muted-foreground">
                     Top sector by average R&D intensity:{" "}
                     <strong>
-                      {topSector ? `${topSector.sector} (${topSector.avg_rd_intensity.toFixed(2)}%)` : "-"}
+                      {topSector ? `${topSector.sector} (${topSector.avg_rd_intensity.toFixed(2)}%)` : "..."}
                     </strong>.
                   </p>
                 </div>
@@ -254,7 +323,7 @@ export function Documentation() {
                   <p className="text-sm text-muted-foreground">
                     Statistical inference rejects equal means across quintiles (ANOVA), with large effect sizes:
                     <strong>
-                      {" "}η² {eta5yr !== undefined ? eta5yr.toFixed(3) : "-"} (5yr) → {eta20yr !== undefined ? eta20yr.toFixed(3) : "-"} (20yr)
+                      {" "}η² {eta5yr !== undefined ? eta5yr.toFixed(3) : "..."} (5yr) → {eta20yr !== undefined ? eta20yr.toFixed(3) : "..."} (20yr)
                     </strong>.
                   </p>
                 </div>
@@ -274,7 +343,7 @@ export function Documentation() {
               <p className="text-muted-foreground">
                 The R&D Factor Analysis Platform is a comprehensive research tool that analyzes the relationship
                 between Research & Development (R&D) investment intensity and long-term stock returns across
-                {fmpOverview?.total_companies ?? "-"} S&P 500 companies over the return period{" "}
+                {fmpOverview?.total_companies ?? "..."} S&P 500 companies over the return period{" "}
                 <strong className="text-foreground">{periodLabel}</strong>.
               </p>
 
@@ -285,15 +354,15 @@ export function Documentation() {
                     Data Coverage
                   </h3>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>{fmpOverview?.total_companies ?? "-"} companies</li>
+                    <li>{fmpOverview?.total_companies ?? "..."} companies</li>
                     <li>
-                      Income statements: {fmpOverview?.total_income_statements ?? "-"} (annual)
+                      Income statements: {fmpOverview?.total_income_statements ?? "..."} (annual)
                     </li>
                     <li>
-                      Price records: {fmpOverview?.total_price_records ?? "-"} (daily)
+                      Price records: {fmpOverview?.total_price_records ?? "..."} (daily)
                     </li>
                     <li>
-                      Annual return records: {fmpOverview?.total_annual_returns ?? "-"}
+                      Annual return records: {fmpOverview?.total_annual_returns ?? "..."}
                     </li>
                     <li>Primary data: Financial Modeling Prep (FMP) API</li>
                   </ul>
@@ -323,8 +392,8 @@ export function Documentation() {
                 <p className="text-sm text-muted-foreground mt-2">
                   <strong>Finding:</strong> The analysis supports this hypothesis with statistically significant results
                   (ANOVA p &lt; 1e-6) and increasing effect sizes over longer windows (η²{" "}
-                  {eta5yr !== undefined ? eta5yr.toFixed(3) : "-"} at 5yr →{" "}
-                  {eta20yr !== undefined ? eta20yr.toFixed(3) : "-"} at 20yr).
+                  {eta5yr !== undefined ? eta5yr.toFixed(3) : "..."} at 5yr →{" "}
+                  {eta20yr !== undefined ? eta20yr.toFixed(3) : "..."} at 20yr).
                 </p>
               </div>
             </CardContent>

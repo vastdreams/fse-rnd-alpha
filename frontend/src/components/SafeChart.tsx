@@ -9,12 +9,15 @@
  * - Use this instead of ResponsiveContainer directly
  */
 
-import { useState, useEffect, useRef, type ReactNode } from "react"
-import { ResponsiveContainer } from "recharts"
+import { cloneElement, useEffect, useMemo, useRef, useState, type ReactElement } from "react"
 
 interface SafeChartProps {
-  children: ReactNode
-  width?: number | `${number}%`
+  /**
+   * Must be a single Recharts chart element (e.g., <AreaChart />, <BarChart />).
+   * We clone it and inject measured numeric width/height to avoid ResponsiveContainer (-1) errors.
+   */
+  children: ReactElement<any>
+  width?: number | `${number}%` | "auto"
   height?: number
   minHeight?: number
   className?: string
@@ -30,52 +33,62 @@ export function SafeChart({
   debounce = 100
 }: SafeChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isReady, setIsReady] = useState(false)
+  const [dims, setDims] = useState<{ width: number; height: number } | null>(null)
 
   useEffect(() => {
-    // Delay initial render to allow container to calculate dimensions
-    const timer = setTimeout(() => {
-      if (containerRef.current) {
-        const { clientWidth, clientHeight } = containerRef.current
-        if (clientWidth > 0 && clientHeight > 0) {
-          setIsReady(true)
-        }
-      }
-    }, debounce)
+    const el = containerRef.current
+    if (!el) return
 
-    return () => clearTimeout(timer)
-  }, [debounce])
+    let t: number | undefined
 
-  // Also check on resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        const { clientWidth, clientHeight } = containerRef.current
-        if (clientWidth > 0 && clientHeight > 0 && !isReady) {
-          setIsReady(true)
-        }
+    const measure = () => {
+      // Prefer getBoundingClientRect over clientWidth/Height for subpixel + transforms.
+      const rect = el.getBoundingClientRect()
+      const w = Math.floor(rect.width)
+      const h = Math.floor(rect.height)
+
+      if (w > 0 && h > 0) {
+        setDims((prev) => (prev?.width === w && prev?.height === h ? prev : { width: w, height: h }))
       }
     }
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [isReady])
+    const scheduleMeasure = () => {
+      if (t) window.clearTimeout(t)
+      t = window.setTimeout(measure, debounce)
+    }
+
+    // Initial measure (and a second pass shortly after mount).
+    scheduleMeasure()
+    window.setTimeout(measure, Math.max(0, Math.min(250, debounce)))
+
+    const ro = new ResizeObserver(() => scheduleMeasure())
+    ro.observe(el)
+
+    return () => {
+      if (t) window.clearTimeout(t)
+      ro.disconnect()
+    }
+  }, [debounce])
+
+  const chartEl = useMemo(() => {
+    if (!dims) return null
+    // Inject explicit dimensions into the Recharts chart component so it never sees -1.
+    // We intentionally DO NOT use ResponsiveContainer here.
+    return cloneElement(children, { width: dims.width, height: dims.height })
+  }, [children, dims?.height, dims?.width])
 
   return (
     <div 
       ref={containerRef} 
       className={className}
-      style={{ height: height, minHeight: minHeight || height }}
+      style={{
+        width: width === "auto" ? undefined : width,
+        height: height,
+        minHeight: minHeight || height,
+      }}
     >
-      {isReady ? (
-        <ResponsiveContainer 
-          width={width} 
-          height="100%" 
-          minHeight={minHeight || height}
-          debounce={debounce}
-        >
-          {children}
-        </ResponsiveContainer>
+      {chartEl ? (
+        chartEl
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <div className="animate-pulse">Loading chart...</div>

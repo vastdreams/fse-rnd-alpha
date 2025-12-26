@@ -21,7 +21,7 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
-
+    
     services:
       postgres:
         image: postgres:15-alpine
@@ -36,39 +36,39 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache pip packages
+    
+    - name: Cache pip packages
         uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
+      with:
+        path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov pytest-asyncio
-
+    
       - name: Run backend tests
-        env:
+      env:
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/test_db
-          SECRET_KEY: test-secret-key
+        SECRET_KEY: test-secret-key
           DEBUG: "true"
-        run: |
+      run: |
           cd backend
           pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
-
-      - name: Upload coverage
+    
+    - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           file: ./backend/coverage.xml
@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        with:
+      with:
           name: frontend-dist
           path: frontend/dist
           retention-days: 7
@@ -115,28 +115,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install linting tools
-        run: |
+    
+    - name: Install linting tools
+      run: |
           pip install flake8 black isort
-
+    
       - name: Run flake8 (critical errors only)
-        run: |
+      run: |
           flake8 backend/app scripts --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Check formatting with black
-        run: |
+    
+    - name: Check formatting with black
+      run: |
           black --check --diff backend/app scripts || echo "::warning::Black formatting issues found"
         continue-on-error: true
-
-      - name: Check imports with isort
-        run: |
+    
+    - name: Check imports with isort
+      run: |
           isort --check-only --diff backend/app scripts || echo "::warning::Import sorting issues found"
         continue-on-error: true
 
@@ -148,15 +148,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install security tools
-        run: |
+    
+    - name: Install security tools
+      run: |
           pip install bandit safety pip-audit
 
       - name: Run bandit (security linter)
@@ -165,7 +165,7 @@ jobs:
           bandit -r backend/app -ll --format txt
 
       - name: Check dependencies with pip-audit
-        run: |
+      run: |
           pip install -r backend/requirements.txt
           pip-audit --strict || echo "::warning::Dependency vulnerabilities found (backend requirements)"
         continue-on-error: true
@@ -226,7 +226,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check all Python files compile
-        run: |
+      run: |
           python -m compileall -q backend/app scripts
           echo "All Python files compile successfully"
 

@@ -184,6 +184,146 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
     explanation:
       "The premium compensates for innovation risk: R&D outcomes are uncertain, and high-R&D firms have more volatile cash flows. Predicts premium in all segments.",
   },
+
+  // Additional methodology terms
+  newey_west: {
+    title: "Newey-West Standard Errors",
+    explanation:
+      "A statistical correction that accounts for autocorrelation and heteroskedasticity in time-series data. Because returns can be correlated across time, standard errors without this adjustment may be too small, leading to overstated significance. We use lag=1 for annual data.",
+    formula: "HAC-adjusted SE = √(Var + 2×Cov_lag1)",
+  },
+  rolling_window: {
+    title: "Rolling Window Analysis",
+    explanation:
+      "A method where we compute statistics over a fixed-length window that 'rolls' through time. For example, a 5-year rolling window starting in 2000 covers 2000-2004, then 2001-2005, etc. Important: quintile assignments are made ONCE at window start and held for the entire period.",
+  },
+  non_overlapping: {
+    title: "Non-Overlapping Returns",
+    explanation:
+      "Each observation is independent and doesn't share time periods with other observations. This is the gold standard for inference because overlapping windows create artificial correlation. Our primary inference uses annual non-overlapping returns.",
+  },
+  overlapping_windows: {
+    title: "Overlapping Windows (Descriptive Only)",
+    explanation:
+      "Windows that share time periods (e.g., 2000-2004 and 2001-2005 share 4 years). These are autocorrelated by construction and should NOT be used for p-values. We use them only for visualizing trends and regime dependence.",
+  },
+  gaap_expensing: {
+    title: "GAAP R&D Expensing Rule",
+    explanation:
+      "Under U.S. GAAP (ASC 730, formerly SFAS 2), R&D costs must be expensed immediately rather than capitalized as an asset. This means R&D-intensive firms appear less profitable on paper even when building valuable intangible assets. This accounting treatment is central to the R&D premium hypothesis.",
+  },
+  point_in_time: {
+    title: "Point-in-Time Universe",
+    explanation:
+      "Using only stocks that were actually in the index at each historical date, not stocks that are in the index today. This prevents survivorship bias because we include companies that later failed or were acquired.",
+  },
+  fiscal_year_lag: {
+    title: "Fiscal Year Lag (6+ months)",
+    explanation:
+      "Companies have up to 90 days after fiscal year end to file 10-K reports. The July-June convention ensures a minimum 6-month lag between fiscal year end (typically December) and portfolio formation (July), so all accounting data is publicly available when we trade.",
+  },
+  equal_weight: {
+    title: "Equal-Weight Portfolio",
+    explanation:
+      "Each stock in the portfolio receives the same dollar allocation. This contrasts with market-cap weighting where larger companies dominate. Equal-weighting gives more influence to smaller stocks and requires rebalancing to maintain equal weights.",
+  },
+  characteristic_premium: {
+    title: "Characteristic Premium (vs Factor)",
+    explanation:
+      "A return pattern associated with a stock characteristic (like R&D intensity) without claiming it's a priced risk factor. We document an association, not causation. The premium could reflect mispricing, risk, or both.",
+  },
+  win_rate: {
+    title: "Win Rate",
+    explanation:
+      "The percentage of periods where the strategy was profitable. A 70% win rate means the high-R&D portfolio beat low-R&D in 70% of years. High win rates suggest consistent, not just average, outperformance.",
+  },
+  regime_dependence: {
+    title: "Regime Dependence",
+    explanation:
+      "The premium varies across market conditions (bull/bear markets, high/low volatility periods). Understanding regime dependence helps set realistic expectations: the strategy won't work every year.",
+  },
+  signal_staleness: {
+    title: "Signal Staleness",
+    explanation:
+      "Over time, the predictive power of a signal decays. A company's R&D intensity from 2000 tells you little about its innovation in 2020. This is why annual rebalancing captures more premium than buy-and-hold.",
+  },
+  competitive_diffusion: {
+    title: "Competitive Diffusion",
+    explanation:
+      "R&D advantages erode over time through imitation, patent expiration, and knowledge spillovers. Today's innovation leader may be tomorrow's laggard. This contributes to signal staleness in long horizons.",
+  },
+  sector_tilt: {
+    title: "Sector Tilt",
+    explanation:
+      "High-R&D portfolios naturally overweight Technology and Healthcare because these sectors invest more in R&D. Some of the premium may reflect sector exposure rather than pure R&D effects. We report sector composition for transparency.",
+  },
+  double_sort: {
+    title: "Double-Sort Analysis",
+    explanation:
+      "First sort stocks by one variable (e.g., size), then within each group, sort by another (e.g., R&D). This tests whether the R&D premium exists after controlling for the first variable. If the premium persists within size groups, it's not just a size effect.",
+  },
+  tercile: {
+    title: "Tercile",
+    explanation:
+      "Dividing stocks into 3 equal groups. Terciles are used when sample sizes are smaller (like within-size groups) because quintiles would have too few stocks per bucket.",
+  },
+
+  // Implementation-specific terms
+  rebalancing_calendar: {
+    title: "Annual Rebalancing Calendar",
+    explanation:
+      "The strategy rebalances once per year in late June/early July. This timing ensures: (1) all 10-K filings are in (90-day deadline from Dec fiscal year end), (2) alignment with academic July-June convention, (3) minimal trading to capture the R&D premium.",
+  },
+  formation_date: {
+    title: "Formation Date",
+    explanation:
+      "The date when portfolio holdings are determined. For R&D Alpha, this is end of June each year. You rank all S&P 500 stocks by prior-year R&D/Revenue, select the top N, and hold for 12 months.",
+  },
+  holding_period: {
+    title: "Holding Period",
+    explanation:
+      "The time between rebalances (July 1 through June 30). Annual rebalancing captures the R&D premium while keeping turnover and costs low. More frequent rebalancing doesn't improve returns but increases costs.",
+  },
+  execution_slippage: {
+    title: "Execution Slippage",
+    explanation:
+      "The difference between the expected price and actual execution price. For liquid S&P 500 stocks traded over several days, slippage is typically 5-15 bps. Avoid trading all positions on the same day.",
+  },
+  capacity_constraint: {
+    title: "Capacity Constraint",
+    explanation:
+      "The maximum AUM before market impact erodes returns. For a 20-stock S&P 500 strategy, capacity is likely $500M-$2B depending on execution quality. Larger funds should use more holdings or gradual execution.",
+  },
+  tracking_error: {
+    title: "Tracking Error",
+    explanation:
+      "Standard deviation of excess returns vs benchmark. Higher tracking error means more deviation from the market. R&D Alpha has ~8-12% annual tracking error vs S&P 500, which feels uncomfortable but is where the alpha comes from.",
+  },
+  tax_efficiency: {
+    title: "Tax Efficiency",
+    explanation:
+      "Low turnover (~15% avg) means most gains are long-term. Annual rebalancing qualifies positions for long-term capital gains rates. Consider tax-loss harvesting in down years.",
+  },
+  broker_selection: {
+    title: "Broker Selection",
+    explanation:
+      "Choose a broker with low commission and good execution quality. For 20 S&P 500 stocks, most retail brokers (Schwab, Fidelity, Interactive Brokers) work well. Avoid payment-for-order-flow brokers for larger accounts.",
+  },
+  data_sources: {
+    title: "Data Sources for DIY",
+    explanation:
+      "R&D expense and revenue are in 10-K filings (SEC EDGAR free). S&P 500 constituents from Wikipedia or index providers. No premium data subscription required for the basic strategy.",
+  },
+  position_sizing: {
+    title: "Position Sizing",
+    explanation:
+      "Equal-weight means each position is 5% of the portfolio (for 20 stocks). At rebalance, sell overweight positions and buy underweight ones. Small deviations (±1%) don't require immediate action.",
+  },
+  rebalance_tolerance: {
+    title: "Rebalance Tolerance",
+    explanation:
+      "How far a position can drift before correcting. A 5% target with ±2% tolerance (3-7%) reduces unnecessary trading. Only rebalance if drift exceeds tolerance or at the annual June date.",
+  },
 }
 
 interface InfoTooltipProps {

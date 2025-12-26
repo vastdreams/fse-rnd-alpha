@@ -43,6 +43,34 @@ npm run build
 # Serve dist/ with nginx or similar
 ```
 
+### Frontend (Production note - `deploy/` stack)
+
+If you are using the production Docker stack in `deploy/docker-compose.yml`, the nginx container serves static files from a bind mount:
+
+- `deploy/frontend/dist` → `/usr/share/nginx/html`
+
+That means copying files to `frontend/dist` **on the server** will not update the live site unless you also copy them into `deploy/frontend/dist`.
+
+**Recommended:** use the deploy script:
+
+```bash
+./deploy/deploy.sh --deploy
+```
+
+**If you need frontend-only updates on EC2:**
+
+```bash
+# (run on your local machine)
+cd frontend && npm run build && cd ..
+
+# copy built assets into the *deploy-mounted* directory on the server
+ssh -i ~/.ssh/your-key.pem ubuntu@your-ec2-ip "mkdir -p /home/ubuntu/fse-rnd-alpha/deploy/frontend/dist"
+scp -i ~/.ssh/your-key.pem -r frontend/dist/* ubuntu@your-ec2-ip:/home/ubuntu/fse-rnd-alpha/deploy/frontend/dist/
+
+# restart nginx container
+ssh -i ~/.ssh/your-key.pem ubuntu@your-ec2-ip "cd /home/ubuntu/fse-rnd-alpha/deploy && docker compose restart frontend"
+```
+
 ## AWS EC2
 
 ```bash

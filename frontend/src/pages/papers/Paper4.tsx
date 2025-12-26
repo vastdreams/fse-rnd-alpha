@@ -13,12 +13,12 @@ import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SafeChart } from "@/components/SafeChart"
 import {
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
   Legend,
@@ -139,7 +139,7 @@ export function Paper4() {
         rightNavCollapsed ? "max-w-none" : "max-w-4xl"
       )}>
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-amber-50 dark:bg-slate-900 border border-amber-200 dark:border-amber-700 p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-amber-50 dark:bg-zinc-900 border border-amber-200 dark:border-amber-600/50 p-8">
           <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02]" />
           <div className="relative z-10">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
@@ -440,7 +440,7 @@ export function Paper4() {
               </CardHeader>
               <CardContent className="h-80">
                 {trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                <SafeChart height={320} minHeight={250}>
                   <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -451,7 +451,7 @@ export function Paper4() {
                     <Line yAxisId="left" type="monotone" dataKey="avgIntensity" name="Avg R&D Intensity (%)" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
                     <Line yAxisId="right" type="monotone" dataKey="totalSpendB" name="Total R&D Spend ($B)" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
-                </ResponsiveContainer>
+                </SafeChart>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">Loading chart data...</div>
                 )}
@@ -466,7 +466,7 @@ export function Paper4() {
               </CardHeader>
               <CardContent className="h-64">
                 {trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                <SafeChart height={256} minHeight={250}>
                   <AreaChart data={trendData}>
                     <defs>
                       <linearGradient id="companyGradient" x1="0" y1="0" x2="0" y2="1">
@@ -480,7 +480,7 @@ export function Paper4() {
                       <RechartsTooltip formatter={(value) => [value as number, "Companies"]} contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
                     <Area type="monotone" dataKey="companies" fill="url(#companyGradient)" stroke="#8b5cf6" strokeWidth={2} />
                   </AreaChart>
-                </ResponsiveContainer>
+                </SafeChart>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">Loading chart data...</div>
                 )}

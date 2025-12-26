@@ -27,7 +27,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Legend,
   Cell,
   PieChart,
@@ -42,6 +41,7 @@ import { TrendingUp, TrendingDown, Target, BarChart3, Zap, AlertTriangle, CheckC
 import { exportToCSV } from "@/lib/export"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "react-router-dom"
+import { SafeChart } from "@/components/SafeChart"
 
 // Colors that work well in both light and dark modes
 const SECTOR_COLORS = [
@@ -140,7 +140,7 @@ export function Portfolio() {
   const isLoading = loadingHoldings || loadingBacktest || loadingForecast
 
   const formatPercent = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return "-"
+    if (val === null || val === undefined) return "..."
     return `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`
   }
 
@@ -482,7 +482,7 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-emerald-500">
               {backtest?.portfolio_performance?.annualized_return 
                 ? `+${backtest.portfolio_performance.annualized_return.toFixed(1)}%`
-                : "-"}
+                : "..."}
             </p>
             <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart} years)</p>
           </CardContent>
@@ -493,7 +493,7 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-blue-500">
               {backtest?.sp500_performance?.annualized_return 
                 ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
-                : "-"}
+                : "..."}
             </p>
             <p className="text-xs text-muted-foreground">Market benchmark</p>
           </CardContent>
@@ -504,7 +504,7 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-amber-500">
               {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
                 ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
-                : "-"}
+                : "..."}
             </p>
             <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
           </CardContent>
@@ -515,12 +515,12 @@ export function Portfolio() {
             <p className="text-3xl font-bold text-purple-500">
               {backtest?.portfolio_performance?.total_return 
                 ? `$${((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
-                : "-"}
+                : "..."}
             </p>
             <p className="text-xs text-muted-foreground">
               vs S&P 500: {backtest?.sp500_performance?.total_return 
                 ? `$${((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
-                : "-"}
+                : "..."}
             </p>
           </CardContent>
         </Card>
@@ -711,7 +711,7 @@ export function Portfolio() {
                 </div>
               )}
               
-              <ResponsiveContainer width="100%" height={350} debounce={50}>
+              <SafeChart height={350} debounce={50}>
               <ComposedChart data={performanceLineData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <defs>
                   <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
@@ -888,7 +888,7 @@ export function Portfolio() {
                   formatter={(value: string) => <span className="text-foreground">{value}</span>}
                 />
               </ComposedChart>
-            </ResponsiveContainer>
+              </SafeChart>
             </>
             )}
           </div>
@@ -899,14 +899,14 @@ export function Portfolio() {
               <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                 ${(performanceLineData[performanceLineData.length - 1]?.forecast || 
                    performanceLineData[performanceLineData.length - 1]?.actuals ||
-                   performanceLineData[performanceLineData.length - 1]?.historical)?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "-"}
+                   performanceLineData[performanceLineData.length - 1]?.historical)?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "..."}
               </p>
               <p className="text-sm text-muted-foreground">Portfolio Value</p>
               <p className="text-xs text-muted-foreground/70">(Started at $100)</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
               <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">
-                ${performanceLineData[performanceLineData.length - 1]?.benchmark?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "-"}
+                ${performanceLineData[performanceLineData.length - 1]?.benchmark?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "..."}
               </p>
               <p className="text-sm text-muted-foreground">Benchmark Value</p>
               <p className="text-xs text-muted-foreground/70">(S&P 500)</p>
@@ -998,7 +998,7 @@ export function Portfolio() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-400">
-              {backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "-"}
+              {backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
             </div>
             <p className="text-xs text-muted-foreground">
               Risk-adjusted return
@@ -1103,7 +1103,7 @@ export function Portfolio() {
             </CardHeader>
             <CardContent style={{ height: 384, minHeight: 384 }}>
               {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (
-              <ResponsiveContainer key={`perf-chart-${activeTab}`} width="100%" height="100%" minHeight={360} debounce={100}>
+              <SafeChart key={`perf-chart-${activeTab}`} height={384} minHeight={360} debounce={100}>
                 <LineChart data={yearlyDataForCharts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -1136,7 +1136,7 @@ export function Portfolio() {
                     dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
+              </SafeChart>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
               )}
@@ -1150,7 +1150,7 @@ export function Portfolio() {
             </CardHeader>
             <CardContent style={{ height: 256, minHeight: 256 }}>
               {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (
-              <ResponsiveContainer key={`alpha-chart-${activeTab}`} width="100%" height="100%" minHeight={240} debounce={100}>
+              <SafeChart key={`alpha-chart-${activeTab}`} height={256} minHeight={240} debounce={100}>
                 <BarChart data={yearlyDataForCharts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -1173,7 +1173,7 @@ export function Portfolio() {
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </SafeChart>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
               )}
@@ -1191,7 +1191,7 @@ export function Portfolio() {
               </CardHeader>
               <CardContent style={{ height: 320, minHeight: 320 }}>
                 {chartsReady && activeTab === "allocation" && sectorAllocation && sectorAllocation.length > 0 ? (
-                <ResponsiveContainer key={`sector-chart-${activeTab}`} width="100%" height="100%" minHeight={300} debounce={100}>
+                <SafeChart key={`sector-chart-${activeTab}`} height={320} minHeight={300} debounce={100}>
                   <PieChart>
                     <Pie
                       data={(sectorAllocation || []).map(s => ({ name: s.sector, value: s.weight }))}
@@ -1216,7 +1216,7 @@ export function Portfolio() {
                       }}
                     />
                   </PieChart>
-                </ResponsiveContainer>
+                </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
                 )}
@@ -1368,7 +1368,7 @@ export function Portfolio() {
               )}
 
               <div className="text-xs text-muted-foreground text-right">
-                Last updated: {methodology?.last_updated || "-"}
+                Last updated: {methodology?.last_updated || "..."}
               </div>
             </CardContent>
           </Card>

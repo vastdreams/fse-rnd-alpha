@@ -28,7 +28,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
   Cell,
   ReferenceLine,
@@ -37,6 +36,7 @@ import { Building2, TrendingUp, FlaskConical, CheckCircle, XCircle, Calculator, 
 import { Button } from "@/components/ui/button"
 import { exportToCSV } from "@/lib/export"
 import { Link } from "react-router-dom"
+import { SafeChart } from "@/components/SafeChart"
 
 // Colors for quintiles that work in both light and dark modes
 const QUINTILE_COLORS = ["#dc2626", "#ea580c", "#ca8a04", "#16a34a", "#2563eb"]
@@ -92,7 +92,7 @@ export function Research() {
   })
 
   const formatPercent = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return "-"
+    if (val === null || val === undefined) return "..."
     return `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`
   }
 
@@ -149,7 +149,7 @@ export function Research() {
   }
 
   const formatPValue = (p: number | null | undefined) => {
-    if (p === null || p === undefined) return "-"
+    if (p === null || p === undefined) return "..."
     if (p < 0.001) return "<0.001***"
     if (p < 0.01) return `${p.toFixed(3)}**`
     if (p < 0.05) return `${p.toFixed(3)}*`
@@ -297,7 +297,7 @@ export function Research() {
               </CardHeader>
               <CardContent style={{ height: 320, minHeight: 320 }}>
                 {chartsReady && quintilePerf && quintilePerf.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300} debounce={50}>
+                  <SafeChart height={320} minHeight={300} debounce={50}>
                     <BarChart data={quintilePerf || []} barGap={0}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="label" className="text-xs" tick={{ fill: 'hsl(var(--foreground))' }} />
@@ -313,7 +313,7 @@ export function Research() {
                         ))}
                       </Bar>
                     </BarChart>
-                </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
                 )}
@@ -371,7 +371,7 @@ export function Research() {
             </CardHeader>
             <CardContent style={{ height: 256, minHeight: 256 }}>
               {chartsReady && rollingWindows && rollingWindows.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minHeight={240} debounce={50}>
+                <SafeChart height={256} minHeight={240} debounce={50}>
                   <BarChart data={rollingWindows || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis 
@@ -395,7 +395,7 @@ export function Research() {
                       ))}
                     </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+                </SafeChart>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
               )}
@@ -414,7 +414,7 @@ export function Research() {
             </CardHeader>
             <CardContent style={{ height: 384, minHeight: 384 }}>
               {chartsReady && factorPremiums && factorPremiums.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minHeight={360} debounce={50}>
+                <SafeChart height={384} minHeight={360} debounce={50}>
                   <LineChart data={factorPremiums || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="year" className="text-xs" />
@@ -429,7 +429,7 @@ export function Research() {
                     <Line type="monotone" dataKey="q5_return" name="Q5 High R&D (Annual %)" stroke="#22c55e" strokeWidth={1} dot={false} />
                     <Line type="monotone" dataKey="q1_return" name="Q1 Low R&D (Annual %)" stroke="#ef4444" strokeWidth={1} dot={false} />
                   </LineChart>
-                </ResponsiveContainer>
+                </SafeChart>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
               )}
@@ -443,7 +443,7 @@ export function Research() {
             </CardHeader>
             <CardContent style={{ height: 320, minHeight: 320 }}>
               {chartsReady && factorPremiums && factorPremiums.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minHeight={300} debounce={50}>
+                <SafeChart height={320} minHeight={300} debounce={50}>
                   <LineChart data={factorPremiums || []}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="year" className="text-xs" />
@@ -459,7 +459,7 @@ export function Research() {
                     <Line type="monotone" dataKey="q4_return" name="Q4 (Annual %)" stroke={QUINTILE_COLORS[3]} strokeWidth={1} dot={false} />
                     <Line type="monotone" dataKey="q5_return" name="Q5 (Annual %)" stroke={QUINTILE_COLORS[4]} strokeWidth={1} dot={false} />
                   </LineChart>
-                </ResponsiveContainer>
+                </SafeChart>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading...</div>
               )}
@@ -492,11 +492,11 @@ export function Research() {
                       <h4 className="font-semibold text-sm">ANOVA Test</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="text-muted-foreground">F-statistic</div>
-                        <div className="text-right font-mono">{anova?.anova?.f_statistic?.toFixed(2) || "-"}</div>
+                        <div className="text-right font-mono">{anova?.anova?.f_statistic?.toFixed(2) || "..."}</div>
                         <div className="text-muted-foreground">p-value</div>
                         <div className="text-right font-mono">{formatPValue(anova?.anova?.p_value)}</div>
                         <div className="text-muted-foreground">η² (effect)</div>
-                        <div className="text-right font-mono">{anova?.anova?.eta_squared?.toFixed(3) || "-"}</div>
+                        <div className="text-right font-mono">{anova?.anova?.eta_squared?.toFixed(3) || "..."}</div>
                       </div>
                     </div>
 
@@ -504,13 +504,13 @@ export function Research() {
                       <h4 className="font-semibold text-sm">T-Test (High vs Low)</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="text-muted-foreground">t-statistic</div>
-                        <div className="text-right font-mono">{anova?.ttest_high_vs_low?.t_statistic?.toFixed(2) || "-"}</div>
+                        <div className="text-right font-mono">{anova?.ttest_high_vs_low?.t_statistic?.toFixed(2) || "..."}</div>
                         <div className="text-muted-foreground">p-value</div>
                         <div className="text-right font-mono">{formatPValue(anova?.ttest_high_vs_low?.p_value)}</div>
                         <div className="text-muted-foreground">Mean diff</div>
                         <div className="text-right font-mono">{formatPercent(anova?.ttest_high_vs_low?.mean_difference)}</div>
                         <div className="text-muted-foreground">Cohen's d</div>
-                        <div className="text-right font-mono">{anova?.ttest_high_vs_low?.cohens_d?.toFixed(3) || "-"}</div>
+                        <div className="text-right font-mono">{anova?.ttest_high_vs_low?.cohens_d?.toFixed(3) || "..."}</div>
                       </div>
                     </div>
 
@@ -595,17 +595,17 @@ export function Research() {
                       <td className="py-5 px-6 font-medium text-foreground">Effect Size (η²)</td>
                       <td className="py-5 px-6 text-center">
                         <span className="font-mono text-lg text-muted-foreground">
-                          {aggregateAnova?.["5yr"]?.anova?.eta_squared?.toFixed(3) || "-"}
+                          {aggregateAnova?.["5yr"]?.anova?.eta_squared?.toFixed(3) || "..."}
                         </span>
                       </td>
                       <td className="py-5 px-6 text-center">
                         <span className="font-mono text-lg text-muted-foreground">
-                          {aggregateAnova?.["10yr"]?.anova?.eta_squared?.toFixed(3) || "-"}
+                          {aggregateAnova?.["10yr"]?.anova?.eta_squared?.toFixed(3) || "..."}
                         </span>
                       </td>
                       <td className="py-5 px-6 text-center">
                         <span className="font-mono text-lg text-muted-foreground">
-                          {aggregateAnova?.["20yr"]?.anova?.eta_squared?.toFixed(3) || "-"}
+                          {aggregateAnova?.["20yr"]?.anova?.eta_squared?.toFixed(3) || "..."}
                         </span>
                       </td>
                     </tr>

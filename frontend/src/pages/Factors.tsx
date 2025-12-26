@@ -10,6 +10,7 @@ import {
 import { useRDSummary } from "@/hooks/useCompanies"
 import { formatPercent } from "@/lib/utils"
 import { FlaskConical } from "lucide-react"
+import { SafeChart } from "@/components/SafeChart"
 import {
   ScatterChart,
   Scatter,
@@ -17,7 +18,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts"
 
 export function Factors() {
@@ -72,7 +72,7 @@ export function Factors() {
                     latestData.reduce((sum, d) => sum + (d.rd_intensity || 0), 0) /
                       latestData.filter((d) => d.rd_intensity).length
                   )
-                : "-"}
+                : "..."}
             </p>
             <p className="text-sm text-muted-foreground">Avg R&D Intensity</p>
           </CardContent>
@@ -85,7 +85,7 @@ export function Factors() {
                     latestData.reduce((sum, d) => sum + (d.rd_tone_score || 0), 0) /
                     latestData.filter((d) => d.rd_tone_score).length
                   ).toFixed(2)
-                : "-"}
+                : "..."}
             </p>
             <p className="text-sm text-muted-foreground">Avg Tone Score</p>
           </CardContent>
@@ -99,7 +99,7 @@ export function Factors() {
             <CardTitle className="text-lg">R&D Intensity vs Tone Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400} minHeight={400} debounce={50}>
+            <SafeChart height={400} minHeight={400} debounce={50}>
               <ScatterChart>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis
@@ -130,7 +130,7 @@ export function Factors() {
                 />
                 <Scatter data={scatterData} fill="#8b5cf6" />
               </ScatterChart>
-            </ResponsiveContainer>
+            </SafeChart>
           </CardContent>
         </Card>
       )}
@@ -166,10 +166,10 @@ export function Factors() {
                         {formatPercent(item.rd_intensity)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.rd_mentions ?? "-"}
+                        {item.rd_mentions ?? "..."}
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.rd_tone_score?.toFixed(2) ?? "-"}
+                        {item.rd_tone_score?.toFixed(2) ?? "..."}
                       </TableCell>
                     </TableRow>
                   ))}

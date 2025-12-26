@@ -13,6 +13,7 @@ import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SafeChart } from "@/components/SafeChart"
 import {
   BarChart,
   Bar,
@@ -20,7 +21,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Cell,
   RadarChart,
   PolarGrid,
@@ -192,7 +192,7 @@ export function Paper2() {
         rightNavCollapsed ? "max-w-none" : "max-w-4xl"
       )}>
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-blue-700 p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-blue-50 dark:bg-zinc-900 border border-blue-200 dark:border-blue-600/50 p-8">
           <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.02]" />
           <div className="relative z-10">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
@@ -387,7 +387,7 @@ export function Paper2() {
               {/* Data Coverage Chart */}
               <div className="h-[400px]">
                 <CardTitle className="text-lg mb-4">Long-Term Data Coverage by Sector</CardTitle>
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={400} minHeight={300}>
                   <BarChart data={sectorCoverageData.sort((a, b) => b.coverage_20yr - a.coverage_20yr)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
@@ -401,7 +401,7 @@ export function Paper2() {
                     <Bar dataKey="coverage_10yr" name="10-Year" fill="#8b5cf6" radius={[0, 2, 2, 0]} />
                     <Bar dataKey="coverage_20yr" name="20-Year" fill="#22c55e" radius={[0, 2, 2, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </div>
             </CardContent>
           </Card>
@@ -466,7 +466,7 @@ export function Paper2() {
                 <CardDescription>Average R&D/Revenue ratio by GICS sector</CardDescription>
               </CardHeader>
               <CardContent className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={400} minHeight={300}>
                   <BarChart data={sectorData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
@@ -487,7 +487,7 @@ export function Paper2() {
                       ))}
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 
@@ -498,7 +498,7 @@ export function Paper2() {
                 <CardDescription>R&D intensity vs. company count by sector</CardDescription>
               </CardHeader>
               <CardContent className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <SafeChart height={400} minHeight={300}>
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis dataKey="sector" tick={{ fill: "#94a3b8", fontSize: 10 }} />
@@ -513,7 +513,7 @@ export function Paper2() {
                     <Radar name="R&D Intensity" dataKey="intensity" stroke="#22c55e" fill="#22c55e" fillOpacity={0.3} />
                     <Radar name="Companies" dataKey="companies" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
                   </RadarChart>
-                </ResponsiveContainer>
+                </SafeChart>
               </CardContent>
             </Card>
 

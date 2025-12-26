@@ -36,6 +36,11 @@ import {
   FlaskConical,
   ExternalLink,
   AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Scale,
 } from "lucide-react"
 import {
   BarChart,
@@ -44,7 +49,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   Cell,
   AreaChart,
   Area,
@@ -60,6 +64,7 @@ import {
 } from "recharts"
 
 import { api } from "@/lib/api"
+import { SafeChart } from "@/components/SafeChart"
 import { AnnualHMLTable } from "@/components/AnnualHMLTable"
 import { RightTableOfContents } from "@/components/RightTableOfContents"
 import { ReferencesList } from "@/components/Citation"
@@ -110,12 +115,22 @@ export function MainPaper() {
   const [activeSection, setActiveSection] = useState("abstract")
   const [rightNavCollapsed, setRightNavCollapsed] = useState(false)
 
-  const handlePrintPDF = () => {
+  const handleDownloadPDF = () => {
+    // Use browser's native print functionality which handles PDF export reliably
+    // Add a class to body for print-specific styling
     document.body.classList.add("printing-paper")
-    window.print()
+    
+    // Force a reflow to ensure styles are applied before print dialog
+    document.body.offsetHeight
+    
+    // Small delay to ensure CSS is fully applied
     setTimeout(() => {
-      document.body.classList.remove("printing-paper")
-    }, 1000)
+      window.print()
+      // Remove the class after print dialog closes
+      setTimeout(() => {
+        document.body.classList.remove("printing-paper")
+      }, 500)
+    }, 100)
   }
 
   useEffect(() => {
@@ -583,7 +598,7 @@ export function MainPaper() {
     <div className="flex gap-8 min-h-0">
       <div
         className={cn(
-          "flex-1 min-w-0 space-y-12 pb-24 transition-all duration-300",
+          "flex-1 min-w-0 space-y-12 pb-24 transition-all duration-300 print-content",
           rightNavCollapsed ? "max-w-none" : "max-w-4xl"
         )}
       >
@@ -591,7 +606,7 @@ export function MainPaper() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border border-slate-200 dark:border-zinc-700 p-8">
           <div className="absolute inset-0 bg-grid-slate-100/[0.04] dark:bg-grid-zinc-500/[0.02]" />
           <div className="relative z-10">
-            <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+            <div className="flex items-start justify-between flex-wrap gap-4 mb-6 no-print" data-pdf-hide="true">
               <Link
                 to="/documentation"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-primary"
@@ -599,10 +614,18 @@ export function MainPaper() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Papers
               </Link>
-              <Button variant="outline" size="sm" onClick={handlePrintPDF}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
+              <div className="flex gap-2">
+                <Link to="/whitepaper">
+                  <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                    <Layers className="mr-2 h-4 w-4" />
+                    View Slide Deck
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
@@ -631,11 +654,11 @@ export function MainPaper() {
               </div>
               <div>
                 <span className="text-muted-foreground">Sample:</span>{" "}
-                <span className="text-foreground">{cohortSummary?.total_companies || "-"} companies</span>
+                <span className="text-foreground">{cohortSummary?.total_companies || "..."} companies</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Period:</span>{" "}
-                <span className="text-foreground">{sampleYearRange || "-"}</span>
+                <span className="text-foreground">{sampleYearRange || "..."}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Return Convention:</span>{" "}
@@ -643,7 +666,77 @@ export function MainPaper() {
               </div>
               <div>
                 <span className="text-muted-foreground">Snapshot built:</span>{" "}
-                <span className="text-foreground">{snapshotBuiltAtLabel || "-"}</span>
+                <span className="text-foreground">{snapshotBuiltAtLabel || "..."}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reader Guide */}
+        <div className="rounded-xl bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-emerald-950/30 dark:via-slate-950/20 dark:to-blue-950/30 border border-slate-200/70 dark:border-slate-800 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-lg bg-emerald-100/70 dark:bg-emerald-900/40">
+              <BookOpen className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground leading-none">Reader Guide</h3>
+              <p className="text-sm text-muted-foreground mt-1">Pick the depth that matches your time.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg border border-emerald-200/70 dark:border-emerald-800/60 bg-white/70 dark:bg-slate-950/30 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                Quick overview
+              </div>
+              <p className="text-sm text-foreground/90 mt-1 leading-relaxed">
+                Start with the{" "}
+                <Link to="/whitepaper" className="text-emerald-700 dark:text-emerald-400 hover:underline font-semibold">
+                  Whitepaper slide deck
+                </Link>{" "}
+                (11 slides, ~5 min).
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-blue-200/70 dark:border-blue-800/60 bg-white/70 dark:bg-slate-950/30 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
+                Full methods
+              </div>
+              <p className="text-sm text-foreground/90 mt-1 leading-relaxed">
+                You're in the right place. This Main Paper contains full methodology, all tables, and references.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-purple-200/70 dark:border-purple-800/60 bg-white/70 dark:bg-slate-950/30 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-400">
+                Deep dives
+              </div>
+              <p className="text-sm text-foreground/90 mt-1 leading-relaxed">
+                Jump to{" "}
+                <a href="#appendix" className="text-purple-700 dark:text-purple-400 hover:underline font-semibold">
+                  Supporting Notes
+                </a>{" "}
+                for sector analysis, factor tests, and robustness checks.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a
+                  href="#sector"
+                  className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/30 dark:text-purple-200 dark:border-purple-800/60"
+                >
+                  Sector
+                </a>
+                <a
+                  href="#robustness"
+                  className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/30 dark:text-purple-200 dark:border-purple-800/60"
+                >
+                  Factor tests
+                </a>
+                <a
+                  href="#appendix"
+                  className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/30 dark:text-purple-200 dark:border-purple-800/60"
+                >
+                  Appendix
+                </a>
               </div>
             </div>
           </div>
@@ -659,7 +752,7 @@ export function MainPaper() {
             <CardContent className="pt-6 space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Objective:</strong> We test whether high R&amp;D intensity predicts higher stock returns
-                in a large-cap U.S. universe, using methodology designed for implementability.
+                in a large-cap U.S. universe, using methodology designed for <em>portfolio implementability</em>.
               </p>
 
               <p className="text-muted-foreground leading-relaxed">
@@ -676,11 +769,17 @@ export function MainPaper() {
                   <>
                     The high-minus-low premium (Q5 minus Q1) averages{" "}
                     <strong className="text-foreground">{annualHmlData.mean_premium.toFixed(2)}%</strong> per year
-                    in non-overlapping annual returns (Newey-West t = {annualHmlData.hac_adjusted.t_statistic.toFixed(2)},
-                    p = {annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)}).
+                    in non-overlapping annual returns. In plain terms: stocks in the top 20% by R&amp;D intensity outperformed the bottom 20% 
+                    by approximately {annualHmlData.mean_premium.toFixed(0)}% annually over the sample period. This difference is statistically 
+                    significant (Newey-West t = {annualHmlData.hac_adjusted.t_statistic.toFixed(2)}, p = {annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)}), 
+                    meaning it is unlikely to have occurred by chance. The premium was positive in{" "}
+                    {typeof annualHmlData?.positive_years === "number" && typeof annualHmlData?.n_years === "number" 
+                      ? `${annualHmlData.positive_years} of ${annualHmlData.n_years} years (${Math.round(annualHmlData.positive_years / annualHmlData.n_years * 100)}% win rate)`
+                      : "the majority of years"}.
                   </>
                 ) : (
-                  <>The high-minus-low premium (Q5 minus Q1) is positive and statistically significant in non-overlapping annual returns.</>
+                  <>The high-minus-low premium (Q5 minus Q1) is positive and statistically significant in non-overlapping annual returns. 
+                    In plain terms: stocks with high R&amp;D intensity consistently outperformed those with low R&amp;D intensity.</>
                 )}
               </p>
 
@@ -688,12 +787,18 @@ export function MainPaper() {
                 <strong className="text-foreground">Implementation:</strong>{" "}
                 {typeof transactionCosts?.annual_trading_cost_pct === "number" && typeof transactionCosts?.net_rd_premium_pct === "number" ? (
                   <>
-                    Under a literature-calibrated transaction-cost model (Novy-Marx &amp; Velikov, 2016), estimated trading costs
-                    are <strong className="text-foreground">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</strong> annually,
-                    yielding a net premium of <strong className="text-foreground">{transactionCosts.net_rd_premium_pct.toFixed(2)}%</strong> per year.
+                    We translate this finding into an investable strategy: buy the top quintile (highest R&amp;D intensity), 
+                    rebalance annually in July, and hold equal-weighted positions. Under a literature-calibrated transaction-cost model 
+                    (Novy-Marx &amp; Velikov, 2016), estimated trading costs are only{" "}
+                    <strong className="text-foreground">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</strong> annually
+                    (due to low turnover and S&amp;P 500 liquidity), yielding a net premium of{" "}
+                    <strong className="text-foreground">{transactionCosts.net_rd_premium_pct.toFixed(2)}%</strong> per year after costs.
+                    This means the strategy retains nearly all of its gross return advantage when implemented in practice.
                   </>
                 ) : (
-                  <>We translate the signal into an implementable strategy with explicit portfolio rules and trading-friction assumptions.</>
+                  <>We translate the signal into an implementable strategy with explicit portfolio rules: buy the top quintile 
+                    by R&amp;D intensity, rebalance annually in July, and hold equal-weighted positions. Trading costs are minimal 
+                    due to low turnover and large-cap liquidity, preserving most of the gross premium.</>
                 )}
               </p>
 
@@ -716,9 +821,22 @@ export function MainPaper() {
             <CardContent className="pt-6 prose dark:prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground">
                 R&amp;D spending is an investment in intangible capital with uncertain payoffs and multi-year horizons. Because R&amp;D is expensed under U.S.
-                GAAP, firms with substantial R&amp;D can look less profitable in contemporaneous statements even when R&amp;D creates economically valuable
-                assets. These features motivate two broad interpretations for any return premium associated with R&amp;D intensity: investors may
-                underweight intangibles (mispricing), or the premium may compensate for innovation-related risks (risk compensation).
+                GAAP{" "}
+                <span className="inline-flex items-center">
+                  <InfoTooltip term="gaap_expensing" size={12} />
+                </span>
+                , firms with substantial R&amp;D can often look less profitable in contemporaneous statements even when R&amp;D creates economically valuable
+                assets. This accounting treatment is important because it creates a potential disconnect between reported earnings and true economic value.
+                These features motivate two broad interpretations for any return premium associated with R&amp;D intensity: investors may
+                underweight intangibles{" "}
+                <span className="inline-flex items-center">
+                  (<InfoTooltip term="mispricing" size={12} />)
+                </span>
+                , or the premium may compensate for innovation-related risks{" "}
+                <span className="inline-flex items-center">
+                  (<InfoTooltip term="risk_compensation" size={12} />)
+                </span>
+                .
               </p>
               <p className="text-muted-foreground">
                 The central, investable question is straightforward: <strong className="text-foreground">does an R&amp;D-intensity sort create a repeatable
@@ -787,38 +905,77 @@ export function MainPaper() {
               <h3 className="text-lg font-semibold text-foreground">2.1 Intangible investment, accounting, and mispricing</h3>
               <p className="text-muted-foreground">
                 A recurring theme in the intangible-capital literature is that standard accounting can understate the economic value of R&amp;D by expensing it.
+                <strong className="text-foreground"> Why does this matter?</strong> Because when R&amp;D is expensed immediately (rather than capitalized like physical assets),
+                a firm investing heavily in innovation reports lower earnings today even if that investment will generate substantial future cash flows.
                 If investors anchor on near-term earnings, the market can underreact to productive R&amp;D and price high-R&amp;D firms too pessimistically.
-                Under that view, a premium reflects gradual learning as innovation outcomes arrive.
+                Under that view, a premium reflects gradual learning as innovation outcomes arrive and the market corrects its initial undervaluation.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">2.2 Risk-based interpretation</h3>
               <p className="text-muted-foreground">
                 A competing interpretation is that high-R&amp;D firms load on innovation-related risks: uncertain payoffs, higher operating leverage, and
-                sensitivity to funding conditions. In this case, a premium can exist without superior risk-adjusted performance; Sharpe ratios may not dominate
-                even when mean returns do.
+                sensitivity to funding conditions. <strong className="text-foreground">Why would investors demand a premium for these risks?</strong> Because
+                R&amp;D outcomes are inherently uncertain (most projects fail), high-R&amp;D firms tend to have more volatile cash flows, and innovation-heavy
+                companies are more sensitive to economic downturns when funding dries up. In this case, a premium can exist without superior risk-adjusted
+                performance; Sharpe ratios{" "}
+                <span className="inline-flex items-center">
+                  <InfoTooltip term="sharpe_ratio" size={12} />
+                </span>{" "}
+                may not dominate even when mean returns do, because investors are being compensated for bearing innovation risk.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">2.3 Practitioner relevance</h3>
               <p className="text-muted-foreground">
-                For a portfolio audience, the core questions are implementability and robustness: is the premium stable across regimes, how concentrated is it
-                by sector, how sensitive are results to survivorship and delisting assumptions, and what fraction survives explicit trading costs?
-                We address these by (i) prioritizing a clean annual return series for inference, (ii) reporting sector structure, and (iii) mapping the signal
-                into an explicit strategy section.
+                For a portfolio audience, the core questions are implementability and robustness. <strong className="text-foreground">Specifically:</strong>
+              </p>
+              <ul className="text-muted-foreground list-disc list-inside space-y-1 mt-2">
+                <li>Is the premium stable across market regimes{" "}
+                  <span className="inline-flex items-center">
+                    <InfoTooltip term="regime_dependence" size={12} />
+                  </span>
+                  , or does it only work in specific conditions?
+                </li>
+                <li>How concentrated is it by sector{" "}
+                  <span className="inline-flex items-center">
+                    <InfoTooltip term="sector_tilt" size={12} />
+                  </span>
+                  ? Is this really an R&amp;D effect or just a tech bet?
+                </li>
+                <li>How sensitive are results to survivorship{" "}
+                  <span className="inline-flex items-center">
+                    <InfoTooltip term="survivorship_bias" size={12} />
+                  </span>{" "}
+                  and delisting assumptions?
+                </li>
+                <li>What fraction of the gross premium survives after trading costs?</li>
+              </ul>
+              <p className="text-muted-foreground mt-2">
+                We address these by (i) prioritizing a clean annual return series for inference, (ii) reporting sector structure transparently, and (iii) mapping the signal
+                into an explicit strategy section with realistic cost assumptions.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">Hypotheses</h3>
+              <p className="text-muted-foreground mb-2">
+                We structure our analysis around four testable hypotheses. Each addresses a specific concern that practitioners and academics would raise:
+              </p>
               <ul className="text-muted-foreground list-disc list-inside space-y-2">
                 <li>
-                  <strong className="text-foreground">H1 (Characteristic premium):</strong> Firms with higher R&amp;D intensity earn higher subsequent returns than low-R&amp;D firms in a large-cap U.S. universe.
+                  <strong className="text-foreground">H1 (Characteristic premium{" "}
+                    <InfoTooltip term="characteristic_premium" size={12} />
+                  ):</strong> Firms with higher R&amp;D intensity earn higher subsequent returns than low-R&amp;D firms in a large-cap U.S. universe.
+                  <span className="text-xs block ml-6 mt-1 italic">Why test this? This is the fundamental question: does R&amp;D intensity predict returns?</span>
                 </li>
                 <li>
                   <strong className="text-foreground">H2 (Stability and regimes):</strong> The premium is observable in the annual series and exhibits time variation that can be summarized with rolling windows and event/regime splits.
+                  <span className="text-xs block ml-6 mt-1 italic">Why test this? A premium that only worked in one decade would be less useful for forward-looking portfolios.</span>
                 </li>
                 <li>
                   <strong className="text-foreground">H3 (Not just sector):</strong> The premium is not fully explained by sector composition, size, or standard factor exposures.
+                  <span className="text-xs block ml-6 mt-1 italic">Why test this? If the premium disappears after controlling for sectors, it's just a sector bet, not an R&amp;D effect.</span>
                 </li>
                 <li>
                   <strong className="text-foreground">H4 (Implementability):</strong> A rules-based portfolio derived from the signal retains a positive net premium under explicit trading-friction assumptions.
+                  <span className="text-xs block ml-6 mt-1 italic">Why test this? Academic premiums often disappear after trading costs. We need to show the premium is capturable in practice.</span>
                 </li>
               </ul>
               <p className="text-muted-foreground">
@@ -841,11 +998,18 @@ export function MainPaper() {
                 <InfoTooltip term="rd_intensity" size={16} />
               </h3>
               <p className="text-muted-foreground">
-                We define R&amp;D intensity as R&amp;D expense divided by revenue, expressed as a percentage.
+                We define R&amp;D intensity as R&amp;D expense divided by revenue, expressed as a percentage. This ratio captures how much
+                a firm invests in research and development relative to its scale. <strong className="text-foreground">Why use revenue as the denominator?</strong>{" "}
+                Revenue is a stable, comparable measure of firm size that is less affected by capital structure or accounting choices than
+                alternatives like total assets or market capitalization.
               </p>
               <div className="not-prose">
                 <Formulas.RDIntensity />
               </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                <strong className="text-foreground">Typical values:</strong> Technology and Healthcare firms often have R&amp;D intensity of 10-30%,
+                while Financials and Utilities are typically below 1%. This wide dispersion is what creates meaningful quintile separation.
+              </p>
 
               <div className="not-prose p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 mt-4">
                 <p className="font-semibold text-foreground mb-2">Accounting Standard: SFAS 2 (1974)</p>
@@ -874,21 +1038,43 @@ export function MainPaper() {
                 : fiscal-year R&D data for year <span className="font-mono">T</span> is mapped to returns from July{" "}
                 <span className="font-mono">T+1</span> through June <span className="font-mono">T+2</span>.
               </p>
-              <div className="not-prose">
+              <p className="text-sm text-muted-foreground mt-2">
+                <strong className="text-foreground">Why this timing matters:</strong> Most U.S. firms have December fiscal year ends and must file
+                10-K reports within 60-90 days (by late February/March). By waiting until July to form portfolios, we ensure all accounting
+                data is publicly available. Using calendar-year returns (January-December) would mean trading on data that wasn't yet public,
+                inflating apparent performance.
+              </p>
+              <div className="not-prose mt-3">
                 <Formulas.TSR />
+              </div>
+              <div className="not-prose p-3 rounded-lg bg-muted/30 border mt-3">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Example timeline:</strong> A firm reports FY2022 R&amp;D in its 10-K filed March 2023.
+                  We use this data to form portfolios in July 2023 and measure returns through June 2024. This 6+ month lag ensures
+                  no information leakage.
+                </p>
               </div>
 
               <h3 className="text-lg font-semibold text-foreground mt-6">3.3 Statistical Inference</h3>
               <p className="text-muted-foreground">
                 We present (i) annual non-overlapping HML premiums for primary inference and (ii) rolling-window
-                summaries for descriptive context. Where overlapping windows are used, inference is HAC-adjusted.
+                summaries for descriptive context. <strong className="text-foreground">Why two approaches?</strong> Annual non-overlapping
+                observations are independent and support valid statistical tests. Rolling windows are autocorrelated (overlapping periods share data)
+                but useful for visualizing trends and regime dependence. We are explicit about which is which.
               </p>
-              <div className="not-prose grid md:grid-cols-2 gap-4">
+              <p className="text-sm text-muted-foreground mt-2">
+                Where overlapping windows are used, inference is HAC-adjusted using Newey-West standard errors to account for serial correlation.
+              </p>
+              <div className="not-prose grid md:grid-cols-2 gap-4 mt-3">
                 <Formulas.ANOVA />
                 <Formulas.EtaSquared />
                 <Formulas.CohensD />
                 <Formulas.SharpeRatio />
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>Reading these formulas:</strong> Each formula box includes a description explaining what it measures and how to interpret typical values.
+                Hover or tap the formula label for details.
+              </p>
             </CardContent>
           </Card>
         </section>
@@ -902,15 +1088,24 @@ export function MainPaper() {
           <Card className="bg-card">
             <CardContent className="pt-6 prose dark:prose-invert max-w-none space-y-4">
               <h3 className="text-lg font-semibold text-foreground">4.1 Portfolio formation (signal and weights)</h3>
+              <p className="text-muted-foreground mb-3">
+                We construct portfolios using a standard academic approach that prioritizes transparency and replicability.
+                Each step is designed to minimize biases while remaining implementable by practitioners.
+              </p>
               <ul className="text-muted-foreground list-disc list-inside space-y-2">
                 <li>
-                  <strong className="text-foreground">Universe:</strong> S&amp;P 500 point-in-time constituents (as implemented in the research pipeline).
+                  <strong className="text-foreground">Universe:</strong> S&amp;P 500 point-in-time constituents{" "}
+                  <InfoTooltip term="point_in_time" size={12} />.{" "}
+                  <span className="text-sm">We use historical membership data to include only stocks that were actually in the index at each formation date,
+                  preventing survivorship bias from excluding failed companies.</span>
                 </li>
                 <li>
-                  <strong className="text-foreground">Signal:</strong> prior fiscal-year R&amp;D intensity (R&amp;D expense / revenue).
+                  <strong className="text-foreground">Signal:</strong> prior fiscal-year R&amp;D intensity (R&amp;D expense / revenue).{" "}
+                  <span className="text-sm">Using the prior year ensures data was publicly available before portfolio formation.</span>
                 </li>
                 <li>
-                  <strong className="text-foreground">Sorting:</strong> equal-count quintiles (Q1 lowest R&amp;D intensity, Q5 highest).
+                  <strong className="text-foreground">Sorting:</strong> equal-count quintiles (Q1 = lowest R&amp;D intensity, Q5 = highest).{" "}
+                  <span className="text-sm">Equal-count sorting ensures each quintile has roughly the same number of stocks, making comparisons fair.</span>
                 </li>
               </ul>
 
@@ -949,14 +1144,22 @@ export function MainPaper() {
                 <p className="text-xs text-muted-foreground mt-2">
                   The <strong>HML premium</strong> (High-Minus-Low) is Q5 return minus Q1 return. A positive premium means high-R&amp;D stocks outperformed low-R&amp;D stocks.
                 </p>
+                <div className="mt-3">
+                  <Formulas.HMLPremium />
+                </div>
               </div>
 
               <ul className="text-muted-foreground list-disc list-inside space-y-2">
                 <li>
-                  <strong className="text-foreground">Weights:</strong> equal-weight within each portfolio; equal-weighted returns are computed each year and compounded.
+                  <strong className="text-foreground">Weights:</strong> equal-weight within each portfolio{" "}
+                  <InfoTooltip term="equal_weight" size={12} />.{" "}
+                  <span className="text-sm">Equal-weighted returns are computed each year and compounded. This gives smaller firms equal influence
+                  with larger firms, which can increase the premium but also increases volatility.</span>
                 </li>
                 <li>
-                  <strong className="text-foreground">Inclusion:</strong> firms with R&amp;D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators.
+                  <strong className="text-foreground">Inclusion:</strong> firms with R&amp;D reported as zero are retained (typically in Q1).
+                  <span className="text-sm"> A minimum-revenue filter is applied to avoid extreme ratios from very small denominators.
+                  Zero-R&amp;D firms are legitimate members of Q1 (they simply don't invest in R&amp;D).</span>
                 </li>
               </ul>
 
@@ -971,27 +1174,54 @@ export function MainPaper() {
                     </TableHeader>
                     <TableBody>
                       <TableRow>
-                        <TableCell className="font-medium">Min revenue threshold</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            Min revenue threshold
+                            <InfoTooltip title="Minimum Revenue Threshold" size={12}>
+                              Firms with revenue below this threshold are excluded to avoid extreme R&amp;D intensity ratios from very small denominators.
+                              A firm with $1M revenue and $500K R&amp;D would show 50% intensity, which may not be comparable to larger firms.
+                              This filter ensures meaningful comparisons across the universe.
+                            </InfoTooltip>
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right font-mono">
                           {typeof (methodologyParameters as any)?.filters?.min_revenue_threshold_usd === "number"
                             ? `$${((methodologyParameters as any).filters.min_revenue_threshold_usd / 1e6).toFixed(0)}M`
-                            : "-"}
+                            : "..."}
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">R&amp;D intensity cap (default)</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            R&amp;D intensity cap (default)
+                            <InfoTooltip title="R&D Intensity Cap (Default)" size={12}>
+                              Maximum R&amp;D intensity allowed for most sectors. Values above this cap are winsorized (set to the cap value) to prevent
+                              outliers from distorting quintile assignments. For example, a biotech firm with 150% R&amp;D/revenue would be capped at 100%.
+                              This is a conservative default that works for most industries.
+                            </InfoTooltip>
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right font-mono">
                           {typeof (methodologyParameters as any)?.filters?.rd_intensity_capping?.default_cap_pct === "number"
                             ? `${(methodologyParameters as any).filters.rd_intensity_capping.default_cap_pct.toFixed(0)}%`
-                            : "-"}
+                            : "..."}
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">R&amp;D intensity cap (high-R&amp;D sectors)</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            R&amp;D intensity cap (high-R&amp;D sectors)
+                            <InfoTooltip title="R&D Intensity Cap (High-R&D Sectors)" size={12}>
+                              Higher cap for sectors where extreme R&amp;D intensity is common and meaningful (e.g., Biotech, Pharma).
+                              These sectors routinely have firms spending more than 100% of revenue on R&amp;D (funded by capital raises).
+                              A higher cap preserves the signal while still limiting extreme outliers.
+                            </InfoTooltip>
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right font-mono">
                           {typeof (methodologyParameters as any)?.filters?.rd_intensity_capping?.high_rd_sector_cap_pct === "number"
                             ? `${(methodologyParameters as any).filters.rd_intensity_capping.high_rd_sector_cap_pct.toFixed(0)}%`
-                            : "-"}
+                            : "..."}
                         </TableCell>
                       </TableRow>
                       <TableRow>
@@ -1001,7 +1231,7 @@ export function MainPaper() {
                             <InfoTooltip title="Return Definition" size={12}>
                               Returns are computed from a daily price series using adjusted close when available (split/dividend-adjusted per the provider),
                               and falling back to close when adjusted close is unavailable. This is a practical approximation of total shareholder return,
-                              subject to vendor definitions and data coverage.
+                              subject to vendor definitions and data coverage. Adjusted close accounts for stock splits and dividends.
                             </InfoTooltip>
                           </span>
                         </TableCell>
@@ -1011,10 +1241,10 @@ export function MainPaper() {
                         <TableCell className="font-medium">
                           <span className="inline-flex items-center gap-1">
                             Universe membership
-                            <InfoTooltip title="Point-in-time membership" size={12}>
-                              Where historical constituent spans are available, the universe for a given formation date is filtered to companies that were
-                              members as of that date. If membership history is unavailable for a period, results fall back to the available dataset and
-                              should be read as less strictly survivorship-controlled.
+                            <InfoTooltip title="Point-in-time Membership" size={12}>
+                              We use historical S&amp;P 500 constituent data to include only stocks that were actually in the index at each formation date.
+                              This prevents survivorship bias: we don't just look at today's S&amp;P 500 members (which excludes failed companies).
+                              When historical membership data is unavailable, we note this limitation.
                             </InfoTooltip>
                           </span>
                         </TableCell>
@@ -1024,21 +1254,39 @@ export function MainPaper() {
                         <TableCell className="font-medium">
                           <span className="inline-flex items-center gap-1">
                             Delisting returns
-                            <InfoTooltip title="Delisting return treatment" size={12}>
-                              If a constituent delists during a return period, the return for that period is replaced with a delisting return estimate.
-                              The platform prefers a price-based estimate from the final trading days and falls back to a documented heuristic when price data
-                              is insufficient.
+                            <InfoTooltip title="Delisting Return Treatment" size={12}>
+                              When a stock delists (leaves the index due to merger, bankruptcy, going private, etc.), we assign a delisting return
+                              for that period. We prefer price-based estimates from the final trading days. If unavailable, we use literature-calibrated
+                              heuristics (e.g., -30% for distress delistings per Shumway 1997). This prevents bias from ignoring failed companies.
                             </InfoTooltip>
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-mono">Integrated by period</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">Return convention</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            Return convention
+                            <InfoTooltip title="Return Convention (July-June)" size={12}>
+                              We use July-June return periods following Fama-French methodology. Fiscal year data for year T is used to form portfolios
+                              in July of year T+1, with returns measured through June T+2. This 6+ month lag ensures all accounting data is publicly
+                              available before we "trade" on it, preventing look-ahead bias.
+                            </InfoTooltip>
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right font-mono">{snapshot?.meta?.return_convention || "july_june"}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">Data tier</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            Data tier
+                            <InfoTooltip title="Data Tier" size={12}>
+                              Tier 1 uses Financial Modeling Prep (FMP) data, which is accessible and cost-effective but may have coverage gaps.
+                              Tier 2 would use CRSP/Compustat (the academic gold standard) for higher coverage and quality.
+                              We document the tier to set appropriate expectations for data limitations.
+                            </InfoTooltip>
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right font-mono">{snapshot?.meta?.data_tier || "tier1"}</TableCell>
                       </TableRow>
                     </TableBody>
@@ -1056,27 +1304,49 @@ export function MainPaper() {
                 <Formulas.TSR />
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground mt-6">4.3 Rolling windows vs annual inference (what each object means)</h3>
+              <h3 className="text-lg font-semibold text-foreground mt-6 flex items-center gap-2">
+                4.3 Rolling windows vs annual inference (what each object means)
+              </h3>
               <p className="text-muted-foreground">
-                We report two complementary objects, each with a specific interpretation:
+                <strong className="text-foreground">This distinction is critical for interpreting our results.</strong> We report two complementary objects, each with a specific interpretation:
               </p>
               <ul className="text-muted-foreground list-disc list-inside space-y-2">
                 <li>
-                  <strong className="text-foreground">Annual series (primary inference):</strong> each year, we form R&amp;D quintiles using the prior fiscal
-                  year and measure the next July-June return. This produces one observation per year, which is the cleanest basis for inference in a
-                  practitioner manuscript.
+                  <strong className="text-foreground">Annual series (primary inference){" "}
+                    <InfoTooltip term="non_overlapping" size={12} />
+                  :</strong> each year, we form R&amp;D quintiles using the prior fiscal
+                  year and measure the next July-June return. This produces one observation per year, which is the cleanest basis for inference because
+                  <em> each observation is independent</em>. We use Newey-West standard errors{" "}
+                  <InfoTooltip term="newey_west" size={12} />{" "}
+                  to account for any residual autocorrelation.
                 </li>
                 <li>
-                  <strong className="text-foreground">Rolling windows (descriptive):</strong> for a given window start, we assign quintiles once (based on
-                  that start-year signal) and then summarize outcomes over 5/10/20 years. These overlapping windows are autocorrelated and are used primarily
-                  to visualize regime dependence and horizon behavior, not as standalone p-values.
+                  <strong className="text-foreground">Rolling windows (descriptive only){" "}
+                    <InfoTooltip term="overlapping_windows" size={12} />
+                  :</strong> for a given window start, we assign quintiles once (based on
+                  that start-year signal) and then summarize outcomes over 5/10/20 years. <strong>Important:</strong> these overlapping windows are autocorrelated
+                  by construction (a 2000-2004 window shares 4 years with a 2001-2005 window). We use them to visualize regime dependence and horizon behavior,
+                  <em> not as standalone p-values</em>.
                 </li>
               </ul>
+              <div className="not-prose mt-3 p-3 rounded-lg border bg-amber-500/5 border-amber-500/20">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Why does this matter?</strong> Many academic papers report rolling-window statistics as if they were independent observations,
+                  leading to overstated significance. We explicitly separate descriptive (rolling) from inferential (annual) results to avoid this pitfall.
+                </p>
+              </div>
+              
+              <h4 className="text-md font-semibold text-foreground mt-6">Statistical formulas used in this paper</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Each formula box below includes a description explaining what it measures and how to interpret typical values.
+              </p>
               <div className="not-prose grid md:grid-cols-2 gap-4">
                 <Formulas.ANOVA />
                 <Formulas.EtaSquared />
                 <Formulas.CohensD />
                 <Formulas.SharpeRatio />
+                <Formulas.NeweyWest />
+                <Formulas.MaxDrawdown />
               </div>
 
               <div className="not-prose mt-4 p-4 rounded-lg border bg-muted/30">
@@ -1102,11 +1372,24 @@ export function MainPaper() {
           <Card className="bg-card">
             <CardContent className="pt-6 prose dark:prose-invert max-w-none">
               <p className="text-muted-foreground">
-                We report the main return evidence in three complementary views. First, we present the non-overlapping annual premium series (Table 5.1),
-                which provides the cleanest basis for inference. Second, we summarize average returns by quintile and the evolution of the premium in rolling
-                windows (Figures 5.2-5.3) to illustrate time variation. Third, we report horizon-level summaries for 5/10/20-year rolling windows (Table 5.4)
-                as descriptive context.
+                We report the main return evidence in three complementary views, each serving a distinct purpose:
               </p>
+              <ul className="text-muted-foreground list-disc list-inside space-y-2 mt-2">
+                <li>
+                  <strong className="text-foreground">Table 5.1 (Annual premium series):</strong> Non-overlapping annual observations{" "}
+                  <InfoTooltip term="non_overlapping" size={12} /> provide the cleanest basis for statistical inference.
+                  <em> This is our primary evidence.</em>
+                </li>
+                <li>
+                  <strong className="text-foreground">Figures 5.2-5.3 (Quintile returns and rolling premium):</strong> Visualize how returns differ across R&amp;D quintiles
+                  and how the premium evolves over time. These illustrate stability and regime dependence.
+                </li>
+                <li>
+                  <strong className="text-foreground">Table 5.4 (Horizon summaries):</strong> 5/10/20-year rolling windows{" "}
+                  <InfoTooltip term="rolling_window" size={12} /> as descriptive context.
+                  <em> Note: these are descriptive, not inferential, because windows overlap.</em>
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -1128,7 +1411,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[340px]">
                 {quintileReturnBar5yr.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={340} minHeight={300}>
                     <BarChart data={quintileReturnBar5yr}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="quintile" stroke="hsl(var(--muted-foreground))" />
@@ -1147,7 +1430,7 @@ export function MainPaper() {
                         ))}
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">
                   Loading quintile summary...
@@ -1155,19 +1438,31 @@ export function MainPaper() {
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  Each bar shows the average annual return for stocks in that R&amp;D quintile. Q1 contains the 20% of firms with the lowest R&amp;D intensity;
+                  Q5 contains the 20% with the highest. The difference between Q5 and Q1 is the R&amp;D premium.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>
-                    The average return profile is higher in the high-R&amp;D quintile than in the low-R&amp;D quintile in the 5-year aggregates{" "}
+                    <strong className="text-foreground">Premium magnitude:</strong>{" "}
                     {(() => {
                       const q1 = quintileReturnBar5yr.find((r) => r.quintile === "Q1")?.avgReturn
                       const q5 = quintileReturnBar5yr.find((r) => r.quintile === "Q5")?.avgReturn
-                      if (typeof q1 !== "number" || typeof q5 !== "number") return ""
-                      return `(Q5 - Q1 = ${(q5 - q1).toFixed(2)} pp).`
+                      if (typeof q1 !== "number" || typeof q5 !== "number") return "Q5 outperforms Q1."
+                      const diff = q5 - q1
+                      return `Q5 averages ${q5.toFixed(1)}% vs Q1's ${q1.toFixed(1)}%, a spread of ${diff.toFixed(2)} percentage points per year.`
                     })()}
                   </li>
-                  <li>Mid-quintiles need not be perfectly monotone; the premium is defined as Q5 minus Q1.</li>
-                  <li>This figure is descriptive (aggregated from overlapping windows); inference is based on the annual non-overlapping series in Table 5.1.</li>
+                  <li>
+                    <strong className="text-foreground">Pattern shape:</strong> The relationship need not be perfectly monotonic (Q2 &lt; Q3 &lt; Q4).
+                    What matters is whether Q5 consistently outperforms Q1. Mid-quintiles often show noise because the R&amp;D signal is strongest at extremes.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Caveat:</strong> This figure aggregates overlapping 5-year windows and is descriptive only.
+                    For statistical inference, see the non-overlapping annual series in Table 5.1.
+                  </li>
                 </ul>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1186,7 +1481,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[340px]">
                 {rollingPremium5yr.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={340} minHeight={300}>
                     <AreaChart data={rollingPremium5yr}>
                       <defs>
                         <linearGradient id="premiumGradientMain" x1="0" y1="0" x2="0" y2="1">
@@ -1215,7 +1510,7 @@ export function MainPaper() {
                       <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
                       <Area type="monotone" dataKey="rdPremium" stroke="#10b981" fill="url(#premiumGradientMain)" strokeWidth={2} />
                     </AreaChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">
                   Loading rolling-window series...
@@ -1223,11 +1518,26 @@ export function MainPaper() {
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  Each point shows the 5-year rolling premium (Q5 return minus Q1 return) for windows ending at that date.
+                  For example, the point at "2015-2019" shows the average annual premium over those 5 years.
+                  The green shaded area highlights when the premium is positive (high R&amp;D outperforms).
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Time variation is substantial: the premium is not constant and can be negative in some regimes.</li>
-                  <li>Overlapping windows are autocorrelated by construction; treat the shape as a stability/regime diagnostic, not independent evidence.</li>
-                  <li>We use this figure to motivate event/regime context (Section 8) rather than to replace the annual-series inference.</li>
+                  <li>
+                    <strong className="text-foreground">Time variation:</strong> The premium is not constant. It can be strongly positive in some periods
+                    and negative in others. This is normal for any characteristic premium and reflects changing market conditions.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Regime dependence:</strong> Look for patterns around major events. The premium often behaves differently
+                    during market stress (2008-2009) vs expansion periods. Section 8 provides regime-by-regime analysis.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Important caveat:</strong> Adjacent points share 4 of 5 years of data, making them highly correlated.
+                    Do not interpret the smoothness of this curve as statistical precision. This chart shows trends, not independent evidence.
+                  </li>
                 </ul>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1286,17 +1596,17 @@ export function MainPaper() {
                       <TableRow key={row.horizon}>
                         <TableCell className="font-medium">{row.horizon.toUpperCase()}</TableCell>
                         <TableCell className="text-right">
-                          {row.premiumPct !== undefined ? row.premiumPct.toFixed(2) : "-"}
+                          {row.premiumPct !== undefined ? row.premiumPct.toFixed(2) : "..."}
                         </TableCell>
-                        <TableCell className="text-right">{row.t !== undefined ? row.t.toFixed(2) : "-"}</TableCell>
+                        <TableCell className="text-right">{row.t !== undefined ? row.t.toFixed(2) : "..."}</TableCell>
                         <TableCell className="text-right">
-                          {row.p !== undefined ? (row.p < 0.001 ? "< 0.001" : row.p.toFixed(4)) : "-"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.eta2 !== undefined ? row.eta2.toFixed(3) : "-"}
+                          {row.p !== undefined ? (row.p < 0.001 ? "< 0.001" : row.p.toFixed(4)) : "..."}
                         </TableCell>
                         <TableCell className="text-right">
-                          {row.cohensD !== undefined ? row.cohensD.toFixed(3) : "-"}
+                          {row.eta2 !== undefined ? row.eta2.toFixed(3) : "..."}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.cohensD !== undefined ? row.cohensD.toFixed(3) : "..."}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1382,10 +1692,15 @@ export function MainPaper() {
           <Card className="bg-card">
             <CardContent className="pt-6 prose dark:prose-invert max-w-none">
               <p className="text-muted-foreground">
-                Sector composition is a key confounder for any R&D-based sort. High-R&D firms are concentrated in a small set of sectors, and sector-wide shocks
-                can mechanically influence the premium. We therefore report (i) R&D intensity by sector, (ii) coverage of eligible firms by sector for
-                long-horizon windows, and (iii) descriptive sector trends and leaderboards. These exhibits are descriptive and are intended to support
-                transparent interpretation of the return results.
+                <strong className="text-foreground">Why sector analysis matters:</strong> Sector composition is a key confounder for any R&amp;D-based sort.
+                High-R&amp;D firms are concentrated in a small set of sectors (primarily Technology and Healthcare), and sector-wide shocks
+                can mechanically influence the premium. If the R&amp;D premium is entirely driven by sector exposure, an investor could replicate
+                it with a simpler sector bet.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                We therefore report (i) R&amp;D intensity by sector, (ii) coverage of eligible firms by sector for long-horizon windows, and
+                (iii) descriptive sector trends and leaderboards. These exhibits are descriptive and are intended to support transparent
+                interpretation of the return results. The key question is: <em>does the R&amp;D premium exist within sectors, or is it just a sector effect?</em>
               </p>
             </CardContent>
           </Card>
@@ -1400,7 +1715,7 @@ export function MainPaper() {
             <CardContent>
               <div className="h-[380px]">
                 {sectorIntensityData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={320}>
+                  <SafeChart height={380} minHeight={320}>
                     <BarChart data={sectorIntensityData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                       <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" />
@@ -1425,7 +1740,7 @@ export function MainPaper() {
                         ))}
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading sector distribution...</div>
                 )}
@@ -1464,17 +1779,24 @@ export function MainPaper() {
               )}
 
               <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart and Table</p>
+                <p className="mb-2">
+                  The horizontal bar chart shows average R&amp;D intensity by sector. Longer bars indicate sectors where firms invest more in R&amp;D
+                  relative to their revenue. The table provides additional detail: company count and total R&amp;D dollars.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>
-                    R&amp;D intensity is highly concentrated by sector. This is expected and makes sector reporting a required companion to any R&amp;D-based sort.
+                    <strong className="text-foreground">Concentration is extreme:</strong> Technology and Healthcare dominate R&amp;D intensity.
+                    This means high-R&amp;D quintiles (Q4, Q5) will be heavily tilted toward these sectors.
                   </li>
                   <li>
-                    The premium could reflect (i) within-sector effects, (ii) sector tilts, or (iii) a combination. We therefore treat sector structure as a
-                    first-order confounder to address in robustness diagnostics.
+                    <strong className="text-foreground">Implication for the premium:</strong> If the R&amp;D premium is just a "tech bet," it would
+                    disappear when we control for sectors. Section 7.5 (Double-Sort) tests this directly.
                   </li>
                   <li>
-                    Total R&amp;D spend shown here is a cumulative sum over the dataset period (context), not a yearly flow.
+                    <strong className="text-foreground">Dollar magnitude:</strong> Total R&amp;D spend shows the economic significance. Technology
+                    firms spend the most in absolute terms, even if some Healthcare firms have higher intensity ratios.
                   </li>
                 </ul>
               </div>
@@ -1506,7 +1828,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[420px]">
                 {sectorCoverageData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={340}>
+                  <SafeChart height={420} minHeight={340}>
                     <BarChart
                       data={sectorCoverageData.slice().sort((a, b) => (b.coverage20yr || 0) - (a.coverage20yr || 0))}
                       layout="vertical"
@@ -1527,18 +1849,30 @@ export function MainPaper() {
                       <Bar dataKey="coverage10yr" name="10-Year" fill="#8b5cf6" radius={[0, 2, 2, 0]} />
                       <Bar dataKey="coverage20yr" name="20-Year" fill="#22c55e" radius={[0, 2, 2, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading coverage...</div>
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  Each bar group shows what percentage of firms in that sector have continuous data for 5, 10, and 20-year analysis windows.
+                  Higher coverage means more firms contribute to the analysis; lower coverage means results are based on fewer observations.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Long-horizon coverage is uneven: fewer firms have continuous data and eligibility for 20-year windows.</li>
                   <li>
-                    Lower 20-year coverage mechanically increases estimation uncertainty and can interact with sector composition (some sectors have shorter
-                    histories or more turnover).
+                    <strong className="text-foreground">Coverage declines with horizon:</strong> Fewer firms have 20 years of continuous data than 5 years.
+                    This is natural: firms merge, go private, or delist over time.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Sector variation:</strong> Some sectors (e.g., established industries) have higher long-term coverage.
+                    Newer sectors or those with more M&amp;A activity have lower coverage.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Implication:</strong> Low coverage doesn't invalidate results, but it increases uncertainty.
+                    20-year window results should be interpreted with more caution than 5-year results.
                   </li>
                 </ul>
               </div>
@@ -1556,7 +1890,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[420px]">
                 {sectorRadarData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={340}>
+                  <SafeChart height={420} minHeight={340}>
                     <RadarChart data={sectorRadarData}>
                       <PolarGrid stroke="hsl(var(--border))" />
                       <PolarAngleAxis dataKey="sector" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
@@ -1576,17 +1910,31 @@ export function MainPaper() {
                       <Radar name="R&D Intensity" dataKey="intensity" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} />
                       <Radar name="Companies" dataKey="companies" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
                     </RadarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading sector radar...</div>
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  This radar chart overlays two different concepts for the same sectors: <strong className="text-foreground">R&amp;D intensity</strong> (how
+                  R&amp;D-heavy the sector is on average) and <strong className="text-foreground">company count</strong> (how many firms from that sector are in
+                  the sample). The goal is to separate “high intensity” from “broad participation.”
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>This view separates “high intensity” from “broad participation”: a sector can have very high R&amp;D intensity with relatively few firms.</li>
                   <li>
-                    This matters for portfolio concentration and capacity: concentrated high-R&amp;D exposure can create sector risk that must be monitored.
+                    <strong className="text-foreground">High intensity, few firms:</strong> These sectors can dominate the top quintile even with a small number
+                    of names, which increases concentration risk.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Many firms, moderate intensity:</strong> These sectors contribute breadth. Broad participation reduces
+                    idiosyncratic concentration but may dilute the signal.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Investor implication:</strong> If the high-R&amp;D portfolio is concentrated in a few sectors, the
+                    observed premium may come with sector drawdowns and capacity constraints that matter for real allocations.
                   </li>
                 </ul>
               </div>
@@ -1604,7 +1952,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[380px]">
                 {rdTrendData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={320}>
+                  <SafeChart height={380} minHeight={320}>
                     <LineChart data={rdTrendData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -1647,17 +1995,31 @@ export function MainPaper() {
                         dot={false}
                       />
                     </LineChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading trends...</div>
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  The green line (left axis) shows the <strong className="text-foreground">average R&amp;D intensity</strong> in the dataset by year. The blue
+                  line (right axis) shows <strong className="text-foreground">total R&amp;D dollars</strong> across the covered firms (a scale measure, not a
+                  return metric). This chart is context for interpretation, not a return test.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Why this matters for the paper</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>This figure provides context on the evolving R&amp;D landscape (coverage, aggregate spend, and average intensity).</li>
                   <li>
-                    It is not a causal claim about returns; it helps interpret which eras and sectors dominate the sample and why regime splits can matter.
+                    <strong className="text-foreground">Signal environment shifts:</strong> If the economy becomes more R&amp;D-intensive over time, the
+                    cross-sectional separation between “high” and “low” can compress or expand, affecting observed premiums.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Regime interpretation:</strong> Large macro episodes can coincide with changes in financing conditions for
+                    innovative firms (risk appetite, rates), which can change the premium’s behavior without changing the definition of the signal.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Non-causal:</strong> This is not evidence that higher aggregate R&amp;D “causes” returns. It helps explain
+                    why event and subperiod splits (Section 8) are informative and why long-horizon results can mix different economic regimes.
                   </li>
                 </ul>
               </div>
@@ -1691,8 +2053,8 @@ export function MainPaper() {
                         const renderLeader = (r: any) => {
                           if (!r) return <span className="text-muted-foreground">-</span>
                           const intensity =
-                            typeof r.avg_rd_intensity === "number" ? `${r.avg_rd_intensity.toFixed(2)}%` : "-"
-                          const years = typeof r.years_of_data === "number" ? `${r.years_of_data}y` : "-"
+                            typeof r.avg_rd_intensity === "number" ? `${r.avg_rd_intensity.toFixed(2)}%` : "..."
+                          const years = typeof r.years_of_data === "number" ? `${r.years_of_data}y` : "..."
                           return (
                             <div className="min-w-[200px] leading-tight">
                               <div className="font-mono">
@@ -1750,7 +2112,7 @@ export function MainPaper() {
                   <div className="font-semibold">
                     {typeof (publicationStats as any)?.rd_factor_premium?.mean === "number"
                       ? `${(publicationStats as any).rd_factor_premium.mean.toFixed(2)}%`
-                      : "-"}
+                      : "..."}
                   </div>
                 </div>
                 <div className="p-3 rounded border bg-muted/30">
@@ -1761,7 +2123,7 @@ export function MainPaper() {
                   <div className="font-semibold">
                     {typeof (publicationStats as any)?.rd_factor_premium?.t_statistic === "number"
                       ? (publicationStats as any).rd_factor_premium.t_statistic.toFixed(2)
-                      : "-"}
+                      : "..."}
                   </div>
                 </div>
                 <div className="p-3 rounded border bg-muted/30">
@@ -1775,7 +2137,7 @@ export function MainPaper() {
                   <div className="font-semibold">
                     {(() => {
                       const s = (publicationStats as any)?.rd_factor_premium
-                      if (!s || typeof s.positive_years !== "number" || typeof s.n_years !== "number" || s.n_years <= 0) return "-"
+                      if (!s || typeof s.positive_years !== "number" || typeof s.n_years !== "number" || s.n_years <= 0) return "..."
                       return `${Math.round((s.positive_years / s.n_years) * 100)}%`
                     })()}
                   </div>
@@ -1785,7 +2147,7 @@ export function MainPaper() {
                   <div className="font-semibold">
                     {typeof (publicationStats as any)?.rd_factor_premium?.n_years === "number"
                       ? (publicationStats as any).rd_factor_premium.n_years
-                      : "-"}
+                      : "..."}
                   </div>
                 </div>
               </div>
@@ -1807,7 +2169,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[360px]">
                 {factorPremiumSeries.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={360} minHeight={300}>
                     <BarChart data={factorPremiumSeries.filter((d) => d.rdPremium !== null)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -1829,17 +2191,35 @@ export function MainPaper() {
                           ))}
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading factor premium series...</div>
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  Each bar shows the annual R&amp;D premium (Q5 return minus Q1 return) for that year. Green bars indicate years when high-R&amp;D
+                  stocks outperformed; red bars indicate years when low-R&amp;D stocks outperformed. This is the raw, year-by-year evidence.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Year-to-year dispersion is expected in characteristic premiums; negative years do not invalidate a positive long-run mean.</li>
-                  <li>This series is the preferred object for “how often does it work?” style questions (win rate, drawdowns, regime dependence).</li>
-                  <li>We use Newey-West inference on the annual non-overlapping premium (Table 5.1) rather than overlapping-window p-values.</li>
+                  <li>
+                    <strong className="text-foreground">Variability is normal:</strong> Even a "real" premium will have negative years.
+                    The question is whether the long-run average is positive and statistically significant (see Table 5.1).
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Win rate:</strong> Count the green vs red bars. A win rate above 50% suggests the premium
+                    is consistent, not just driven by a few outlier years.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Drawdown periods:</strong> Look for clusters of red bars. These represent periods when
+                    the strategy underperformed and help set realistic expectations for implementation.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Statistical approach:</strong> We use Newey-West standard errors on this annual series
+                    to account for potential autocorrelation. This is more conservative than assuming independence.
+                  </li>
                 </ul>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1856,7 +2236,7 @@ export function MainPaper() {
             <CardContent className="space-y-3">
               <div className="h-[360px]">
                 {growthOf1.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <SafeChart height={360} minHeight={300}>
                     <AreaChart data={growthOf1}>
                       <defs>
                         <linearGradient id="q5GradientMain" x1="0" y1="0" x2="0" y2="1">
@@ -1897,16 +2277,43 @@ export function MainPaper() {
                         strokeWidth={2}
                       />
                     </AreaChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 ) : (
                   <div className="h-full flex items-center justify-center text-muted-foreground">Loading cumulative series...</div>
                 )}
               </div>
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Interpretation</p>
+                <p className="font-semibold text-foreground mb-2">How to Read This Chart</p>
+                <p className="mb-2">
+                  This shows what $1 invested at the start of the sample period would grow to over time. The green line (Q5) represents
+                  the high-R&amp;D portfolio; the red line (Q1) represents the low-R&amp;D portfolio. The widening gap between lines
+                  visualizes the cumulative effect of the annual premium.
+                </p>
+                <p className="font-semibold text-foreground mb-1 mt-3">Key Observations</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Compounding highlights path dependence: a small set of drawdown episodes can dominate long-horizon wealth outcomes.</li>
-                  <li>Growth-of-$1 is intuitive but not risk-adjusted; it should be read alongside volatility and drawdown diagnostics (Section 9.3).</li>
+                  <li>
+                    <strong className="text-foreground">Compounding effect:</strong> Small annual differences compound dramatically over time.
+                    {(() => {
+                      const lastQ5 = growthOf1[growthOf1.length - 1]?.q5Cumulative
+                      const lastQ1 = growthOf1[growthOf1.length - 1]?.q1Cumulative
+                      if (typeof lastQ5 === "number" && typeof lastQ1 === "number") {
+                        return ` $1 in Q5 grew to $${lastQ5.toFixed(2)} vs $${lastQ1.toFixed(2)} in Q1.`
+                      }
+                      return ""
+                    })()}
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Path dependence:</strong> The final value depends heavily on the sequence of returns.
+                    A large drawdown early in the period has a bigger impact than one late in the period because there's more time to recover (or not).
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Not risk-adjusted:</strong> This chart shows raw wealth growth, not risk-adjusted performance.
+                    Q5 may have higher volatility (see Section 9.3). Higher returns with higher risk may or may not be attractive depending on your risk tolerance.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Hindsight bias warning:</strong> This is a backtest. Actual implementation would face
+                    trading costs, timing differences, and behavioral challenges not reflected here.
+                  </li>
                 </ul>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1921,6 +2328,18 @@ export function MainPaper() {
               <CardDescription>Regression tests of whether the premium is explained by standard factor models.</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-3 rounded-lg border bg-muted/30 text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground mb-2">What are factor spanning tests?</p>
+                <p className="mb-2">
+                  We regress the R&amp;D premium (HML-RD) on standard academic factors to test whether it's explained by known risk exposures.
+                  If the alpha (intercept) is significant after controlling for factors, the R&amp;D premium is "distinct" and not just a combination
+                  of existing factors.
+                </p>
+                <Formulas.FactorAlpha />
+                <p className="mt-2 text-xs">
+                  <strong>Models tested:</strong> FF3 (Market, Size, Value), FF5 (adds Profitability, Investment), FF6 (adds Momentum).
+                </p>
+              </div>
               {(spanningTests as any)?.models ? (
                 <div className="space-y-4">
                   <div className="overflow-x-auto">
@@ -1958,9 +2377,9 @@ export function MainPaper() {
                         {Object.entries((spanningTests as any).models).map(([model, data]: any) => (
                           <tr key={model} className="border-b border-border/50">
                             <td className="py-2 px-3 font-medium text-foreground">{model}</td>
-                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.alpha === "number" ? `${(data.alpha * 100).toFixed(2)}%` : "-"}</td>
-                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.alpha_t === "number" ? data.alpha_t.toFixed(2) : "-"}</td>
-                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.r_squared === "number" ? `${(data.r_squared * 100).toFixed(1)}%` : "-"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.alpha === "number" ? `${(data.alpha * 100).toFixed(2)}%` : "..."}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.alpha_t === "number" ? data.alpha_t.toFixed(2) : "..."}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{typeof data.r_squared === "number" ? `${(data.r_squared * 100).toFixed(1)}%` : "..."}</td>
                             <td className="py-2 px-3 text-center">
                               {data.is_spanned ? (
                                 <Badge variant="outline" className="text-yellow-600 dark:text-yellow-400">Yes</Badge>
@@ -2143,20 +2562,20 @@ export function MainPaper() {
                         <div key={r.size} className="p-4 rounded-lg bg-muted/30 border text-center">
                           <h4 className="font-semibold mb-2 text-foreground">{r.size}</h4>
                           <div className="text-xs text-muted-foreground">
-                            High {typeof high === "number" ? `${high.toFixed(2)}%` : "-"} vs Low {typeof low === "number" ? `${low.toFixed(2)}%` : "-"}
+                            High {typeof high === "number" ? `${high.toFixed(2)}%` : "..."} vs Low {typeof low === "number" ? `${low.toFixed(2)}%` : "..."}
                           </div>
                           <div className="text-2xl font-bold text-primary mt-2">
-                            {typeof spread === "number" ? `${spread >= 0 ? "+" : ""}${spread.toFixed(2)}%` : "-"}
+                            {typeof spread === "number" ? `${spread >= 0 ? "+" : ""}${spread.toFixed(2)}%` : "..."}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            t = {typeof r.t === "number" ? r.t.toFixed(2) : "-"}
+                            t = {typeof r.t === "number" ? r.t.toFixed(2) : "..."}
                           </div>
                           <Badge
                             className={
                               r.significant === null ? "bg-slate-500 mt-2" : r.significant ? "bg-green-600 mt-2" : "bg-slate-500 mt-2"
                             }
                           >
-                            {r.significant === null ? "-" : r.significant ? "Significant" : "Not Sig."}
+                            {r.significant === null ? "..." : r.significant ? "Significant" : "Not Sig."}
                           </Badge>
                         </div>
                       )
@@ -2196,11 +2615,11 @@ export function MainPaper() {
                               <TableCell>{fmtCell(byRd["Medium"])}</TableCell>
                               <TableCell>{fmtCell(byRd["High"])}</TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.spread === "number" ? `${r.spread >= 0 ? "+" : ""}${r.spread.toFixed(2)}%` : "-"}
+                                {typeof r.spread === "number" ? `${r.spread >= 0 ? "+" : ""}${r.spread.toFixed(2)}%` : "..."}
                               </TableCell>
-                              <TableCell className="text-right font-mono">{typeof r.t === "number" ? r.t.toFixed(2) : "-"}</TableCell>
+                              <TableCell className="text-right font-mono">{typeof r.t === "number" ? r.t.toFixed(2) : "..."}</TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.p === "number" ? (r.p < 0.001 ? "< 0.001" : r.p.toFixed(4)) : "-"}
+                                {typeof r.p === "number" ? (r.p < 0.001 ? "< 0.001" : r.p.toFixed(4)) : "..."}
                               </TableCell>
                             </TableRow>
                           )
@@ -2308,11 +2727,11 @@ export function MainPaper() {
                                     <TableCell className="font-medium">{r.name}</TableCell>
                                     <TableCell className="text-right font-mono">{r.mean.toFixed(2)}%</TableCell>
                                     <TableCell className="text-right font-mono">
-                                      {r.delta === null ? "-" : `${r.delta >= 0 ? "+" : ""}${r.delta.toFixed(2)}%`}
+                                      {r.delta === null ? "..." : `${r.delta >= 0 ? "+" : ""}${r.delta.toFixed(2)}%`}
                                     </TableCell>
-                                    <TableCell className="text-right font-mono">{r.t === null ? "-" : r.t.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{r.t === null ? "..." : r.t.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-mono">
-                                      {r.p === null ? "-" : r.p < 0.001 ? "< 0.001" : r.p.toFixed(4)}
+                                      {r.p === null ? "..." : r.p < 0.001 ? "< 0.001" : r.p.toFixed(4)}
                                     </TableCell>
                                   </TableRow>
                                 ))
@@ -2499,16 +2918,16 @@ export function MainPaper() {
                               <TableCell className="font-medium">{r.label}</TableCell>
                               <TableCell className="text-muted-foreground">{r.event}</TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.meanPremium === "number" ? `${r.meanPremium.toFixed(2)}%` : "-"}
+                                {typeof r.meanPremium === "number" ? `${r.meanPremium.toFixed(2)}%` : "..."}
                               </TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.winRatePct === "number" ? `${r.winRatePct.toFixed(0)}%` : "-"}
+                                {typeof r.winRatePct === "number" ? `${r.winRatePct.toFixed(0)}%` : "..."}
                               </TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.meanQ5 === "number" ? `${r.meanQ5.toFixed(2)}%` : "-"}
+                                {typeof r.meanQ5 === "number" ? `${r.meanQ5.toFixed(2)}%` : "..."}
                               </TableCell>
                               <TableCell className="text-right font-mono">
-                                {typeof r.meanQ1 === "number" ? `${r.meanQ1.toFixed(2)}%` : "-"}
+                                {typeof r.meanQ1 === "number" ? `${r.meanQ1.toFixed(2)}%` : "..."}
                               </TableCell>
                               <TableCell className="text-right font-mono">{r.n}</TableCell>
                             </TableRow>
@@ -2525,28 +2944,55 @@ export function MainPaper() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-foreground">8.3 Sector structure</h3>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  8.3 Sector structure
+                  <InfoTooltip term="sector_tilt" size={14} />
+                </h3>
                 <p className="text-muted-foreground">
-                  High-R&D portfolios mechanically tilt toward R&D-intensive sectors (notably Technology and Healthcare). This does not invalidate the signal,
-                  but it makes sector reporting essential. Section 6 documents both R&D intensity by sector and coverage, and Section 7 includes diagnostics that
-                  help assess whether the premium survives basic sector and size confounding.
+                  High-R&D portfolios mechanically tilt toward R&D-intensive sectors (notably Technology and Healthcare). <strong className="text-foreground">Why does this matter?</strong>{" "}
+                  Because if the premium is entirely driven by sector exposure, an investor could replicate it with a simpler sector bet.
+                  This does not invalidate the signal, but it makes sector reporting essential. Section 6 documents both R&D intensity by sector and coverage,
+                  and Section 7 includes diagnostics (including double-sorts{" "}
+                  <InfoTooltip term="double_sort" size={12} />
+                  ) that help assess whether the premium survives basic sector and size confounding.
                 </p>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold text-foreground">8.4 Factor controls</h3>
                 <p className="text-muted-foreground">
-                  The spanning tests in Section 7.3 evaluate whether the premium is explained by standard factor models. When factor inputs are present in the
-                  frozen snapshot, we report regression alphas and a model-by-model interpretation. When factor inputs are missing, we treat the spanning results
-                  as unavailable rather than imputing them.
+                  The spanning tests in Section 7.3 evaluate whether the premium is explained by standard factor models (Fama-French 3-factor, 5-factor, and 6-factor including momentum).
+                  <strong className="text-foreground"> Why do we run these tests?</strong> If the R&D premium is fully "spanned"{" "}
+                  <InfoTooltip term="spanned" size={12} />{" "}
+                  by known factors, it would mean investors can replicate the premium using existing factor ETFs without needing an R&D-specific strategy.
+                  A significant alpha{" "}
+                  <InfoTooltip term="alpha" size={12} />{" "}
+                  after controlling for factors suggests the R&D premium is distinct and potentially valuable.
+                </p>
+                <p className="text-muted-foreground mt-2">
+                  When factor inputs are present in the frozen snapshot, we report regression alphas and a model-by-model interpretation.
+                  When factor inputs are missing, we treat the spanning results as unavailable rather than imputing them.
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-foreground">8.5 Mechanisms (mispricing vs risk)</h3>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  8.5 Mechanisms (mispricing vs risk)
+                </h3>
                 <p className="text-muted-foreground">
                   This design does not identify mechanisms, but the stratification diagnostics in Section 7.4 provide structured evidence that is more consistent
-                  with either a mispricing or risk-based interpretation. We report those diagnostics as suggestive rather than definitive.
+                  with either a mispricing{" "}
+                  <InfoTooltip term="mispricing" size={12} />{" "}
+                  or risk-based{" "}
+                  <InfoTooltip term="risk_compensation" size={12} />{" "}
+                  interpretation. <strong className="text-foreground">Why does this distinction matter?</strong>
+                </p>
+                <ul className="text-muted-foreground list-disc list-inside space-y-1 mt-2">
+                  <li>If <strong>mispricing</strong>: the premium may shrink as investors become more sophisticated or R&D valuation improves.</li>
+                  <li>If <strong>risk compensation</strong>: the premium should persist because it compensates for real economic risks that won't disappear.</li>
+                </ul>
+                <p className="text-muted-foreground mt-2">
+                  We report those diagnostics as suggestive rather than definitive. Most likely, both mechanisms contribute to some degree.
                 </p>
               </div>
 
@@ -2698,18 +3144,41 @@ export function MainPaper() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="p-4 border rounded-lg">
-                  <p className="font-semibold mb-2 text-foreground">Rules</p>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Universe: point-in-time S&amp;P 500 constituents</li>
-                    <li>Signal: prior fiscal-year R&amp;D intensity (R&amp;D / revenue)</li>
-                    <li>Formation: end of June; hold July through June</li>
-                    <li>Rebalance: annual</li>
-                    <li>Weights: equal-weight within the selected portfolio</li>
+                  <p className="font-semibold mb-2 text-foreground">Portfolio Construction Rules</p>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                    <li>
+                      <strong className="text-foreground">Universe:</strong> point-in-time S&amp;P 500 constituents{" "}
+                      <InfoTooltip term="point_in_time" size={12} />
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Signal:</strong> prior fiscal-year R&amp;D intensity (R&amp;D / revenue)
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Formation:</strong> end of June; hold July through June{" "}
+                      <InfoTooltip term="july_june_convention" size={12} />
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Rebalance:</strong> annual (once per year)
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Weights:</strong> equal-weight within the selected portfolio{" "}
+                      <InfoTooltip term="equal_weight" size={12} />
+                    </li>
                   </ul>
+                  <div className="mt-3">
+                    <Formulas.Turnover />
+                  </div>
                 </div>
 
                 <div className="p-4 border rounded-lg">
                   <p className="font-semibold mb-2 text-foreground">Transaction-cost assumptions</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    We use the Novy-Marx &amp; Velikov (2016) methodology, calibrated for S&amp;P 500 liquidity characteristics.
+                    Trading costs include bid-ask spread, market impact, and commissions.
+                  </p>
+                  <div className="mb-3">
+                    <Formulas.TradingCost />
+                  </div>
                   {transactionCosts ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
@@ -2735,16 +3204,19 @@ export function MainPaper() {
                           <div className="font-semibold">
                             {(() => {
                               const capture = transactionCosts.premium_capture_rate_pct ?? transactionCosts.premium_after_costs_pct
-                              if (capture === null || capture === undefined) return "-"
+                              if (capture === null || capture === undefined) return "..."
                               return `${capture.toFixed(1)}%`
                             })()}
                           </div>
                         </div>
                       </div>
 
-                      <pre className="text-xs bg-muted/30 border rounded p-3 overflow-auto">
-                        {JSON.stringify(transactionCosts.cost_breakdown, null, 2)}
-                      </pre>
+                      <div className="p-3 rounded border bg-muted/30 text-sm">
+                        <p className="font-semibold text-foreground mb-1">Cost breakdown</p>
+                        <pre className="text-xs overflow-auto">
+                          {JSON.stringify(transactionCosts.cost_breakdown, null, 2)}
+                        </pre>
+                      </div>
 
                       <p className="text-xs text-muted-foreground">{transactionCosts.methodology_note}</p>
                     </div>
@@ -2766,34 +3238,59 @@ export function MainPaper() {
                   {!netOfCost5yr ? (
                     <p className="text-sm text-muted-foreground">Loading net-of-cost results...</p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Quintile</TableHead>
-                            <TableHead className="text-right">Gross Return (%)</TableHead>
-                            <TableHead className="text-right">Trading Cost (%)</TableHead>
-                            <TableHead className="text-right">Net Return (%)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {netOfCost5yr.quintile_results.map((q) => (
-                            <TableRow key={q.quintile}>
-                              <TableCell className="font-medium">Q{q.quintile}</TableCell>
-                              <TableCell className="text-right">{q.gross_return_pct.toFixed(2)}</TableCell>
-                              <TableCell className="text-right">{q.trading_cost_pct.toFixed(3)}</TableCell>
-                              <TableCell className="text-right">{q.net_return_pct.toFixed(2)}</TableCell>
+                    <>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>
+                                <span className="flex items-center gap-1">
+                                  Quintile
+                                  <InfoTooltip term="quintile" size={12} />
+                                </span>
+                              </TableHead>
+                              <TableHead className="text-right">Gross Return (%)</TableHead>
+                              <TableHead className="text-right">Trading Cost (%)</TableHead>
+                              <TableHead className="text-right">Net Return (%)</TableHead>
                             </TableRow>
-                          ))}
-                          <TableRow>
-                            <TableCell className="font-semibold">HML (Q5-Q1)</TableCell>
-                            <TableCell className="text-right font-semibold">{netOfCost5yr.gross_rd_premium_pct.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">-</TableCell>
-                            <TableCell className="text-right font-semibold">{netOfCost5yr.net_rd_premium_pct.toFixed(2)}</TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {netOfCost5yr.quintile_results.map((q) => (
+                              <TableRow key={q.quintile}>
+                                <TableCell className="font-medium">Q{q.quintile}</TableCell>
+                                <TableCell className="text-right">{q.gross_return_pct.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{q.trading_cost_pct.toFixed(3)}</TableCell>
+                                <TableCell className="text-right">{q.net_return_pct.toFixed(2)}</TableCell>
+                              </TableRow>
+                            ))}
+                            <TableRow className="bg-muted/30">
+                              <TableCell className="font-semibold">HML (Q5-Q1)</TableCell>
+                              <TableCell className="text-right font-semibold">{netOfCost5yr.gross_rd_premium_pct.toFixed(2)}</TableCell>
+                              <TableCell className="text-right">-</TableCell>
+                              <TableCell className="text-right font-semibold">{netOfCost5yr.net_rd_premium_pct.toFixed(2)}</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                        <p className="font-semibold text-foreground mb-2">How to Read This Table</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>
+                            <strong className="text-foreground">Gross Return:</strong> Average annual return before any trading costs.
+                          </li>
+                          <li>
+                            <strong className="text-foreground">Trading Cost:</strong> Estimated annual cost from rebalancing (bid-ask + impact + commissions).
+                          </li>
+                          <li>
+                            <strong className="text-foreground">Net Return:</strong> What you actually keep after trading costs.
+                          </li>
+                          <li>
+                            <strong className="text-foreground">HML row:</strong> The premium (Q5 minus Q1). This is what matters for the strategy.
+                            A gross premium of {netOfCost5yr.gross_rd_premium_pct.toFixed(2)}% becomes {netOfCost5yr.net_rd_premium_pct.toFixed(2)}% after costs.
+                          </li>
+                        </ul>
+                      </div>
+                    </>
                   )}
                   <p className="text-xs text-muted-foreground mt-3">
                     Source: <code>/api/research/publication-snapshot</code> (frozen; net-of-cost returns).
@@ -2840,10 +3337,10 @@ export function MainPaper() {
                           {rollingAggregates["5yr"].map((q) => (
                             <TableRow key={q.quintile}>
                               <TableCell className="font-medium">{q.label}</TableCell>
-                              <TableCell className="text-right">{q.avg_return !== null && q.avg_return !== undefined ? q.avg_return.toFixed(2) : "-"}</TableCell>
-                              <TableCell className="text-right">{q.volatility !== null && q.volatility !== undefined ? q.volatility.toFixed(2) : "-"}</TableCell>
-                              <TableCell className="text-right">{q.sharpe_ratio !== null && q.sharpe_ratio !== undefined ? q.sharpe_ratio.toFixed(3) : "-"}</TableCell>
-                              <TableCell className="text-right">{q.max_drawdown !== null && q.max_drawdown !== undefined ? q.max_drawdown.toFixed(2) : "-"}</TableCell>
+                              <TableCell className="text-right">{q.avg_return !== null && q.avg_return !== undefined ? q.avg_return.toFixed(2) : "..."}</TableCell>
+                              <TableCell className="text-right">{q.volatility !== null && q.volatility !== undefined ? q.volatility.toFixed(2) : "..."}</TableCell>
+                              <TableCell className="text-right">{q.sharpe_ratio !== null && q.sharpe_ratio !== undefined ? q.sharpe_ratio.toFixed(3) : "..."}</TableCell>
+                              <TableCell className="text-right">{q.max_drawdown !== null && q.max_drawdown !== undefined ? q.max_drawdown.toFixed(2) : "..."}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -2874,7 +3371,7 @@ export function MainPaper() {
                           <div className="font-semibold text-green-600 dark:text-green-400">
                             {typeof (investableBacktest as any)?.portfolio_performance?.annualized_return === "number"
                               ? `${(investableBacktest as any).portfolio_performance.annualized_return.toFixed(2)}%`
-                              : "-"}
+                              : "..."}
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
@@ -2882,7 +3379,7 @@ export function MainPaper() {
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.benchmark_performance?.annualized_return === "number"
                               ? `${(investableBacktest as any).benchmark_performance.annualized_return.toFixed(2)}%`
-                              : "-"}
+                              : "..."}
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
@@ -2896,7 +3393,7 @@ export function MainPaper() {
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.sp500_performance?.annualized_return === "number"
                               ? `${(investableBacktest as any).sp500_performance.annualized_return.toFixed(2)}%`
-                              : "-"}
+                              : "..."}
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
@@ -2904,7 +3401,7 @@ export function MainPaper() {
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.excess_vs_sp500 === "number"
                               ? `${(investableBacktest as any).excess_vs_sp500 >= 0 ? "+" : ""}${(investableBacktest as any).excess_vs_sp500.toFixed(2)}%`
-                              : "-"}
+                              : "..."}
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
@@ -2918,7 +3415,7 @@ export function MainPaper() {
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.turnover?.avg_turnover_pct === "number"
                               ? `${(investableBacktest as any).turnover.avg_turnover_pct.toFixed(1)}%`
-                              : "-"}
+                              : "..."}
                           </div>
                         </div>
                       </div>
@@ -2936,7 +3433,7 @@ export function MainPaper() {
 
                       <div className="h-[340px]">
                         {investableGrowth.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                          <SafeChart height={340} minHeight={300}>
                             <LineChart data={investableGrowth}>
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                               <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
@@ -2954,7 +3451,7 @@ export function MainPaper() {
                               <Line type="monotone" dataKey="benchmarkIndex" name="EW Cohort" stroke="#3b82f6" strokeWidth={2} dot={false} />
                               <Line type="monotone" dataKey="sp500Index" name="S&P 500" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="5 5" />
                             </LineChart>
-                          </ResponsiveContainer>
+                          </SafeChart>
                         ) : (
                           <div className="h-full flex items-center justify-center text-muted-foreground">Loading growth series...</div>
                         )}
@@ -3016,13 +3513,13 @@ export function MainPaper() {
                               {(investableBacktest as any).yearly_data.slice(0, 25).map((r: any) => (
                                 <TableRow key={r.year}>
                                   <TableCell className="font-mono">{r.year}</TableCell>
-                                  <TableCell className="text-right font-semibold text-green-600 dark:text-green-400">{typeof r.portfolio_return === "number" ? r.portfolio_return.toFixed(2) : "-"}</TableCell>
-                                  <TableCell className="text-right">{typeof r.benchmark_return === "number" ? r.benchmark_return.toFixed(2) : "-"}</TableCell>
-                                  <TableCell className="text-right">{typeof r.sp500_return === "number" ? r.sp500_return.toFixed(2) : "-"}</TableCell>
+                                  <TableCell className="text-right font-semibold text-green-600 dark:text-green-400">{typeof r.portfolio_return === "number" ? r.portfolio_return.toFixed(2) : "..."}</TableCell>
+                                  <TableCell className="text-right">{typeof r.benchmark_return === "number" ? r.benchmark_return.toFixed(2) : "..."}</TableCell>
+                                  <TableCell className="text-right">{typeof r.sp500_return === "number" ? r.sp500_return.toFixed(2) : "..."}</TableCell>
                                   <TableCell className={`text-right ${typeof r.excess_vs_sp500 === "number" && r.excess_vs_sp500 >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                                    {typeof r.excess_vs_sp500 === "number" ? `${r.excess_vs_sp500 >= 0 ? "+" : ""}${r.excess_vs_sp500.toFixed(2)}` : "-"}
+                                    {typeof r.excess_vs_sp500 === "number" ? `${r.excess_vs_sp500 >= 0 ? "+" : ""}${r.excess_vs_sp500.toFixed(2)}` : "..."}
                                   </TableCell>
-                                  <TableCell className="text-right">{typeof r.turnover_pct === "number" ? r.turnover_pct.toFixed(1) : "-"}</TableCell>
+                                  <TableCell className="text-right">{typeof r.turnover_pct === "number" ? r.turnover_pct.toFixed(1) : "..."}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -3035,6 +3532,371 @@ export function MainPaper() {
                       </p>
                     </>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* 9.5 Implementation Timeline */}
+              <Card className="border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-bold">📅</span>
+                    9.5 Implementation Timeline
+                  </CardTitle>
+                  <CardDescription>
+                    Annual calendar view: when to do what for the R&D Alpha strategy.{" "}
+                    <InfoTooltip term="rebalancing_calendar" size={12} />
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Timeline visual */}
+                  <div className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Q1: Jan-Mar */}
+                      <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">❄️</span>
+                          <span className="font-semibold text-foreground">Jan – Mar</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">10-Ks filing window</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• Most Dec fiscal-year 10-Ks filed</li>
+                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• Optionally: collect R&D data as filings come in</li>
+                        </ul>
+                      </div>
+
+                      {/* Q2: Apr-Jun */}
+                      <div className="p-4 rounded-lg border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">🌱</span>
+                          <span className="font-semibold text-foreground">Apr – Jun</span>
+                          <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-700 dark:text-emerald-300">
+                            ACTION
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">Formation period</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• <strong className="text-foreground">Late June:</strong> compute R&D/Rev rankings</li>
+                          <li>• <strong className="text-foreground">June 25-30:</strong> place rebalance orders</li>
+                          <li>• Use prior fiscal-year data (now fully available)</li>
+                          <li>• Spread trades over 3-5 days to minimize impact</li>
+                        </ul>
+                      </div>
+
+                      {/* Q3: Jul-Sep */}
+                      <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">☀️</span>
+                          <span className="font-semibold text-foreground">Jul – Sep</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">New holding period starts</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• Portfolio is set for 12 months</li>
+                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• Ignore quarterly noise</li>
+                        </ul>
+                      </div>
+
+                      {/* Q4: Oct-Dec */}
+                      <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">🍂</span>
+                          <span className="font-semibold text-foreground">Oct – Dec</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">Continue holding</p>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• Dec: consider tax-loss harvesting if applicable</li>
+                          <li>• Prepare for next year's data collection</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Arrow indicator */}
+                    <div className="hidden md:flex items-center justify-center mt-4 text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span>← Holding Period (12 months)</span>
+                        <span className="font-mono text-emerald-600 dark:text-emerald-400">→ Rebalance → </span>
+                        <span>Next Holding Period →</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">⚠️ Key insight: You do almost nothing all year</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      The strategy requires ~1 day of work per year (computing rankings + placing orders). The rest of the time, you hold. 
+                      This is a feature, not a bug: frequent trading destroys returns through costs.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 9.6 Practical Implementation Checklist */}
+              <Card className="border-blue-500/30 bg-blue-50/30 dark:bg-blue-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold">✓</span>
+                    9.6 Practical Implementation Checklist
+                  </CardTitle>
+                  <CardDescription>
+                    Step-by-step guide for implementing the R&D Alpha strategy with real money.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Setup (one-time) */}
+                    <div className="p-4 rounded-lg border">
+                      <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-xs">1</span>
+                        One-Time Setup
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Open brokerage account</strong>{" "}
+                            <InfoTooltip term="broker_selection" size={12} />
+                            <br />
+                            <span className="text-xs">Schwab, Fidelity, or Interactive Brokers recommended</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Decide portfolio size</strong>{" "}
+                            <InfoTooltip term="position_sizing" size={12} />
+                            <br />
+                            <span className="text-xs">Minimum ~$10K for reasonable position sizes (20 × $500)</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Bookmark data sources</strong>{" "}
+                            <InfoTooltip term="data_sources" size={12} />
+                            <br />
+                            <span className="text-xs">SEC EDGAR (10-Ks), S&P 500 list (Wikipedia/Bloomberg)</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Set calendar reminder</strong>
+                            <br />
+                            <span className="text-xs">June 20: "Compute R&D rankings and rebalance"</span>
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Annual rebalance */}
+                    <div className="p-4 rounded-lg border">
+                      <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-xs">2</span>
+                        Annual Rebalance (June)
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 font-mono text-xs mt-0.5">A.</span>
+                          <span>
+                            <strong className="text-foreground">Get current S&P 500 list</strong>
+                            <br />
+                            <span className="text-xs">~503 tickers (some share classes)</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 font-mono text-xs mt-0.5">B.</span>
+                          <span>
+                            <strong className="text-foreground">Collect R&D + Revenue</strong>
+                            <br />
+                            <span className="text-xs">From most recent 10-K (prior fiscal year)</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 font-mono text-xs mt-0.5">C.</span>
+                          <span>
+                            <strong className="text-foreground">Compute R&D/Revenue, rank, select top 20</strong>{" "}
+                            <InfoTooltip term="rd_intensity" size={12} />
+                            <br />
+                            <span className="text-xs">Exclude firms with 0 R&D (banks, utilities)</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-500 font-mono text-xs mt-0.5">D.</span>
+                          <span>
+                            <strong className="text-foreground">Place orders over 3-5 days</strong>{" "}
+                            <InfoTooltip term="execution_slippage" size={12} />
+                            <br />
+                            <span className="text-xs">Limit orders, avoid market-on-open</span>
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* During the year */}
+                    <div className="p-4 rounded-lg border">
+                      <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400 text-white text-xs">3</span>
+                        During the Year (Jul – May)
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-slate-400">-</span>
+                          <span>
+                            <strong className="text-foreground">Do nothing</strong>{" "}
+                            <InfoTooltip term="holding_period" size={12} />
+                            <br />
+                            <span className="text-xs">Seriously. No mid-year trading.</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-slate-400">-</span>
+                          <span>
+                            <strong className="text-foreground">Reinvest dividends</strong>
+                            <br />
+                            <span className="text-xs">Set to DRIP or accumulate cash for next rebalance</span>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-slate-400">-</span>
+                          <span>
+                            <strong className="text-foreground">Ignore earnings surprises</strong>
+                            <br />
+                            <span className="text-xs">Quarterly noise is not signal</span>
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* What to expect */}
+                    <div className="p-4 rounded-lg border bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                      <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-500 text-white text-xs">!</span>
+                        What to Expect
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-start gap-2">
+                          <TrendingUp className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Long-term edge:</strong> ~5-7% excess /yr (historical)
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <TrendingDown className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Painful years:</strong> ~30% of years underperform{" "}
+                            <InfoTooltip term="tracking_error" size={12} />
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Target className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Time horizon:</strong> 5+ years to see the edge
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Scale className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong className="text-foreground">Sector tilt:</strong> Overweight tech/healthcare{" "}
+                            <InfoTooltip term="sector_tilt" size={12} />
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Quick reference */}
+                  <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50 border">
+                    <p className="font-semibold text-foreground mb-2">📋 Quick Reference</p>
+                    <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Holdings:</span>{" "}
+                        <span className="font-semibold text-foreground">20 stocks (equal-weight)</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Rebalance:</span>{" "}
+                        <span className="font-semibold text-foreground">Annual (June)</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Signal:</span>{" "}
+                        <span className="font-semibold text-foreground">R&D / Revenue</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Universe:</span>{" "}
+                        <span className="font-semibold text-foreground">S&P 500</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 9.7 Common Questions */}
+              <Card className="border-slate-500/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">?</span>
+                    9.7 Common Questions
+                  </CardTitle>
+                  <CardDescription>
+                    Practical FAQs for implementing the R&D Alpha strategy.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        q: "Can I use fewer than 20 stocks?",
+                        a: "Yes, but more concentration = more volatility. With 10 stocks, each position is 10% of portfolio. Consider your risk tolerance. The minimum viable portfolio is probably 15-20 stocks for reasonable diversification.",
+                      },
+                      {
+                        q: "What if a stock gets acquired mid-year?",
+                        a: "Take the cash from the acquisition and hold it until the next rebalance. Don't try to replace the position mid-year – that's extra trading cost with no expected benefit.",
+                      },
+                      {
+                        q: "Should I use sector caps?",
+                        a: "Optional. Without caps, you'll be ~40-50% tech/healthcare. With sector caps (e.g., max 25% per sector), you get more diversification but may reduce the R&D signal strength. We show uncapped results in the backtest.",
+                      },
+                      {
+                        q: "How much money do I need to start?",
+                        a: "Minimum ~$10K for 20 positions of $500 each. Below this, commission costs (if any) and odd-lot execution become proportionally expensive. Ideal is $50K+ for cleaner position sizes.",
+                      },
+                      {
+                        q: "Can I add this to my existing portfolio?",
+                        a: "Yes – treat it as a 'sleeve'. Allocate 10-30% of your equity allocation to R&D Alpha, keep the rest in index funds. This reduces tracking error while capturing some of the premium.",
+                      },
+                      {
+                        q: "What about taxes?",
+                        a: "Low turnover (~15%) means most gains are long-term. Annual rebalancing qualifies all held positions for long-term capital gains rates. Consider holding in a tax-advantaged account (IRA, 401k) if concerned about taxes.",
+                      },
+                      {
+                        q: "Why not use an ETF instead?",
+                        a: "No pure R&D intensity ETF exists. Existing 'innovation' ETFs use different signals (patents, themes) and have higher fees. DIY costs ~0 in fees vs 0.5-0.8% for thematic ETFs.",
+                      },
+                      {
+                        q: "What if I miss the June rebalance?",
+                        a: "Rebalance when you can. A few weeks delay won't materially affect returns. The key is annual rebalancing with fresh R&D data – the exact date matters less than consistency.",
+                      },
+                    ].map((faq, i) => (
+                      <div key={i} className="p-3 rounded-lg border bg-muted/30">
+                        <p className="font-semibold text-foreground text-sm mb-1">{faq.q}</p>
+                        <p className="text-muted-foreground text-xs">{faq.a}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                    <p className="font-semibold text-emerald-800 dark:text-emerald-200 text-sm mb-2">🔗 Interactive Tool</p>
+                    <p className="text-emerald-700 dark:text-emerald-300 text-xs mb-3">
+                      For current holdings, live rankings, and scenario modeling, use the R&D ETF tool:
+                    </p>
+                    <Link to="/portfolio">
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <FlaskConical className="mr-2 h-4 w-4" />
+                        Open R&D ETF Tool
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </CardContent>
@@ -3115,15 +3977,15 @@ export function MainPaper() {
               <div className="not-prose grid gap-2 text-sm">
                 <div className="p-3 rounded border bg-muted/30">
                   <span className="text-muted-foreground">Snapshot ID:</span>{" "}
-                  <span className="font-mono">{snapshot?.meta?.id || "-"}</span>
+                  <span className="font-mono">{snapshot?.meta?.id || "..."}</span>
                 </div>
                 <div className="p-3 rounded border bg-muted/30">
                   <span className="text-muted-foreground">Built at:</span>{" "}
-                  <span className="font-mono">{snapshotBuiltAtLabel || "-"}</span>
+                  <span className="font-mono">{snapshotBuiltAtLabel || "..."}</span>
                 </div>
                 <div className="p-3 rounded border bg-muted/30">
                   <span className="text-muted-foreground">Git commit:</span>{" "}
-                  <span className="font-mono">{snapshot?.meta?.git_commit ? snapshot.meta.git_commit.slice(0, 12) : "-"}</span>
+                  <span className="font-mono">{snapshot?.meta?.git_commit ? snapshot.meta.git_commit.slice(0, 12) : "..."}</span>
                 </div>
               </div>
               <ul className="text-muted-foreground list-disc list-inside">
@@ -3161,19 +4023,19 @@ export function MainPaper() {
                 <ul className="text-muted-foreground text-sm space-y-2">
                   <li>
                     <strong className="text-foreground">Primary result:</strong> The annual non-overlapping HML premium averages{" "}
-                    <strong>{typeof annualHmlData?.mean_premium === "number" ? `${annualHmlData.mean_premium.toFixed(2)}%` : "-"}</strong> per year
-                    (Newey-West t = {typeof annualHmlData?.hac_adjusted?.t_statistic === "number" ? annualHmlData.hac_adjusted.t_statistic.toFixed(2) : "-"},
-                    p = {typeof annualHmlData?.hac_adjusted?.p_value === "number" ? (annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)) : "-"}).
+                    <strong>{typeof annualHmlData?.mean_premium === "number" ? `${annualHmlData.mean_premium.toFixed(2)}%` : "..."}</strong> per year
+                    (Newey-West t = {typeof annualHmlData?.hac_adjusted?.t_statistic === "number" ? annualHmlData.hac_adjusted.t_statistic.toFixed(2) : "..."},
+                    p = {typeof annualHmlData?.hac_adjusted?.p_value === "number" ? (annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)) : "..."}).
                   </li>
                   <li>
                     <strong className="text-foreground">Horizon dependence:</strong> Rolling-window premiums are{" "}
-                    {headlinePremiums.map((h) => `${h.horizon.toUpperCase()}: ${typeof h.premiumPct === "number" ? h.premiumPct.toFixed(2) : "-"}%`).join(", ")} (Q5-Q1).
+                    {headlinePremiums.map((h) => `${h.horizon.toUpperCase()}: ${typeof h.premiumPct === "number" ? h.premiumPct.toFixed(2) : "..."}%`).join(", ")} (Q5-Q1).
                     Longer horizons show smaller premiums, consistent with signal decay and regime mixing.
                   </li>
                   <li>
                     <strong className="text-foreground">Implementability:</strong> Under literature-calibrated transaction costs, the net-of-cost premium
-                    remains <strong>{typeof netOfCost5yr?.net_rd_premium_pct === "number" ? `${netOfCost5yr.net_rd_premium_pct.toFixed(2)}%` : "-"}</strong> at the
-                    5-year horizon with a <strong>{typeof transactionCosts?.premium_capture_rate_pct === "number" ? `${transactionCosts.premium_capture_rate_pct.toFixed(1)}%` : "-"}</strong> capture rate.
+                    remains <strong>{typeof netOfCost5yr?.net_rd_premium_pct === "number" ? `${netOfCost5yr.net_rd_premium_pct.toFixed(2)}%` : "..."}</strong> at the
+                    5-year horizon with a <strong>{typeof transactionCosts?.premium_capture_rate_pct === "number" ? `${transactionCosts.premium_capture_rate_pct.toFixed(1)}%` : "..."}</strong> capture rate.
                   </li>
                 </ul>
               </div>

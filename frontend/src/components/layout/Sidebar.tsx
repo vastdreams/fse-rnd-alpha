@@ -73,15 +73,15 @@ export function Sidebar() {
           onClick={() => setMobileOpen(false)}
         />
       )}
-      <aside 
-        className={cn(
-          "fixed left-0 top-0 z-40 h-screen bg-card border-r border-border transition-all duration-300",
+    <aside 
+      className={cn(
+          "fixed left-0 top-0 z-40 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col",
           isMobile ? "w-64" : (collapsed ? "w-16" : "w-64")
-        )}
-      >
-      {/* Logo */}
+      )}
+    >
+      {/* Logo - fixed at top */}
       <div className={cn(
-        "flex items-center gap-3 p-4 border-b border-border",
+        "flex items-center gap-3 p-4 border-b border-border flex-shrink-0",
         collapsed && "justify-center"
       )}>
         <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
@@ -100,7 +100,7 @@ export function Sidebar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={toggle}
+        onClick={toggle}
               className={cn(
                 "absolute -right-4 top-20 z-50",
                 "w-8 h-8 rounded-full",
@@ -113,8 +113,8 @@ export function Sidebar() {
                 "hover:scale-110 hover:shadow-xl",
                 "active:scale-95"
               )}
-            >
-              {collapsed ? (
+      >
+        {collapsed ? (
                 <ChevronRight className="h-4 w-4" />
               ) : (
                 <ChevronLeft className="h-4 w-4" />
@@ -127,9 +127,9 @@ export function Sidebar() {
         </Tooltip>
       </TooltipProvider>
 
-      {/* Navigation */}
+      {/* Navigation - scrollable middle section */}
       <TooltipProvider delayDuration={0}>
-        <nav className="p-2 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <nav className="p-2 space-y-1 overflow-y-auto flex-1 min-h-0">
           {/* Main Nav Items */}
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
@@ -141,7 +141,7 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group",
                   isActive 
-                    ? "bg-gradient-to-r from-emerald-500/15 to-teal-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-200/50 dark:border-emerald-500/20" 
+                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 shadow-sm border border-emerald-300 dark:border-emerald-700" 
                     : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground hover:shadow-sm",
                   collapsed && "justify-center px-2"
                 )}
@@ -196,8 +196,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 group",
                   location.pathname.startsWith("/papers")
-                    ? "bg-gradient-to-r from-blue-500/15 to-indigo-500/10 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/20" 
-                    : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                    ? "bg-blue-500/20 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-400/50 dark:border-blue-500/40" 
+                    : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
                 )}
               >
                 <ScrollText className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
@@ -213,10 +213,10 @@ export function Sidebar() {
             <Link
               to={mainPaperItem.path}
               className={cn(
-                "flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm relative group font-medium",
+                "flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm relative group font-medium border",
                 location.pathname === mainPaperItem.path
-                  ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-sm" 
-                  : "bg-slate-100 dark:bg-slate-800 text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700"
+                  ? "bg-emerald-500/20 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-400 dark:border-emerald-600 shadow-sm" 
+                  : "bg-transparent text-muted-foreground border-slate-300 dark:border-slate-600 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-400 dark:hover:border-emerald-600"
               )}
             >
               {location.pathname === mainPaperItem.path && (
@@ -232,19 +232,19 @@ export function Sidebar() {
             {/* Sub-research papers */}
             <div className="pt-1 space-y-0.5">
               <span className="px-3 text-[10px] uppercase tracking-wider text-muted-foreground/60">Sub-Research</span>
-              {paperItems.map((item) => {
-                const isActive = location.pathname === item.path
-                const Icon = item.icon
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
+            {paperItems.map((item) => {
+              const isActive = location.pathname === item.path
+              const Icon = item.icon
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs relative group",
-                      isActive 
-                        ? "bg-gradient-to-r from-blue-500/15 to-indigo-500/10 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/20" 
-                        : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                    isActive 
+                        ? "bg-blue-500/20 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-400/50 dark:border-blue-500/40" 
+                        : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
                     )}
                   >
                     {isActive && (
@@ -254,10 +254,10 @@ export function Sidebar() {
                       "w-3.5 h-3.5 transition-transform duration-200",
                       !isActive && "group-hover:scale-110"
                     )} />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                )
-              })}
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              )
+            })}
             </div>
           </div>
         )}
@@ -274,8 +274,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center justify-center px-2 py-2.5 rounded-xl transition-all duration-200 group",
                   location.pathname === "/documentation"
-                    ? "bg-gradient-to-r from-amber-500/15 to-orange-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20" 
-                    : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                    ? "bg-amber-500/20 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/50 dark:border-amber-500/40" 
+                    : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
                 )}
               >
                 <BookOpen className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
@@ -289,8 +289,8 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group",
               location.pathname === "/documentation"
-                ? "bg-gradient-to-r from-amber-500/15 to-orange-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20" 
-                : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                ? "bg-amber-500/20 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/50 dark:border-amber-500/40" 
+                : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
             )}
           >
             {location.pathname === "/documentation" && (
@@ -313,8 +313,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center justify-center px-2 py-2.5 rounded-xl transition-all duration-200 group",
                   location.pathname === "/methodology"
-                    ? "bg-gradient-to-r from-purple-500/15 to-violet-500/10 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-500/20" 
-                    : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                    ? "bg-purple-500/20 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-400/50 dark:border-purple-500/40" 
+                    : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
                 )}
               >
                 <FlaskConical className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
@@ -328,8 +328,8 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group",
               location.pathname === "/methodology"
-                ? "bg-gradient-to-r from-purple-500/15 to-violet-500/10 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-500/20" 
-                : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                ? "bg-purple-500/20 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-400/50 dark:border-purple-500/40" 
+                : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
             )}
           >
             {location.pathname === "/methodology" && (
@@ -352,8 +352,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center justify-center px-2 py-2.5 rounded-xl transition-all duration-200 group",
                   location.pathname === "/whitepaper"
-                    ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm" 
-                    : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                    ? "bg-teal-500/20 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 border border-teal-400/50 dark:border-teal-500/40" 
+                    : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
                 )}
               >
                 <Presentation className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
@@ -367,12 +367,12 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group",
               location.pathname === "/whitepaper"
-                ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm" 
-                : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-foreground"
+                ? "bg-teal-500/20 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 border border-teal-400/50 dark:border-teal-500/40" 
+                : "text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-foreground"
             )}
           >
             {location.pathname === "/whitepaper" && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-teal-500 rounded-r-full" />
             )}
             <Presentation className={cn(
               "w-5 h-5 flex-shrink-0 transition-transform duration-200",
@@ -384,8 +384,8 @@ export function Sidebar() {
         </nav>
       </TooltipProvider>
 
-      {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-border space-y-2">
+      {/* Footer - fixed at bottom */}
+      <div className="p-3 border-t border-border space-y-2 flex-shrink-0">
         {/* Back to Finsoeasy.com */}
         <TooltipProvider>
           <Tooltip>
@@ -460,27 +460,27 @@ export function Sidebar() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleTheme}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleTheme}
                 className={cn(
                   "w-full justify-start cursor-pointer",
                   collapsed && "px-0 justify-center"
                 )}
-              >
-                {theme === "dark" ? (
-                  <>
-                    <Sun className="w-4 h-4" />
-                    {!collapsed && <span className="ml-2">Light Mode</span>}
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-4 h-4" />
-                    {!collapsed && <span className="ml-2">Dark Mode</span>}
-                  </>
-                )}
-              </Button>
+        >
+          {theme === "dark" ? (
+            <>
+              <Sun className="w-4 h-4" />
+              {!collapsed && <span className="ml-2">Light Mode</span>}
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4" />
+              {!collapsed && <span className="ml-2">Dark Mode</span>}
+            </>
+          )}
+        </Button>
             </TooltipTrigger>
             <TooltipContent side={collapsed ? "right" : "top"}>
               {theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
