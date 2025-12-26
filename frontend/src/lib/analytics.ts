@@ -6,9 +6,11 @@
  *   - analytics: Analytics singleton with tracking methods
  *   - usePageView: Hook for automatic page view tracking
  *   - useSessionTracking: Hook for session management
- * NON-RESPONSIBILITIES:
- *   - Does not handle external analytics providers (GA, Mixpanel)
- *   - Does not persist data to backend (logs to console in dev, could extend to API)
+ * 
+ * INTEGRATIONS:
+ *   - Google Analytics 4 (G-3RYSL77PJF)
+ *   - Internal session tracking
+ * 
  * NOTES FOR FUTURE AI:
  *   - Extend sendEvent() to POST to /api/analytics endpoint when ready
  *   - Add user identification when auth is implemented
@@ -16,6 +18,42 @@
 
 import { useEffect, useRef } from "react"
 import { useLocation } from "react-router-dom"
+
+// Google Analytics 4 configuration
+const GA_TRACKING_ID = 'G-3RYSL77PJF'
+
+// Declare gtag on window
+declare global {
+  interface Window {
+    gtag: (...args: unknown[]) => void
+    dataLayer: unknown[]
+  }
+}
+
+/**
+ * Send page view to Google Analytics
+ */
+function gaTrackPageView(path: string, title?: string) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('config', GA_TRACKING_ID, {
+      page_path: path,
+      page_title: title || document.title,
+    })
+  }
+}
+
+/**
+ * Send custom event to Google Analytics
+ */
+function gaTrackEvent(action: string, category: string, label?: string, value?: number) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, {
+      event_category: category,
+      event_label: label,
+      value: value,
+    })
+  }
+}
 
 interface AnalyticsEvent {
   type: "page_view" | "click" | "search" | "export" | "session_start" | "session_end" | "interaction"
@@ -125,6 +163,7 @@ class Analytics {
     this.session.pageViews++
     this.session.lastActivity = new Date().toISOString()
 
+    // Send to internal analytics
     this.sendEvent({
       type: "page_view",
       timestamp: new Date().toISOString(),
@@ -132,18 +171,48 @@ class Analytics {
       path,
       data: { title: title || document.title }
     })
+    
+    // Send to Google Analytics
+    gaTrackPageView(path, title)
   }
 
   trackSearch(query: string, resultCount: number) {
     this.trackEvent("search", { query, resultCount })
+    gaTrackEvent("search", "search", query, resultCount)
   }
 
   trackClick(element: string, context?: Record<string, unknown>) {
     this.trackEvent("click", { element, ...context })
+    gaTrackEvent("click", "interaction", element)
   }
 
   trackExport(type: string, itemCount: number) {
     this.trackEvent("export", { type, itemCount })
+    gaTrackEvent("export", "data_export", type, itemCount)
+  }
+  
+  /**
+   * Track paper views (for research content)
+   */
+  trackPaperView(paperId: string, paperTitle: string) {
+    this.trackEvent("interaction", { action: "paper_view", paperId, paperTitle })
+    gaTrackEvent("view", "paper", `${paperId}: ${paperTitle}`)
+  }
+  
+  /**
+   * Track company research views
+   */
+  trackCompanyView(ticker: string, companyName: string) {
+    this.trackEvent("interaction", { action: "company_view", ticker, companyName })
+    gaTrackEvent("view", "company", `${ticker}: ${companyName}`)
+  }
+  
+  /**
+   * Track portfolio/ETF interactions
+   */
+  trackPortfolioAction(action: string, details?: string) {
+    this.trackEvent("interaction", { action: "portfolio", portfolioAction: action, details })
+    gaTrackEvent(action, "portfolio", details)
   }
 
   getSession(): Session {
