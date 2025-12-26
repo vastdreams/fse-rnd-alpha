@@ -1,18 +1,188 @@
 # R&D Alpha Project Handoff Documentation
 
-## Project Overview
+---
 
-**R&D Alpha** is a research platform analyzing the relationship between R&D investment intensity and long-term stock returns. It provides:
-- Academic research paper (Main Paper) with publication-ready methodology
-- Interactive whitepaper slide deck (11 slides)
-- R&D ETF strategy tool with live holdings and backtesting
-- Company-level R&D factor analysis
+## 1. Product Overview
 
-**Live Site:** `http://research.finsoeasy.com`
+### What is R&D Alpha?
+
+**R&D Alpha** is a quantitative research platform that investigates whether companies investing heavily in R&D (Research & Development) outperform those that don't. It's a sub-product of the **Finsoeasy** ecosystem, providing:
+
+1. **Academic-grade research** proving the R&D premium exists
+2. **Investable strategy** (R&D ETF) that captures this premium
+3. **Interactive tools** for exploring the data
+
+### The Core Thesis
+
+> Companies that invest more in R&D (as a % of revenue) generate higher long-term stock returns.
+
+This happens because:
+- **Accounting quirk**: GAAP requires R&D to be expensed immediately (not capitalized), making R&D-heavy firms look less profitable on paper
+- **Market underreaction**: Investors undervalue these "hidden assets"
+- **Long-term payoff**: R&D investments take 3-5 years to show up in returns
+
+### Key Research Findings
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| **Annual R&D Premium** | +7.55% | High-R&D stocks beat low-R&D by 7.55%/year |
+| **t-Statistic** | 2.78 | Statistically significant (>2.0) |
+| **p-Value** | 0.0107 | 99% confidence the effect is real |
+| **Win Rate** | 71% | Premium was positive in 17 of 24 years |
+| **Net Premium (after costs)** | +5.33% | What you actually keep after trading |
+| **Sample Period** | 1995-2024 | 30 years of data |
+
+### Who Uses This?
+
+1. **Individual investors** - Implement the R&D ETF strategy
+2. **Financial advisors** - Research-backed factor tilt for clients
+3. **Academics** - Replicable methodology and frozen datasets
+4. **Finsoeasy users** - Integrated research for the main platform
 
 ---
 
-## Repository Information
+## 2. Product Features
+
+### 2.1 Main Paper (`/papers/main`)
+- Publication-ready academic paper
+- 12 sections: Introduction → Conclusion
+- All tables and figures rendered from frozen data
+- PDF export with proper A4 formatting
+- ~4000 lines of React code
+
+### 2.2 Whitepaper Slide Deck (`/whitepaper`)
+- 11 investor-focused slides
+- "Why should I care?" hook on slide 1
+- Implementation timeline and checklist
+- PDF-ready A4 format
+
+### 2.3 R&D ETF Tool (`/portfolio`)
+- Live holdings based on current R&D rankings
+- Backtest with transaction costs
+- Sector allocation analysis
+- Forecast vs actual performance
+- Export to CSV
+
+### 2.4 Research Dashboard (`/research`)
+- Quintile return analysis
+- Rolling premium visualization
+- Factor spanning tests
+- Statistical inference tables
+
+### 2.5 Company Explorer (`/companies`)
+- Individual company R&D profiles
+- Historical R&D intensity charts
+- Sector comparisons
+
+---
+
+## 3. Data Architecture
+
+### Data Sources
+
+| Source | What We Get | API/Method | Tier |
+|--------|-------------|------------|------|
+| **Financial Modeling Prep (FMP)** | Fundamentals (R&D, revenue), prices, S&P 500 list | REST API | Tier 1 |
+| **Ken French Data Library** | Fama-French factors (MKT, SMB, HML, etc.) | CSV download | Tier 1 |
+| **SEC EDGAR** | 10-K filings for validation | Public filings | Tier 1 |
+| **CRSP/Compustat** | Premium academic data (optional) | WRDS | Tier 2 |
+
+### Data Flow
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   FMP API       │────▶│   PostgreSQL    │────▶│   FastAPI       │
+│   (fundamentals)│     │   (storage)     │     │   (backend)     │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+┌─────────────────┐     ┌─────────────────┐              │
+│  Ken French     │────▶│   Factor        │──────────────┤
+│  (factors)      │     │   Tables        │              │
+└─────────────────┘     └─────────────────┘              │
+                                                         ▼
+                                               ┌─────────────────┐
+                                               │   React         │
+                                               │   Frontend      │
+                                               └─────────────────┘
+```
+
+### Database Tables (Key)
+
+| Table | Purpose |
+|-------|---------|
+| `companies` | Company metadata (ticker, name, sector) |
+| `financials` | Annual fundamentals (R&D, revenue, etc.) |
+| `prices` | Daily stock prices |
+| `quintile_assignments` | Annual R&D quintile assignments |
+| `factor_returns` | Fama-French factor data |
+| `publication_snapshots` | Frozen research results |
+
+### Publication Snapshot
+
+The research paper uses a **frozen snapshot** to ensure reproducibility:
+- Snapshot ID: Unique identifier for each computation run
+- Git commit: Links to exact code version
+- Built date: When the snapshot was created
+- Served from: `/api/research/publication-snapshot`
+
+---
+
+## 4. AWS Infrastructure
+
+### Current Setup (EC2 Only)
+
+| Resource | Details |
+|----------|---------|
+| **EC2 Instance** | Ubuntu, hosts Docker stack |
+| **Domain** | `research.finsoeasy.com` |
+| **SSL** | Not yet configured (HTTP only) |
+| **Database** | PostgreSQL in Docker (not RDS) |
+| **Storage** | Local EBS volume |
+
+### S3 Bucket (Optional, Not Currently Active)
+
+The codebase supports S3 for data storage, but it's **not currently configured**:
+
+```python
+# In deploy/docker-compose.yml
+S3_BUCKET: ${S3_BUCKET:-fse-rnd-alpha-data}
+AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+AWS_REGION: ${AWS_REGION:-us-east-1}
+```
+
+**To enable S3:**
+1. Create bucket: `fse-rnd-alpha-data`
+2. Create IAM user with S3 access
+3. Add credentials to `deploy/.env`
+4. Run `python deploy/setup_aws.py --upload`
+
+### IAM Requirements (If Using S3)
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::fse-rnd-alpha-data",
+        "arn:aws:s3:::fse-rnd-alpha-data/*"
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 5. Repository Information
 
 | Property | Value |
 |----------|-------|
@@ -270,11 +440,154 @@ git subtree add --prefix=research https://github.com/vastdreams/fse-rnd-alpha.gi
 
 ---
 
-## Notes for AI Agents
+---
+
+## 12. Research Methodology Details
+
+### Quintile Sorting Process
+
+Each June:
+1. Get all S&P 500 constituents (point-in-time, ~500 companies)
+2. Exclude firms with zero R&D (banks, utilities, ~100 firms)
+3. Calculate R&D Intensity = R&D Expense / Revenue (from prior fiscal year)
+4. Sort firms into 5 quintiles (Q1 = lowest, Q5 = highest)
+5. Track returns July → June (Fama-French convention)
+
+### Why July-June?
+
+Companies have 90 days after fiscal year end to file 10-K. Most have December fiscal year end. By July, all 10-Ks are public, avoiding look-ahead bias.
+
+```
+Fiscal Year End: Dec 31, 2023
+10-K Filed By: Mar 31, 2024
+Portfolio Formation: June 30, 2024
+Holding Period: July 1, 2024 → June 30, 2025
+```
+
+### Transaction Cost Model
+
+Uses Novy-Marx & Velikov (2016) methodology:
+- **Bid-ask spread**: ~10 bps for S&P 500 stocks
+- **Market impact**: Minimal for equal-weight small positions
+- **Round-trip cost**: ~20 bps per 100% turnover
+- **Average turnover**: ~15% annually
+
+---
+
+## 13. Finsoeasy Integration
+
+### Relationship to Main Platform
+
+R&D Alpha is a **research sub-product** of finsoeasy.com:
+- Separate codebase for research independence
+- Shares design language (Tailwind, shadcn/ui)
+- Links back to main finsoeasy site
+- Uses `research.finsoeasy.com` subdomain
+
+### Future Integration Points
+
+1. **User accounts**: Share authentication with main finsoeasy
+2. **Portfolio integration**: Add R&D tilt to user portfolios
+3. **Alerts**: Notify users of annual rebalance
+4. **Data API**: Expose research data to main platform
+
+---
+
+## 14. Development Guidelines
+
+### Code Conventions
+
+- **File headers**: Every file has PATH, PURPOSE, and DEPENDENCIES comments
+- **No hardcoded values**: All research numbers come from API
+- **TypeScript**: Strict mode, no `any` where avoidable
+- **Tailwind**: Use `cn()` utility for conditional classes
+- **Charts**: Always wrap Recharts in `SafeChart` component
+
+### Testing Checklist
+
+Before deploying:
+1. [ ] `npm run build` succeeds without errors
+2. [ ] Main Paper renders all sections
+3. [ ] Whitepaper slides 1-11 all visible
+4. [ ] PDF export produces non-blank pages
+5. [ ] API endpoints return data (`/api/research/publication-snapshot`)
+
+### Known Issues
+
+| Issue | Workaround |
+|-------|------------|
+| Recharts `-1` dimension error | Use `SafeChart` wrapper |
+| Print blank pages | CSS removes page-break rules |
+| Right nav cutoff | Toggle positioned outside overflow |
+
+---
+
+## 15. Notes for AI Agents
+
+### Critical Rules
 
 1. **SSH Key Required:** The key at `~/.ssh/fse-rnd-alpha-key.pem` is needed for EC2 access
-2. **Frontend Deploy Path:** Always deploy to `/home/ubuntu/fse-rnd-alpha/deploy/frontend/dist/` (not `frontend/dist/`)
+2. **Frontend Deploy Path:** Always deploy to `/home/ubuntu/fse-rnd-alpha/deploy/frontend/dist/` (NOT `frontend/dist/`)
 3. **Print Styles:** If modifying, test with browser print preview before deploying
 4. **Recharts:** Use `SafeChart` wrapper to prevent dimension errors
 5. **Build Command:** `npm --prefix frontend run build` from project root
+
+### File Locations (Most Edited)
+
+| File | What It Does | Lines |
+|------|--------------|-------|
+| `frontend/src/pages/papers/MainPaper.tsx` | Academic paper | ~4000 |
+| `frontend/src/pages/Whitepaper.tsx` | Slide deck | ~2000 |
+| `frontend/src/index.css` | Global + print styles | ~750 |
+| `frontend/src/components/InfoTooltip.tsx` | Metric explanations | ~370 |
+| `backend/app/api/routes/research.py` | Research API | ~500 |
+
+### Deployment Checklist
+
+```bash
+# 1. Build
+npm --prefix frontend run build
+
+# 2. Verify build
+ls frontend/dist/  # Should have index.html, assets/
+
+# 3. Deploy
+scp -i ~/.ssh/fse-rnd-alpha-key.pem -r frontend/dist/* \
+  ubuntu@research.finsoeasy.com:/home/ubuntu/fse-rnd-alpha/deploy/frontend/dist/
+
+# 4. Verify live site
+curl -I http://research.finsoeasy.com  # Should return 200
+```
+
+### Emergency Rollback
+
+```bash
+# SSH to server
+ssh -i ~/.ssh/fse-rnd-alpha-key.pem ubuntu@research.finsoeasy.com
+
+# Check git log for last good commit
+cd /home/ubuntu/fse-rnd-alpha
+git log --oneline -5
+
+# Checkout previous version
+git checkout <commit-hash>
+
+# Rebuild and restart
+cd deploy && docker compose restart frontend
+```
+
+---
+
+## 16. Contact & Resources
+
+| Resource | URL |
+|----------|-----|
+| **Live Site** | http://research.finsoeasy.com |
+| **GitHub Repo** | https://github.com/vastdreams/fse-rnd-alpha |
+| **API Docs** | http://research.finsoeasy.com/docs |
+| **Main Finsoeasy** | https://finsoeasy.com |
+
+---
+
+*Last updated: December 2025*
 
