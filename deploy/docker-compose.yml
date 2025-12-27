@@ -73,6 +73,13 @@ services:
       DEBUG: ${DEBUG:-false}
       SECRET_KEY: ${SECRET_KEY:-change-in-production}
       API_KEY_REQUIRED: ${API_KEY_REQUIRED:-false}
+      FINSOEASY_EMAIL_PASSWORD: ${FINSOEASY_EMAIL_PASSWORD:-}
+      # Stripe payment processing
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-https://research.finsoeasy.com/donate?success=true}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-https://research.finsoeasy.com/donate?canceled=true}
     # Security: Don't expose backend directly in production - use nginx
     # ports:
     #   - "8000:8000"

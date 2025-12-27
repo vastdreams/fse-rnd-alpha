@@ -60,6 +60,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production-use-secrets-token-hex-32"
     API_KEY_REQUIRED: bool = False
     
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_SUCCESS_URL: str = "https://research.finsoeasy.com/donate/success"
+    STRIPE_CANCEL_URL: str = "https://research.finsoeasy.com/donate"
+    
     # Server
     DEBUG: bool = False
     

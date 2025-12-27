@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -2038,15 +2039,16 @@ export function Whitepaper() {
         </div>
       )}
 
-      {/* Print View - renders all slides for PDF export */}
-      {isPrinting && (
-        <div className="whitepaper-print-view fixed inset-0 bg-white z-[9999] overflow-auto">
+      {/* Print View - renders all slides for PDF export via portal to body */}
+      {isPrinting && createPortal(
+        <div className="whitepaper-print-view" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflow: 'auto' }}>
           {slides.map((slide, i) => (
             <div key={i} className="whitepaper-print-slide">
               {slide}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

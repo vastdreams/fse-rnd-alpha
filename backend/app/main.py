@@ -21,7 +21,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 
-from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers
+from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations
 from app.core.config import settings
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.db.session import engine, create_tables
@@ -181,6 +181,8 @@ app.include_router(ai_analysis.router, prefix="/api/ai", tags=["AI Analysis"])
 app.include_router(research.router, prefix="/api/research", tags=["Research"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
 app.include_router(papers.router, prefix="/api/papers", tags=["Papers"])
+app.include_router(subscribe.router, prefix="/api", tags=["Subscribe"])
+app.include_router(donations.router, prefix="/api", tags=["Donations"])
 
 
 @app.get("/health", tags=["Health"])

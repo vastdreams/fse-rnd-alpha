@@ -1,8 +1,12 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Coffee, Globe, BookOpen, Shield, Zap, ExternalLink, RefreshCw } from "lucide-react"
+import { Heart, Coffee, Globe, BookOpen, Shield, Zap, ExternalLink, RefreshCw, Loader2, AlertCircle, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useSearchParams } from "react-router-dom"
+
+// API base URL - in production nginx proxies /api to backend, in dev use localhost:8000
+const API_BASE = import.meta.env.VITE_API_URL || ""
 
 const donationTiers = [
   { amount: 5, label: "Coffee", description: "Buy us a coffee", icon: Coffee },
@@ -15,13 +19,60 @@ export function Donate() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(25)
   const [customAmount, setCustomAmount] = useState("")
   const [isRecurring, setIsRecurring] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null)
+  const [searchParams] = useSearchParams()
+  
+  const isSuccess = searchParams.get("success") === "true"
+  const isCanceled = searchParams.get("canceled") === "true"
 
   const finalAmount = customAmount ? parseInt(customAmount) : selectedAmount
 
-  const handleDonate = () => {
-    // In production, this would redirect to Stripe
-    const donationType = isRecurring ? "monthly recurring" : "one-time"
-    alert(`Thank you for your ${finalAmount ? `$${finalAmount}` : ''} ${donationType} donation intent! Stripe integration coming soon.`)
+  // Check if Stripe is configured
+  useEffect(() => {
+    fetch(`${API_BASE}/api/donations/config`)
+      .then(res => res.json())
+      .then((data: { configured: boolean }) => setStripeConfigured(data.configured))
+      .catch(() => setStripeConfigured(false))
+  }, [])
+
+  const handleDonate = async () => {
+    if (!finalAmount || finalAmount < 1) {
+      setError("Please select or enter a valid amount")
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/donations/create-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: finalAmount,
+          is_recurring: isRecurring,
+          success_url: `${window.location.origin}/donate?success=true`,
+          cancel_url: `${window.location.origin}/donate?canceled=true`,
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || `HTTP ${response.status}`)
+      }
+      
+      const data = await response.json() as { checkout_url: string; session_id: string }
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.checkout_url
+    } catch (err: unknown) {
+      console.error("Donation error:", err)
+      const message = err instanceof Error ? err.message : "Failed to process donation. Please try again."
+      setError(message)
+      setIsLoading(false)
+    }
   }
 
   const impactAreas = [
@@ -31,8 +82,40 @@ export function Donate() {
     { icon: Zap, title: "New Alphas", description: "Fund research into additional asymmetric alpha strategies" },
   ]
 
+  // Show success message if redirected from Stripe
+  if (isSuccess) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-500">
+          <CheckCircle className="w-10 h-10 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Thank You!</h1>
+        <p className="text-muted-foreground text-lg">
+          Your donation has been received. You are helping keep R&D research free and accessible to everyone.
+        </p>
+        <div className="flex justify-center gap-4 pt-4">
+          <Button variant="outline" onClick={() => window.location.href = "/donate"}>
+            Make Another Donation
+          </Button>
+          <Button onClick={() => window.location.href = "/"}>
+            Back to Research
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-8">
+      {/* Canceled notice */}
+      {isCanceled && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
+          <p className="text-amber-800 dark:text-amber-200">
+            Your donation was canceled. No worries - you can try again anytime!
+          </p>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500">
@@ -131,18 +214,41 @@ export function Donate() {
               </button>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
             {/* Donate button */}
             <Button 
               onClick={handleDonate}
-              disabled={!finalAmount}
-              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+              disabled={!finalAmount || isLoading || stripeConfigured === false}
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white disabled:opacity-50"
             >
-              <Heart className="w-5 h-5 mr-2" />
-              {isRecurring ? "Donate " : "Donate "}
-              {finalAmount ? `$${finalAmount}` : ""}
-              {isRecurring && "/month"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Redirecting to checkout...
+                </>
+              ) : (
+                <>
+                  <Heart className="w-5 h-5 mr-2" />
+                  {isRecurring ? "Donate " : "Donate "}
+                  {finalAmount ? `$${finalAmount}` : ""}
+                  {isRecurring && "/month"}
+                </>
+              )}
             </Button>
 
+            {stripeConfigured === false && (
+              <p className="text-xs text-center text-amber-600 dark:text-amber-400">
+                Payment processing is being set up. Please check back soon or contact us directly.
+              </p>
+            )}
+            
             <p className="text-xs text-center text-muted-foreground">
               Secure payment via Stripe. {isRecurring ? "Cancel anytime." : "One-time donation."}
             </p>

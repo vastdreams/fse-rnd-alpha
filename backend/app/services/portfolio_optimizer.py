@@ -183,7 +183,8 @@ class PortfolioOptimizer:
         """
         # Use new R&D Alpha scorer for rd_alpha method
         if method == "rd_alpha":
-            return await self._select_with_rd_alpha_scorer(n=n, as_of_year=None)
+            holdings, _ = await self._select_with_rd_alpha_scorer(n=n, as_of_year=None)
+            return holdings
         
         query = select(ResearchCohort).where(
             ResearchCohort.years_with_data >= min_years,
@@ -234,7 +235,7 @@ class PortfolioOptimizer:
         self,
         n: int = 20,
         as_of_year: Optional[int] = None
-    ) -> List[PortfolioHolding]:
+    ) -> Tuple[List[PortfolioHolding], Optional[Dict]]:
         """
         Select companies using the new R&D Alpha scoring engine.
         
@@ -242,13 +243,17 @@ class PortfolioOptimizer:
         - Uses sector-agnostic weighting to prevent tech/biotech overconcentration
         - Applies the research-based selection formula
         - Integrates findings from Papers 1-4
+        - Returns eligibility metadata for transparency
+        
+        Returns:
+            Tuple of (holdings list, eligibility metadata dict or None)
         """
         from app.services.rd_alpha_scorer import RDAlphaScorer
         
         scorer = RDAlphaScorer(self.session)
         
-        # Calculate scores
-        all_scores = await scorer.calculate_alpha_scores(
+        # Calculate scores (returns tuple with eligibility result)
+        all_scores, eligibility_result = await scorer.calculate_alpha_scores(
             universe="sp500",
             as_of_year=as_of_year
         )
@@ -268,7 +273,13 @@ class PortfolioOptimizer:
                 quality_score=score.quality_score
             ))
         
-        return holdings
+        # Build eligibility metadata for API response
+        eligibility_meta = None
+        if eligibility_result:
+            eligibility_meta = eligibility_result.to_meta_dict()
+            eligibility_meta["warnings"] = eligibility_result.warnings
+        
+        return holdings, eligibility_meta
     
     async def select_top_rd_companies_for_year(
         self,
@@ -293,7 +304,8 @@ class PortfolioOptimizer:
         # Allow point-in-time selection using the R&D Alpha scoring engine
         # (sector-constrained, research-based scoring; uses only information available as-of as_of_year)
         if method == "rd_alpha":
-            return await self._select_with_rd_alpha_scorer(n=n, as_of_year=as_of_year)
+            holdings, _ = await self._select_with_rd_alpha_scorer(n=n, as_of_year=as_of_year)
+            return holdings
 
         # Use PRIOR year's financial data to avoid look-ahead bias
         # At the start of 2020, we would only have FY2019 data available
@@ -419,12 +431,12 @@ class PortfolioOptimizer:
             bench_raw = bench_result.scalar()
             benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
         else:
-        bench_result = await self.session.execute(
-            select(func.avg(FMPAnnualReturn.annual_return))
-            .where(FMPAnnualReturn.year == as_of_year)
-        )
-        bench_raw = bench_result.scalar()
-        benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
+            bench_result = await self.session.execute(
+                select(func.avg(FMPAnnualReturn.annual_return))
+                .where(FMPAnnualReturn.year == as_of_year)
+            )
+            bench_raw = bench_result.scalar()
+            benchmark_return = float(bench_raw) if bench_raw is not None else 0.08
         
         # Projection (NOT a prediction): benchmark + baseline premium.
         forecast_return = benchmark_return + premium
@@ -445,14 +457,14 @@ class PortfolioOptimizer:
                 )
                 r = result.scalar()
             else:
-            result = await self.session.execute(
-                select(FMPAnnualReturn.annual_return)
-                .where(
-                    FMPAnnualReturn.symbol == symbol,
-                    FMPAnnualReturn.year == as_of_year
+                result = await self.session.execute(
+                    select(FMPAnnualReturn.annual_return)
+                    .where(
+                        FMPAnnualReturn.symbol == symbol,
+                        FMPAnnualReturn.year == as_of_year
+                    )
                 )
-            )
-            r = result.scalar()
+                r = result.scalar()
             if r is not None:
                 actual_return += float(r) * weight
                 valid_w += weight
@@ -585,13 +597,13 @@ class PortfolioOptimizer:
                     ret = result.scalar()
                 else:
                     # Calendar year returns
-                result = await self.session.execute(
-                    select(FMPAnnualReturn.annual_return)
-                    .where(
-                        FMPAnnualReturn.symbol == symbol,
-                        FMPAnnualReturn.year == year
+                    result = await self.session.execute(
+                        select(FMPAnnualReturn.annual_return)
+                        .where(
+                            FMPAnnualReturn.symbol == symbol,
+                            FMPAnnualReturn.year == year
+                        )
                     )
-                )
                     ret = result.scalar()
                 
                 if ret is not None:
@@ -701,18 +713,18 @@ class PortfolioOptimizer:
         universe_portfolio_symbols: set[str] = set()
 
         for year in years:
-        if use_point_in_time:
+            if use_point_in_time:
                 year_holdings = await self.select_top_rd_companies_for_year(
                     as_of_year=year,
-                n=n_holdings,
-                method=selection_method,
+                    n=n_holdings,
+                    method=selection_method,
                     sectors=sectors,
-            )
-        else:
+                )
+            else:
                 year_holdings = await self.select_top_rd_companies(
-                n=n_holdings,
-                method=selection_method,
-                sectors=sectors,
+                    n=n_holdings,
+                    method=selection_method,
+                    sectors=sectors,
                     min_years=5,
                 )
 

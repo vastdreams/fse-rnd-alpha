@@ -14,10 +14,21 @@ export function Subscribe() {
     if (!email) return
     
     setLoading(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setLoading(false)
-    setSubmitted(true)
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "subscribe_page" }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSubmitted(true)
+      }
+    } catch (error) {
+      console.error("Subscribe error:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const benefits = [

@@ -42,14 +42,15 @@ export const auditDataMap: Record<string, (params: Record<string, unknown>) => A
         stepNumber: 2,
         type: "source",
         title: "Annual Portfolio Returns",
-        description: "For each year, select top R&D companies and calculate equal-weighted portfolio return",
+        description: "For each July, select ETF holdings using point-in-time FY(T-1) data and calculate equal-weighted return",
         sources: [
-          { label: "Selection Method", value: "rd_alpha (R&D intensity scoring)" },
-          { label: "Weighting", value: "Equal weight (5% each for Top 20)" },
-          { label: "Rebalancing", value: "Annual in July" },
+          { label: "Selection Method", value: "R&D Alpha scoring (point-in-time)" },
+          { label: "Formation Date", value: "July 1 (Fama-French convention)" },
+          { label: "Data Used", value: "FY(T-1) financials" },
+          { label: "Weighting", value: "Equal weight at formation" },
           { label: "Return Source", value: "july_june_returns table" },
         ],
-        note: "Portfolio is reconstituted annually using point-in-time R&D data"
+        note: "Portfolio uses eligibility gates to prevent survivorship bias (listing, filing, liquidity)"
       },
       {
         stepNumber: 3,

@@ -429,11 +429,16 @@ async def get_rd_alpha_holdings(
     - Applies sector adjustment to prevent tech/biotech overweight
     - Includes momentum and quality factors
     - Normalizes by volatility
+    - Uses point-in-time FY(T-1) financials for backtests
+    
+    ETF20 R&D ALPHA SELECTION:
+    Formation date is July 1 of the given year.
+    Holdings are selected using only data available at formation.
     """
     scorer = RDAlphaScorer(session)
     
-    # Calculate scores for all candidates
-    all_scores = await scorer.calculate_alpha_scores(
+    # Calculate scores for all candidates (returns tuple with eligibility result)
+    all_scores, eligibility_result = await scorer.calculate_alpha_scores(
         universe="sp500",
         as_of_year=year
     )
@@ -443,7 +448,7 @@ async def get_rd_alpha_holdings(
         all_scores, n_holdings=n
     )
     
-    return {
+    response = {
         "holdings": [
             {
                 "symbol": s.symbol,
@@ -457,6 +462,8 @@ async def get_rd_alpha_holdings(
                 "quality_score": round(s.quality_score, 3),
                 "final_score": round(s.final_score, 4),
                 "rank": s.selection_rank,
+                "fiscal_year_used": s.fiscal_year_used,
+                "data_source": s.data_source,
             }
             for s in selected
         ],
@@ -475,6 +482,13 @@ async def get_rd_alpha_holdings(
         "total_candidates": len(all_scores),
         "selected_count": len(selected),
     }
+    
+    # Add eligibility metadata if available
+    if eligibility_result:
+        response["eligibility"] = eligibility_result.to_meta_dict()
+        response["eligibility"]["warnings"] = eligibility_result.warnings
+    
+    return response
 
 
 @router.get("/sector-weights")
@@ -491,7 +505,7 @@ async def get_sector_weight_targets(
     """
     scorer = RDAlphaScorer(session)
     
-    all_scores = await scorer.calculate_alpha_scores(
+    all_scores, _ = await scorer.calculate_alpha_scores(
         universe="sp500",
         as_of_year=year
     )
@@ -533,12 +547,12 @@ async def get_all_selection_candidates(
     """
     scorer = RDAlphaScorer(session)
     
-    all_scores = await scorer.get_all_candidates_with_scores(
+    all_scores, eligibility_result = await scorer.get_all_candidates_with_scores(
         as_of_year=year,
         limit=limit
     )
     
-    return {
+    response = {
         "candidates": [
             {
                 "rank": s.selection_rank,
@@ -553,12 +567,21 @@ async def get_all_selection_candidates(
                 "volatility": round(s.volatility, 3),
                 "final_score": round(s.final_score, 4),
                 "years_of_data": s.years_of_data,
+                "fiscal_year_used": s.fiscal_year_used,
+                "data_source": s.data_source,
             }
             for s in all_scores
         ],
         "total_candidates": len(all_scores),
         "as_of_year": year,
     }
+    
+    # Add eligibility metadata if available
+    if eligibility_result:
+        response["eligibility"] = eligibility_result.to_meta_dict()
+        response["eligibility"]["warnings"] = eligibility_result.warnings
+    
+    return response
 
 
 @router.get("/sp500-forecast")
@@ -664,4 +687,159 @@ async def get_universe_sector_breakdown(
         }
         for b in breakdowns
     ]
+
+
+# ==============================================================================
+# Forecast Distribution Endpoint (ETF20 R&D Alpha)
+# ==============================================================================
+
+@router.get("/forecast-distribution")
+async def get_forecast_distribution(
+    session: AsyncSession = Depends(get_db),
+    n_holdings: int = Query(20, ge=5, le=50),
+    method: str = Query("rd_alpha"),
+    use_july_june: bool = Query(True, description="Use July-June returns (Fama-French convention)")
+):
+    """
+    Get ETF20 R&D Alpha expected return distribution with probability bands.
+    
+    Returns:
+    - Expected return with p10/p50/p90 bands
+    - Market baseline scenarios (low/mid/high)
+    - Historical R&D premium dispersion
+    - Confidence metrics and methodology
+    
+    This is a PROJECTION tool, not a prediction. Past performance does not guarantee future results.
+    """
+    from datetime import datetime
+    from sqlalchemy import select, func
+    from app.db.models import RollingWindowResult, FamaFrenchFactor
+    
+    current_year = datetime.now().year
+    return_convention = "july_june" if use_july_june else "calendar"
+    
+    # Get market forecaster scenarios
+    forecaster = MarketForecaster()
+    market_forecast = forecaster.get_sp500_forecast(years_forward=5, include_historical=False)
+    
+    # Extract 5-year forward scenarios
+    market_scenarios = {
+        "low": None,
+        "mid": None,
+        "high": None,
+    }
+    for f in market_forecast.forecasts:
+        if f.is_forecast and f.year == current_year + 5:
+            market_scenarios["low"] = f.return_low
+            market_scenarios["mid"] = f.return_mid
+            market_scenarios["high"] = f.return_high
+            break
+    
+    # Fallback market return assumptions if no forecast data
+    if market_scenarios["mid"] is None:
+        market_scenarios = {"low": 4.0, "mid": 7.0, "high": 10.0}
+    
+    # Get historical R&D premium from rolling window results
+    premium_result = await session.execute(
+        select(
+            RollingWindowResult.quintile,
+            func.avg(RollingWindowResult.avg_return).label("avg_ret"),
+            func.stddev(RollingWindowResult.avg_return).label("std_ret"),
+        )
+        .where(
+            RollingWindowResult.return_convention == return_convention,
+            RollingWindowResult.data_tier == "tier1",
+            RollingWindowResult.quintile.in_([1, 5]),
+            RollingWindowResult.avg_return.isnot(None),
+        )
+        .group_by(RollingWindowResult.quintile)
+    )
+    
+    premium_data = {int(r[0]): {"avg": float(r[1]), "std": float(r[2]) if r[2] else 0} for r in premium_result.fetchall()}
+    
+    # Calculate R&D premium and its dispersion
+    if 1 in premium_data and 5 in premium_data:
+        base_premium = premium_data[5]["avg"] - premium_data[1]["avg"]
+        # Premium dispersion: combine Q5 and Q1 volatility
+        premium_std = (premium_data[5].get("std", 0) ** 2 + premium_data[1].get("std", 0) ** 2) ** 0.5
+    else:
+        # Fallback based on research findings
+        base_premium = 7.0  # ~7% annual premium (from Paper 1)
+        premium_std = 5.0   # Approximate historical dispersion
+    
+    # Calculate expected return distribution
+    # E[R] = Market Return + R&D Premium
+    # Distribution uses market scenarios × premium dispersion
+    
+    def calc_percentile(market_ret: float, premium: float, premium_std: float, z_score: float) -> float:
+        """Calculate return at a given z-score."""
+        return market_ret + premium + z_score * premium_std
+    
+    # p10 = low market + premium - 1.28σ
+    # p50 = mid market + premium
+    # p90 = high market + premium + 1.28σ
+    
+    distribution = {
+        "p10": {
+            "expected_return": round(market_scenarios["low"] + base_premium - 1.28 * premium_std, 2),
+            "market_scenario": "bearish",
+            "premium_scenario": "below_average",
+        },
+        "p50": {
+            "expected_return": round(market_scenarios["mid"] + base_premium, 2),
+            "market_scenario": "base_case",
+            "premium_scenario": "average",
+        },
+        "p90": {
+            "expected_return": round(market_scenarios["high"] + base_premium + 1.28 * premium_std, 2),
+            "market_scenario": "bullish",
+            "premium_scenario": "above_average",
+        },
+    }
+    
+    # Get current holdings for context
+    optimizer = PortfolioOptimizer(session, use_july_june=use_july_june)
+    holdings = await optimizer.select_top_rd_companies(n=n_holdings, method=method)
+    avg_rd_intensity = sum(h.rd_intensity for h in holdings) / len(holdings) if holdings else 0
+    
+    return {
+        "as_of": str(current_year),
+        "methodology": method,
+        "holdings_count": len(holdings),
+        "avg_rd_intensity": round(avg_rd_intensity, 2),
+        "distribution": distribution,
+        "components": {
+            "market_baseline": {
+                "low": market_scenarios["low"],
+                "mid": market_scenarios["mid"],
+                "high": market_scenarios["high"],
+                "source": "Investment bank consensus (GS, JPM, MS, BAC)",
+            },
+            "rd_premium": {
+                "expected": round(base_premium, 2),
+                "historical_std": round(premium_std, 2),
+                "source": "Historical Q5-Q1 spread (Tier 1 data)",
+            },
+        },
+        "confidence": {
+            "level": "moderate",
+            "note": "Based on 30+ year historical analysis with point-in-time data",
+            "caveats": [
+                "Past performance does not guarantee future results",
+                "Premium may vary significantly year-to-year",
+                "Market regime changes can affect R&D premium persistence",
+            ],
+        },
+        "methodology_summary": (
+            f"Expected return = Market baseline + R&D premium. "
+            f"The R&D premium of {round(base_premium, 1)}% annually is derived from historical "
+            f"Q5-Q1 spread analysis using {return_convention} returns. "
+            f"Distribution bands incorporate market scenario uncertainty and premium dispersion."
+        ),
+        "disclaimer": (
+            "This is a projection tool for educational purposes only. "
+            "It is not investment advice. Past performance does not guarantee future results. "
+            "Actual returns may differ materially from projections."
+        ),
+    }
 

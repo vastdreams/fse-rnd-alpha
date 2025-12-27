@@ -41,6 +41,7 @@ import {
   TrendingDown,
   Target,
   Scale,
+  Github,
 } from "lucide-react"
 import {
   BarChart,
@@ -625,6 +626,16 @@ export function MainPaper() {
                   <Download className="mr-2 h-4 w-4" />
                   Download PDF
                 </Button>
+                <a
+                  href="https://github.com/vastdreams/rd-alpha-research"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" size="sm">
+                    <Github className="mr-2 h-4 w-4" />
+                    View Code
+                  </Button>
+                </a>
               </div>
             </div>
 
@@ -4000,6 +4011,25 @@ export function MainPaper() {
                 </li>
                 <li>Snapshot meta (ID + commit hash) is the canonical anchor for all displayed numbers.</li>
               </ul>
+              <div className="not-prose mt-4 p-4 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/30">
+                <div className="flex items-center gap-3 mb-2">
+                  <Github className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-semibold text-foreground">Open Source</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  The core research code is open source under MIT license. Clone the repository to replicate results or build upon this work.
+                </p>
+                <a
+                  href="https://github.com/vastdreams/rd-alpha-research"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors"
+                >
+                  <Github className="h-4 w-4" />
+                  github.com/vastdreams/rd-alpha-research
+                  <ExternalLink className="h-3 w-3 opacity-70" />
+                </a>
+              </div>
             </CardContent>
           </Card>
         </section>

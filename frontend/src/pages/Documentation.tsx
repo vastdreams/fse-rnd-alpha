@@ -531,16 +531,16 @@ export function Documentation() {
                 </div>
 
                 <div className="p-4 border rounded-lg">
-                  <h3 className="font-semibold mb-2">R&D ETF Dashboard</h3>
+                  <h3 className="font-semibold mb-2">ETF R&D Alpha Selection Dashboard</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Portfolio construction and backtesting:
+                    Portfolio construction and backtesting (ETF10/ETF20/ETF50):
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Top 20 R&D companies portfolio</li>
+                    <li>ETF10/20/50 R&D Alpha Selection baskets</li>
+                    <li>Annual July reconstitution with point-in-time data</li>
                     <li>Performance vs S&P 500 benchmark</li>
-                    <li>Historical backtests by time period</li>
-                    <li>Sector allocation breakdown</li>
-                    <li>Forecast based on historical premium</li>
+                    <li>Historical backtests with eligibility gates</li>
+                    <li>Forecast distribution (p10/p50/p90 bands)</li>
                   </ul>
                 </div>
               </div>
@@ -643,44 +643,87 @@ export function Documentation() {
         <TabsContent value="portfolio" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>R&D ETF Portfolio</CardTitle>
-              <CardDescription>Understanding the portfolio construction and backtesting</CardDescription>
+              <CardTitle>ETF R&D Alpha Selection</CardTitle>
+              <CardDescription>Understanding the portfolio construction, annual rolls, and backtesting</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
+                <div className="p-4 border rounded-lg bg-purple-500/5 border-purple-500/20">
+                  <h3 className="font-semibold mb-2 text-purple-400">ETF Basket Sizes</h3>
+                  <div className="grid gap-2 md:grid-cols-3 mt-3">
+                    <div className="p-3 border rounded bg-purple-500/10">
+                      <Badge className="bg-purple-500">ETF10</Badge>
+                      <p className="text-xs mt-2 text-muted-foreground">Concentrated (10 holdings)</p>
+                      <p className="text-xs text-muted-foreground">Higher tracking error</p>
+                    </div>
+                    <div className="p-3 border rounded bg-purple-500/10">
+                      <Badge className="bg-purple-500">ETF20</Badge>
+                      <p className="text-xs mt-2 text-muted-foreground">Balanced (20 holdings)</p>
+                      <p className="text-xs text-muted-foreground">Default basket</p>
+                    </div>
+                    <div className="p-3 border rounded bg-purple-500/10">
+                      <Badge className="bg-purple-500">ETF50</Badge>
+                      <p className="text-xs mt-2 text-muted-foreground">Diversified (50 holdings)</p>
+                      <p className="text-xs text-muted-foreground">Lower tracking error</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="p-4 border rounded-lg">
-                  <h3 className="font-semibold mb-2">Portfolio Selection</h3>
+                  <h3 className="font-semibold mb-2">Annual Roll Date: July 1</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    The R&D ETF selects top companies using three methods:
+                    Following the Fama-French convention:
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li><strong>Quality-Adjusted:</strong> R&D intensity × data quality score (default)</li>
-                    <li><strong>Highest R&D:</strong> Pure R&D intensity ranking</li>
-                    <li><strong>Balanced:</strong> Diversified across sectors</li>
+                    <li><strong>Formation:</strong> July 1 of year T</li>
+                    <li><strong>Data used:</strong> FY(T-1) financials for R&D intensity</li>
+                    <li><strong>Holding period:</strong> July T to June T+1</li>
+                    <li><strong>Weighting:</strong> Equal-weight at formation, drift during year</li>
                   </ul>
                 </div>
 
                 <div className="p-4 border rounded-lg">
-                  <h3 className="font-semibold mb-2">Backtesting</h3>
+                  <h3 className="font-semibold mb-2">Portfolio Selection (R&D Alpha Method)</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Historical performance is calculated by:
+                    The R&D Alpha scoring formula:
+                  </p>
+                  <code className="block bg-slate-900 text-emerald-400 p-2 rounded text-sm my-2">
+                    Score = (RD_Intensity × Sector_Adj × Momentum × Quality) / Volatility
+                  </code>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li><strong>R&D Intensity:</strong> FY(T-1) R&D/Revenue, capped by sector</li>
+                    <li><strong>Sector Adjustment:</strong> Prevents tech/biotech overconcentration</li>
+                    <li><strong>Momentum:</strong> Trailing 3-year excess return vs benchmark</li>
+                    <li><strong>Quality:</strong> Data quality and coverage score</li>
+                    <li><strong>Volatility:</strong> Trailing 3-year annualized volatility</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-semibold mb-2">Backtesting with Eligibility Gates</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Anti-lookahead rules to prevent survivorship bias:
                   </p>
                   <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Selecting top R&D companies at period start</li>
-                    <li>Calculating equal-weighted portfolio returns</li>
-                    <li>Comparing to S&P 500 benchmark</li>
-                    <li>Computing excess return (alpha)</li>
+                    <li><strong>Membership gate:</strong> S&P 500 constituent as of formation date</li>
+                    <li><strong>Listing gate:</strong> Trading for ≥1 year before formation</li>
+                    <li><strong>Filing gate:</strong> FY(T-1) 10-K filed before formation</li>
+                    <li><strong>Liquidity gate:</strong> Median 60-day volume ≥ $1M</li>
                   </ol>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Mode shown as "Published" when historical S&P 500 membership available, otherwise "Provisional".
+                  </p>
                 </div>
 
                 <div className="p-4 border rounded-lg">
                   <h3 className="font-semibold mb-2">Performance Metrics</h3>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                     <li><strong>Total Return:</strong> Cumulative return over the period</li>
-                    <li><strong>Annualized Return:</strong> Average annual return</li>
-                    <li><strong>Excess Return:</strong> Portfolio return minus benchmark return</li>
-                    <li><strong>Sharpe Ratio:</strong> Risk-adjusted return measure</li>
+                    <li><strong>Annualized Return (CAGR):</strong> Compound annual growth rate</li>
+                    <li><strong>Excess Return:</strong> Portfolio return minus S&P 500 return</li>
+                    <li><strong>Sharpe Ratio:</strong> Risk-adjusted return (using time-varying RF)</li>
                     <li><strong>Max Drawdown:</strong> Largest peak-to-trough decline</li>
+                    <li><strong>Turnover:</strong> Annual portfolio turnover percentage</li>
                   </ul>
                 </div>
               </div>

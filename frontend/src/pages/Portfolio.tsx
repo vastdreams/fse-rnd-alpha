@@ -95,15 +95,21 @@ export function Portfolio() {
     queryFn: () => portfolioApi.getForecastVsActual(asOfYear, nHoldings, "rd_alpha", selectedSector),
   })
 
-  // Backtest from 2005 to the selected year (or last complete year for "Current ETF")
+  // Backtest from 2005 to the CURRENT year (always fetch full history)
+  // We use asOfYear to split "historical" vs "actuals" in the chart
   // Starting in 2000-2002 would include dot-com bubble burst which distorts results
-  // IMPORTANT: Use asOfYear as the end date so metrics CHANGE with year selection
   const backtestStart = 2005
-  // Cap end year to CURRENT_YEAR - 1 (incomplete data for current year)
+  // Always fetch through CURRENT_YEAR - 1 (last complete year)
+  const backtestEndForQuery = CURRENT_YEAR - 1
+  // For metrics display, cap at selected year
   const backtestEnd = Math.min(asOfYear, CURRENT_YEAR - 1)
+  
+  // Fetch FULL backtest data (2005 to current year) for the chart
+  // CRITICAL: Always fetch through CURRENT_YEAR-1 to have actuals data for comparison
   const { data: backtest, isLoading: loadingBacktest } = useQuery({
-    queryKey: ["backtest", backtestStart, backtestEnd, nHoldings, selectedSector],
-    queryFn: () => portfolioApi.backtest(backtestStart, backtestEnd, nHoldings, "rd_alpha", selectedSector),
+    queryKey: ["backtest-full-chart", backtestStart, backtestEndForQuery, nHoldings, selectedSector],
+    queryFn: () => portfolioApi.backtest(backtestStart, backtestEndForQuery, nHoldings, "rd_alpha", selectedSector),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
   const { data: sectors } = useQuery({
@@ -156,12 +162,70 @@ export function Portfolio() {
     }))
   }, [backtest?.yearly_data])
 
+  // Compute metrics for the SELECTED year range (not full backtest)
+  // This allows metrics to change when user selects different years
+  const selectedYearMetrics = useMemo(() => {
+    const rows = backtest?.yearly_data || []
+    // Filter to years within the selected range
+    const filteredRows = rows.filter(d => d.year >= backtestStart && d.year <= backtestEnd)
+    
+    if (filteredRows.length === 0) {
+      return null
+    }
+    
+    // Calculate portfolio metrics
+    const portfolioReturns = filteredRows.map(d => (d.portfolio_return || 0) / 100)
+    const sp500Returns = filteredRows.map(d => (d.sp500_return || 0) / 100)
+    
+    // Total return (compound)
+    const portfolioTotal = portfolioReturns.reduce((acc, r) => acc * (1 + r), 1) - 1
+    const sp500Total = sp500Returns.reduce((acc, r) => acc * (1 + r), 1) - 1
+    
+    // Annualized return (CAGR)
+    const nYears = filteredRows.length
+    const portfolioAnnualized = nYears > 0 ? Math.pow(1 + portfolioTotal, 1 / nYears) - 1 : 0
+    const sp500Annualized = nYears > 0 ? Math.pow(1 + sp500Total, 1 / nYears) - 1 : 0
+    
+    // Volatility (std dev of annual returns)
+    const mean = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length
+    const variance = portfolioReturns.reduce((acc, r) => acc + Math.pow(r - mean, 2), 0) / (portfolioReturns.length - 1 || 1)
+    const volatility = Math.sqrt(variance)
+    
+    // Sharpe ratio (assuming 2% risk-free)
+    const riskFreeRate = 0.02
+    const sharpeRatio = volatility > 0 ? (portfolioAnnualized - riskFreeRate) / volatility : 0
+    
+    // Max drawdown
+    let peak = 1
+    let maxDrawdown = 0
+    let cumulative = 1
+    for (const r of portfolioReturns) {
+      cumulative *= (1 + r)
+      if (cumulative > peak) peak = cumulative
+      const drawdown = (cumulative - peak) / peak
+      if (drawdown < maxDrawdown) maxDrawdown = drawdown
+    }
+    
+    return {
+      portfolio: {
+        total_return: portfolioTotal * 100,
+        annualized_return: portfolioAnnualized * 100,
+        volatility: volatility * 100,
+        sharpe_ratio: sharpeRatio,
+        max_drawdown: maxDrawdown * 100,
+      },
+      sp500: {
+        total_return: sp500Total * 100,
+        annualized_return: sp500Annualized * 100,
+      },
+      excess_vs_sp500: (portfolioAnnualized - sp500Annualized) * 100,
+    }
+  }, [backtest?.yearly_data, backtestStart, backtestEnd])
+
   const cumulativeExcessVsSp500 = useMemo(() => {
-    const port = backtest?.portfolio_performance?.total_return
-    const sp = backtest?.sp500_performance?.total_return
-    if (typeof port !== "number" || typeof sp !== "number") return null
-    return port - sp
-  }, [backtest?.portfolio_performance?.total_return, backtest?.sp500_performance?.total_return])
+    if (!selectedYearMetrics) return null
+    return selectedYearMetrics.portfolio.total_return - selectedYearMetrics.sp500.total_return
+  }, [selectedYearMetrics])
 
   // Export holdings to CSV
   const handleExportHoldings = () => {
@@ -215,6 +279,7 @@ export function Portfolio() {
     // Use canonical 5-year R&D premium from research (7.11% verified)
     const forecastPremium = forecastVsActual?.forecast_premium ?? 7.1
     
+    
     // Calculate cumulative values starting at 100
     let portfolioCumulative = 100
     let benchmarkCumulative = 100
@@ -251,12 +316,17 @@ export function Portfolio() {
       portfolioLow: null,
     })
     
+    // Track cumulative values for each year to use for actuals extension
+    const cumulativeByYear: Record<number, { portfolio: number; benchmark: number }> = {}
+    
     // Process historical data through all available years
     // Use S&P 500 return for benchmark when available, fallback to cohort EW benchmark
     backtest.yearly_data.forEach((d) => {
       portfolioCumulative *= (1 + (d.portfolio_return || 0) / 100)
       const benchmarkReturn = typeof d.sp500_return === "number" ? d.sp500_return : 0
       benchmarkCumulative *= (1 + benchmarkReturn / 100)
+      
+      cumulativeByYear[d.year] = { portfolio: portfolioCumulative, benchmark: benchmarkCumulative }
       
       // Track the value at selection year
       if (d.year === asOfYear) {
@@ -337,6 +407,20 @@ export function Portfolio() {
     return chartData
   }, [backtest, asOfYear, forecastVsActual])
 
+  // Check if we have actuals data (years after selection with actual portfolio returns)
+  const hasActualsData = useMemo(() => {
+    const actualsPoints = performanceLineData.filter(d => d.actuals !== null && d.year > asOfYear)
+    return actualsPoints.length > 0
+  }, [performanceLineData, asOfYear])
+  
+  // Get the range of actuals data
+  const actualsYearRange = useMemo(() => {
+    const actualsPoints = performanceLineData.filter(d => d.actuals !== null)
+    if (actualsPoints.length === 0) return null
+    const years = actualsPoints.map(d => d.year)
+    return { min: Math.min(...years), max: Math.max(...years) }
+  }, [performanceLineData])
+
   // Calculate forecast accuracy
   const forecastAccuracy = useMemo(() => {
     if (!forecastVsActual?.is_historical || forecastVsActual.actual_return === null) return null
@@ -368,17 +452,17 @@ export function Portfolio() {
               <div className="flex items-center gap-3 mb-2">
                 <Zap className="h-8 w-8 text-purple-500" />
                 <h1 className="text-4xl font-bold">
-                  <span className="text-purple-500">R&D</span>{" "}
-                  <span className="text-foreground">Alpha ETF</span>
+                  <span className="text-purple-500">ETF{nHoldings}</span>{" "}
+                  <span className="text-foreground">R&D Alpha Selection</span>
                 </h1>
               </div>
               <p className="text-lg text-muted-foreground max-w-xl">
-                Dynamically constructed portfolio of Top {nHoldings} R&D-intensive companies 
-                as of <span className="text-purple-500 font-semibold">{asOfYear}</span>
+                Research-backed basket of {nHoldings} R&D-intensive companies 
+                as of <span className="text-purple-500 font-semibold">July {asOfYear}</span>
               </p>
               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
                 <FlaskConical className="h-3 w-3" />
-                <span><strong>Methodology:</strong> July-June returns (Fama-French convention) • Delisting-adjusted • R&D Alpha scoring</span>
+                <span><strong>Annual Roll:</strong> July reconstitution • FY(T-1) financials • Point-in-time selection</span>
               </p>
             </div>
             
@@ -434,16 +518,16 @@ export function Portfolio() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-slate-800">
-                          <SelectItem value="10">Top 10</SelectItem>
-                          <SelectItem value="20">Top 20</SelectItem>
-                          <SelectItem value="50">Top 50</SelectItem>
+                          <SelectItem value="10">ETF10</SelectItem>
+                          <SelectItem value="20">ETF20</SelectItem>
+                          <SelectItem value="50">ETF50</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs">
                     <p className="text-sm">
-                      <strong>Holdings:</strong> Number of highest R&D-intensity companies to include in the portfolio.
+                      <strong>ETF Size:</strong> ETF10 (concentrated), ETF20 (balanced), ETF50 (diversified).
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -476,108 +560,107 @@ export function Portfolio() {
         </div>
       </div>
 
-      {/* KEY METRICS - Annualized Returns Front and Center */}
-      {/* Right-click any value to audit and see calculation details */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* KEY METRICS - Compact cards */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Annualized Return</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Annualized Return</p>
             <AuditableValue
               metricId="annualized_return"
               metricLabel="Annualized Return"
-              value={backtest?.portfolio_performance?.annualized_return?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.portfolio.annualized_return?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd, 
                 nHoldings,
-                value: backtest?.portfolio_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.portfolio.annualized_return?.toFixed(1)
               }}
             >
-              <p className="text-3xl font-bold text-emerald-500">
-                {backtest?.portfolio_performance?.annualized_return 
-                  ? `+${backtest.portfolio_performance.annualized_return.toFixed(1)}%`
-                  : "..."}
-              </p>
+              <p className="text-2xl font-bold text-emerald-500">
+                {selectedYearMetrics?.portfolio.annualized_return !== undefined
+                  ? `${selectedYearMetrics.portfolio.annualized_return >= 0 ? "+" : ""}${selectedYearMetrics.portfolio.annualized_return.toFixed(1)}%`
+                : "..."}
+            </p>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">{backtestStart}-{backtestEnd} ({backtestEnd - backtestStart} years)</p>
+            <p className="text-[10px] text-muted-foreground">{backtestStart}-{backtestEnd}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">S&P 500 (Annualized)</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">S&P 500</p>
             <AuditableValue
               metricId="sp500_return"
               metricLabel="S&P 500 (Annualized)"
-              value={backtest?.sp500_performance?.annualized_return?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.sp500.annualized_return?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.sp500.annualized_return?.toFixed(1)
               }}
             >
-              <p className="text-3xl font-bold text-blue-500">
-                {backtest?.sp500_performance?.annualized_return 
-                  ? `+${backtest.sp500_performance.annualized_return.toFixed(1)}%`
-                  : "..."}
-              </p>
+              <p className="text-2xl font-bold text-blue-500">
+                {selectedYearMetrics?.sp500.annualized_return !== undefined
+                  ? `${selectedYearMetrics.sp500.annualized_return >= 0 ? "+" : ""}${selectedYearMetrics.sp500.annualized_return.toFixed(1)}%`
+                : "..."}
+            </p>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">Market benchmark</p>
+            <p className="text-[10px] text-muted-foreground">Benchmark</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Excess Return (Annual)</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Excess Return</p>
             <AuditableValue
               metricId="excess_return"
               metricLabel="Excess Return (Annual)"
-              value={backtest?.excess_vs_sp500?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.excess_vs_sp500?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.excess_vs_sp500?.toFixed(1),
-                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
-                benchmarkReturn: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.excess_vs_sp500?.toFixed(1),
+                portfolioReturn: selectedYearMetrics?.portfolio.annualized_return?.toFixed(1),
+                benchmarkReturn: selectedYearMetrics?.sp500.annualized_return?.toFixed(1)
               }}
             >
-              <p className="text-3xl font-bold text-amber-500">
-                {backtest?.excess_vs_sp500 !== undefined && backtest?.excess_vs_sp500 !== null
-                  ? `${backtest.excess_vs_sp500 >= 0 ? "+" : ""}${backtest.excess_vs_sp500.toFixed(1)}%`
-                  : "..."}
-              </p>
+              <p className="text-2xl font-bold text-amber-500">
+                {selectedYearMetrics?.excess_vs_sp500 !== undefined
+                  ? `${selectedYearMetrics.excess_vs_sp500 >= 0 ? "+" : ""}${selectedYearMetrics.excess_vs_sp500.toFixed(1)}%`
+                : "..."}
+            </p>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">R&D premium vs S&P 500</p>
+            <p className="text-[10px] text-muted-foreground">vs S&P 500</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">$100 Becomes</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">$100 Becomes</p>
             <AuditableValue
               metricId="total_value"
               metricLabel="$100 Becomes"
-              value={backtest?.portfolio_performance?.total_return 
-                ? ((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
+              value={selectedYearMetrics?.portfolio.total_return !== undefined
+                ? ((100 * (1 + selectedYearMetrics.portfolio.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
                 : "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.portfolio_performance?.total_return 
-                  ? ((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
+                value: selectedYearMetrics?.portfolio.total_return !== undefined
+                  ? ((100 * (1 + selectedYearMetrics.portfolio.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
                   : "...",
-                totalReturn: backtest?.portfolio_performance?.total_return?.toFixed(2),
-                sp500Value: backtest?.sp500_performance?.total_return 
-                  ? ((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
+                totalReturn: selectedYearMetrics?.portfolio.total_return?.toFixed(2),
+                sp500Value: selectedYearMetrics?.sp500.total_return !== undefined
+                  ? ((100 * (1 + selectedYearMetrics.sp500.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
                   : "..."
               }}
             >
-              <p className="text-3xl font-bold text-purple-500">
-                {backtest?.portfolio_performance?.total_return 
-                  ? `$${((100 * (1 + backtest.portfolio_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
-                  : "..."}
-              </p>
+              <p className="text-2xl font-bold text-purple-500">
+                {selectedYearMetrics?.portfolio.total_return !== undefined
+                  ? `$${((100 * (1 + selectedYearMetrics.portfolio.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                : "..."}
+            </p>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">
-              vs S&P 500: {backtest?.sp500_performance?.total_return 
-                ? `$${((100 * (1 + backtest.sp500_performance.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+            <p className="text-[10px] text-muted-foreground">
+              S&P: ${selectedYearMetrics?.sp500.total_return !== undefined
+                ? ((100 * (1 + selectedYearMetrics.sp500.total_return / 100))).toLocaleString(undefined, {maximumFractionDigits: 0})
                 : "..."}
             </p>
           </CardContent>
@@ -613,62 +696,116 @@ export function Portfolio() {
         </CardContent>
       </Card>
 
-      {/* HOW TO USE THIS TOOL - Investment Instructions */}
+      {/* HOW ETF{n} R&D ALPHA WORKS - Educational Section */}
       <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-card">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <BookOpen className="h-5 w-5 text-purple-500" />
-            How to Use This Tool for Investing
+            How ETF{nHoldings} R&D Alpha Selection Works
           </CardTitle>
+          <CardDescription>
+            Understanding the annual reconstitution, rebalancing, and backtest methodology
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Core Mechanics */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20">
+              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">📅 Annual Roll Date</h4>
+              <p className="text-sm text-muted-foreground">
+                <strong>July 1</strong> of each year (Fama-French convention). This ensures FY(T-1) 
+                annual reports are available before selection.
+              </p>
+            </div>
+            <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
+              <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">📊 Data Used</h4>
+              <p className="text-sm text-muted-foreground">
+                <strong>FY(T-1) financials</strong> for R&D intensity. Trailing 3-year momentum 
+                and volatility through June 30. Point-in-time data only.
+              </p>
+            </div>
+            <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/20">
+              <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-2">⚖️ Rebalancing</h4>
+              <p className="text-sm text-muted-foreground">
+                <strong>Equal weights</strong> reset at each July reconstitution. Holdings drift 
+                during the year; no intra-year rebalancing.
+              </p>
+            </div>
+          </div>
+
+          {/* Timeline Diagram */}
+          <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4">
+            <h4 className="font-semibold mb-3">Annual Cycle Timeline</h4>
+            <div className="flex items-center justify-between text-xs text-muted-foreground relative">
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -z-10" />
+              <div className="flex flex-col items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2">
+                <div className="w-3 h-3 rounded-full bg-amber-500" />
+                <span>May-Jun</span>
+                <span className="font-medium text-foreground">10-Ks filed</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2">
+                <div className="w-3 h-3 rounded-full bg-purple-500" />
+                <span>Jul 1</span>
+                <span className="font-medium text-foreground">Reconstitute</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <span>Jul-Jun</span>
+                <span className="font-medium text-foreground">Hold period</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span>Jun 30</span>
+                <span className="font-medium text-foreground">Measure return</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Key Definitions */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">1</span>
-                Build Your Portfolio
+                What is "Backtest"?
               </h4>
-              <ul className="text-sm text-muted-foreground space-y-1.5 ml-8">
-                <li>• Select "Current ETF" to see today's recommended holdings</li>
-                <li>• Choose Top 20 holdings for diversification, Top 10 for concentration</li>
-                <li>• Equal-weight each position (e.g., 5% each for Top 20)</li>
-                <li>• Download holdings via the "Holdings" tab export button</li>
-              </ul>
+              <p className="text-sm text-muted-foreground ml-8">
+                A <strong>simulation</strong> of what would have happened if you followed this 
+                selection rule historically. We re-select holdings each July using only data 
+                available at that time, then measure actual returns through the following June.
+              </p>
             </div>
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">2</span>
-                Rebalancing Schedule
+                What is "Forecast"?
               </h4>
-              <ul className="text-sm text-muted-foreground space-y-1.5 ml-8">
-                <li>• <strong>Annually in July</strong> (Fama-French convention)</li>
-                <li>• Wait for prior fiscal-year 10-K filings (typically May-June)</li>
-                <li>• Re-rank by R&D intensity and update holdings</li>
-                <li>• Expected turnover: ~40% per year</li>
-              </ul>
+              <p className="text-sm text-muted-foreground ml-8">
+                An <strong>expected return range</strong> based on market consensus + historical 
+                R&D premium. Not a prediction—shows probability bands (p10/p50/p90) accounting 
+                for market uncertainty and premium variability.
+              </p>
             </div>
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">3</span>
-                Expected Performance
+                Rebalancing vs Reconstitution
               </h4>
-              <ul className="text-sm text-muted-foreground space-y-1.5 ml-8">
-                <li>• Historical R&D premium: <strong>+5-8%</strong> over S&P 500 annually</li>
-                <li>• Higher volatility than benchmark (expect ~18-20% annual vol)</li>
-                <li>• Sector concentration in Tech & Healthcare</li>
-                <li>• See <Link to="/papers/main" className="text-purple-500 hover:underline">Main Paper</Link> for full research</li>
-              </ul>
+              <p className="text-sm text-muted-foreground ml-8">
+                <strong>Reconstitution</strong> = changing which stocks are in the basket (annually in July). 
+                <strong> Rebalancing</strong> = resetting weights to equal (also annually). We do both 
+                together at the July roll date.
+              </p>
             </div>
             <div className="space-y-3">
               <h4 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center">!</span>
-                Important Considerations
+                Important Caveats
               </h4>
-              <ul className="text-sm text-muted-foreground space-y-1.5 ml-8">
-                <li>• <strong>Not investment advice</strong> - research tool only</li>
-                <li>• Transaction costs reduce net returns ~0.07% annually</li>
-                <li>• Tax implications vary by account type</li>
-                <li>• Consider your risk tolerance and time horizon</li>
+              <ul className="text-sm text-muted-foreground space-y-1 ml-8">
+                <li>• Past performance ≠ future results</li>
+                <li>• Backtests are subject to data quality limitations</li>
+                <li>• Transaction costs (~0.07% annually) reduce net returns</li>
+                <li>• This is a research tool, not investment advice</li>
               </ul>
             </div>
           </div>
@@ -723,22 +860,25 @@ export function Portfolio() {
             <div>
               <CardTitle className="text-2xl flex items-center gap-3 flex-wrap">
                 Portfolio Performance
-                <div className="flex items-center gap-2 text-sm font-normal flex-wrap">
-                  <span className="px-2 py-1 bg-cyan-500/20 rounded text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
+                <div className="flex items-center gap-2 text-xs font-normal flex-wrap">
+                  <span className="px-2 py-0.5 bg-cyan-500/20 rounded text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
                     Historical ({backtestStart}-{asOfYear})
                   </span>
                   {asOfYear < CURRENT_YEAR - 1 && (
-                    <span className="px-2 py-1 bg-emerald-500/20 rounded text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
-                      Actuals ({asOfYear + 1}-{CURRENT_YEAR - 1})
+                    <span className={`px-2 py-0.5 rounded border ${hasActualsData ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30' : 'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30'}`}>
+                      {hasActualsData 
+                        ? `Actuals (${actualsYearRange?.min || asOfYear}-${actualsYearRange?.max || CURRENT_YEAR - 1})`
+                        : `No Actuals Data`
+                      }
                     </span>
                   )}
-                  <span className="px-2 py-1 bg-purple-500/20 rounded text-purple-600 dark:text-purple-300 border border-purple-500/30">
+                  <span className="px-2 py-0.5 bg-purple-500/20 rounded text-purple-600 dark:text-purple-300 border border-purple-500/30">
                     10yr Forecast
                   </span>
                 </div>
               </CardTitle>
               <CardDescription className="text-base mt-1">
-                Growth of $100 invested in {backtestStart} - R&D Portfolio vs S&P 500 benchmark
+                Growth of $100 invested in {backtestStart} - ETF{nHoldings} R&D Alpha vs S&P 500 benchmark
               </CardDescription>
             </div>
             
@@ -851,7 +991,7 @@ export function Portfolio() {
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: dotColor }} />
                           <span className="font-bold text-foreground">${portfolioValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-muted-foreground text-sm">R&D ETF</span>
+                          <span className="text-muted-foreground text-sm">ETF{nHoldings}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CHART_COLORS.benchmark }} />
@@ -871,7 +1011,7 @@ export function Portfolio() {
                   }}
                 />
                 
-                {/* Forecast confidence band */}
+                {/* Forecast confidence band - hidden from legend */}
                 <Area
                   type="monotone"
                   dataKey="portfolioHigh"
@@ -879,6 +1019,8 @@ export function Portfolio() {
                   fill="url(#forecastGradient)"
                   fillOpacity={1}
                   connectNulls={false}
+                  legendType="none"
+                  name=""
                 />
                 <Area
                   type="monotone"
@@ -887,6 +1029,8 @@ export function Portfolio() {
                   fill="hsl(var(--background))"
                   fillOpacity={1}
                   connectNulls={false}
+                  legendType="none"
+                  name=""
                 />
                 
                 {/* Benchmark line - dashed, neutral gray */}
@@ -914,40 +1058,13 @@ export function Portfolio() {
                   activeDot={{ r: 8, fill: CHART_COLORS.historical, stroke: '#fff', strokeWidth: 2 }}
                 />
                 
-                {/* Actuals line - green, solid - SEPARATE LINE showing what actually happened */}
-                <Line
-                  type="monotone"
-                  dataKey="actuals"
-                  name="Actual Performance ($)"
-                  stroke={CHART_COLORS.actuals}
-                  strokeWidth={3}
-                  dot={(props) => {
-                    const { cx, cy, index } = props
-                    if (!cx || !cy) return null
-                    // Show dots on actuals line
-                    return (
-                      <circle 
-                        key={`actual-dot-${index}`}
-                        cx={cx} 
-                        cy={cy} 
-                        r={4} 
-                        fill={CHART_COLORS.actuals} 
-                        stroke="#fff" 
-                        strokeWidth={2}
-                      />
-                    )
-                  }}
-                  connectNulls={false}
-                  activeDot={{ r: 8, fill: CHART_COLORS.actuals, stroke: '#fff', strokeWidth: 2 }}
-                />
-                
-                {/* Forecast line - purple, with dots */}
+                {/* Forecast line - purple, dashed - rendered FIRST so actuals overlays it */}
                 <Line
                   type="monotone"
                   dataKey="forecast"
                   name="10-Year Forecast ($)"
                   stroke={CHART_COLORS.forecast}
-                  strokeWidth={3}
+                  strokeWidth={2}
                   strokeDasharray="8 4"
                   dot={(props) => {
                     const { cx, cy, index } = props
@@ -957,22 +1074,52 @@ export function Portfolio() {
                         key={`forecast-dot-${index}`}
                         cx={cx} 
                         cy={cy} 
-                        r={4} 
+                        r={3} 
                         fill={CHART_COLORS.forecast} 
+                        stroke="#fff" 
+                        strokeWidth={1}
+                      />
+                    )
+                  }}
+                  connectNulls={true}
+                  activeDot={{ r: 6, fill: CHART_COLORS.forecast, stroke: '#fff', strokeWidth: 2 }}
+                />
+                
+                {/* Actuals line - green, solid - rendered AFTER forecast so it overlays */}
+                <Line
+                  type="monotone"
+                  dataKey="actuals"
+                  name="Actual Performance ($)"
+                  stroke={CHART_COLORS.actuals}
+                  strokeWidth={4}
+                  dot={(props) => {
+                    const { cx, cy, index } = props
+                    if (!cx || !cy) return null
+                    return (
+                      <circle 
+                        key={`actual-dot-${index}`}
+                        cx={cx} 
+                        cy={cy} 
+                        r={5} 
+                        fill={CHART_COLORS.actuals} 
                         stroke="#fff" 
                         strokeWidth={2}
                       />
                     )
                   }}
-                  connectNulls={false}
-                  activeDot={{ r: 8, fill: CHART_COLORS.forecast, stroke: '#fff', strokeWidth: 2 }}
+                  connectNulls={true}
+                  activeDot={{ r: 8, fill: CHART_COLORS.actuals, stroke: '#fff', strokeWidth: 2 }}
                 />
                 
                 <Legend 
                   verticalAlign="bottom"
                   iconType="circle"
-                  wrapperStyle={{ paddingTop: 20 }}
-                  formatter={(value: string) => <span className="text-foreground">{value}</span>}
+                  wrapperStyle={{ paddingTop: 16, fontSize: 12 }}
+                  formatter={(value: string) => {
+                    // Filter out the confidence band entries from legend
+                    if (!value || value === '') return null
+                    return <span className="text-foreground text-xs">{value}</span>
+                  }}
                 />
               </ComposedChart>
               </SafeChart>
@@ -980,32 +1127,30 @@ export function Portfolio() {
             )}
           </div>
           
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-border">
-            <div className="text-center p-4 rounded-lg bg-purple-50 dark:bg-purple-500/10">
-              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+          {/* Stats Row - Compact */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
+            <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-500/10">
+              <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
                 ${(performanceLineData[performanceLineData.length - 1]?.forecast || 
                    performanceLineData[performanceLineData.length - 1]?.actuals ||
                    performanceLineData[performanceLineData.length - 1]?.historical)?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "..."}
               </p>
-              <p className="text-sm text-muted-foreground">Portfolio Value</p>
-              <p className="text-xs text-muted-foreground/70">(Started at $100)</p>
+              <p className="text-xs text-muted-foreground">Portfolio Value</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
-              <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">
+            <div className="text-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
+              <p className="text-xl font-bold text-slate-600 dark:text-slate-300">
                 ${performanceLineData[performanceLineData.length - 1]?.benchmark?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "..."}
               </p>
-              <p className="text-sm text-muted-foreground">Benchmark Value</p>
-              <p className="text-xs text-muted-foreground/70">(S&P 500)</p>
+              <p className="text-xs text-muted-foreground">S&P 500</p>
             </div>
-            <div className={`text-center p-4 rounded-lg ${
+            <div className={`text-center p-3 rounded-lg ${
               cumulativeExcessVsSp500 === null
                 ? 'bg-slate-100 dark:bg-slate-800'
                 : cumulativeExcessVsSp500 >= 0
                   ? 'bg-green-50 dark:bg-green-500/10'
                   : 'bg-red-50 dark:bg-red-500/10'
             }`}>
-              <p className={`text-3xl font-bold ${
+              <p className={`text-xl font-bold ${
                 cumulativeExcessVsSp500 === null
                   ? 'text-slate-600 dark:text-slate-300'
                   : cumulativeExcessVsSp500 >= 0
@@ -1014,135 +1159,122 @@ export function Portfolio() {
               }`}>
                 {formatPercent(cumulativeExcessVsSp500)}
               </p>
-              <p className="text-sm text-muted-foreground">Cumulative Excess vs S&P 500</p>
-              <p className="text-xs text-muted-foreground/70">(pp difference in total return)</p>
+              <p className="text-xs text-muted-foreground">Excess vs S&P</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10">
-              <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+            <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+              <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
                 +{(forecastVsActual?.forecast_premium ?? 7.1).toFixed(1)}%
               </p>
-              <p className="text-sm text-muted-foreground">Expected R&D Premium (5yr)</p>
+              <p className="text-xs text-muted-foreground">R&D Premium</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Summary Stats Cards - Right-click any value to audit */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Summary Stats Cards - Compact */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annualized Portfolio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Annualized</span>
+              <TrendingUp className="h-3 w-3 text-emerald-500" />
+            </div>
             <AuditableValue
               metricId="annualized_return"
               metricLabel="Annualized Portfolio"
-              value={backtest?.portfolio_performance?.annualized_return?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.portfolio.annualized_return?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd, 
                 nHoldings,
-                value: backtest?.portfolio_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.portfolio.annualized_return?.toFixed(1)
               }}
               showHoverIndicator={false}
             >
-              <div className="text-2xl font-bold text-emerald-400">
-                {formatPercent(backtest?.portfolio_performance?.annualized_return)}
-              </div>
+            <div className="text-xl font-bold text-emerald-400">
+              {formatPercent(selectedYearMetrics?.portfolio.annualized_return)}
+            </div>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">
-              {backtestStart}-{backtestEnd} average
-            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annualized S&P 500</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-muted-foreground">S&P 500</span>
+              <BarChart3 className="h-3 w-3 text-blue-500" />
+            </div>
             <AuditableValue
               metricId="sp500_return"
               metricLabel="Annualized S&P 500"
-              value={backtest?.sp500_performance?.annualized_return?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.sp500.annualized_return?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.sp500.annualized_return?.toFixed(1)
               }}
               showHoverIndicator={false}
             >
-              <div className="text-2xl font-bold text-blue-400">
-                {formatPercent(backtest?.sp500_performance?.annualized_return)}
-              </div>
+            <div className="text-xl font-bold text-blue-400">
+              {formatPercent(selectedYearMetrics?.sp500.annualized_return)}
+            </div>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">
-              Market benchmark
-            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alpha Generated</CardTitle>
-            {(backtest?.excess_vs_sp500 || 0) >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-purple-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Alpha</span>
+              {(selectedYearMetrics?.excess_vs_sp500 || 0) >= 0 ? (
+                <TrendingUp className="h-3 w-3 text-purple-500" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-500" />
+              )}
+            </div>
             <AuditableValue
               metricId="excess_return"
               metricLabel="Alpha Generated"
-              value={backtest?.excess_vs_sp500?.toFixed(1) || "..."}
+              value={selectedYearMetrics?.excess_vs_sp500?.toFixed(1) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.excess_vs_sp500?.toFixed(1),
-                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
-                benchmarkReturn: backtest?.sp500_performance?.annualized_return?.toFixed(1)
+                value: selectedYearMetrics?.excess_vs_sp500?.toFixed(1),
+                portfolioReturn: selectedYearMetrics?.portfolio.annualized_return?.toFixed(1),
+                benchmarkReturn: selectedYearMetrics?.sp500.annualized_return?.toFixed(1)
               }}
               showHoverIndicator={false}
             >
-              <div className={`text-2xl font-bold ${(backtest?.excess_vs_sp500 || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
-                {formatPercent(backtest?.excess_vs_sp500)}
-              </div>
+            <div className={`text-xl font-bold ${(selectedYearMetrics?.excess_vs_sp500 || 0) >= 0 ? 'text-purple-400' : 'text-red-400'}`}>
+              {formatPercent(selectedYearMetrics?.excess_vs_sp500)}
+            </div>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">
-              Annualized excess vs S&P 500
-            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20 hover:border-amber-500/40 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sharpe Ratio</CardTitle>
-            <Target className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Sharpe</span>
+              <Target className="h-3 w-3 text-amber-500" />
+            </div>
             <AuditableValue
               metricId="sharpe_ratio"
               metricLabel="Sharpe Ratio"
-              value={backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
+              value={selectedYearMetrics?.portfolio.sharpe_ratio?.toFixed(2) || "..."}
               auditParams={{ 
                 startYear: backtestStart, 
                 endYear: backtestEnd,
-                value: backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2),
-                portfolioReturn: backtest?.portfolio_performance?.annualized_return?.toFixed(1),
-                volatility: backtest?.portfolio_performance?.volatility?.toFixed(1)
+                value: selectedYearMetrics?.portfolio.sharpe_ratio?.toFixed(2),
+                portfolioReturn: selectedYearMetrics?.portfolio.annualized_return?.toFixed(1),
+                volatility: selectedYearMetrics?.portfolio.volatility?.toFixed(1)
               }}
               showHoverIndicator={false}
             >
-              <div className="text-2xl font-bold text-amber-400">
-                {backtest?.portfolio_performance?.sharpe_ratio?.toFixed(2) || "..."}
-              </div>
+            <div className="text-xl font-bold text-amber-400">
+              {selectedYearMetrics?.portfolio.sharpe_ratio?.toFixed(2) || "..."}
+            </div>
             </AuditableValue>
-            <p className="text-xs text-muted-foreground">
-              Risk-adjusted return
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -1169,11 +1301,11 @@ export function Portfolio() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>
-                  Top {nHoldings} R&D Companies
-                  <Badge variant="outline" className="ml-2">As of {asOfYear}</Badge>
+                  ETF{nHoldings} R&D Alpha Selection
+                  <Badge variant="outline" className="ml-2">July {asOfYear}</Badge>
                 </CardTitle>
                 <CardDescription>
-                  Dynamically selected based on R&D intensity in {asOfYear}
+                  Point-in-time selection using FY{asOfYear - 1} R&D intensity data
                 </CardDescription>
               </div>
               <TooltipProvider>
@@ -1238,8 +1370,8 @@ export function Portfolio() {
         <TabsContent value="performance" className="space-y-4">
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>Portfolio vs S&P 500 ({backtestStart}-{asOfYear})</CardTitle>
-              <CardDescription>Year-over-year comparison of R&D ETF vs S&P 500</CardDescription>
+              <CardTitle>ETF{nHoldings} vs S&P 500 ({backtestStart}-{asOfYear})</CardTitle>
+              <CardDescription>Year-over-year comparison of ETF{nHoldings} R&D Alpha vs S&P 500</CardDescription>
             </CardHeader>
             <CardContent style={{ height: 384, minHeight: 384 }}>
               {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (
@@ -1260,7 +1392,7 @@ export function Portfolio() {
                   <Line 
                     type="monotone" 
                     dataKey="portfolio_return" 
-                    name="R&D ETF" 
+                    name={`ETF${nHoldings} R&D Alpha`} 
                     stroke="#22c55e" 
                     strokeWidth={3}
                     dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
@@ -1286,7 +1418,7 @@ export function Portfolio() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle>Annual Excess Return (Alpha)</CardTitle>
-              <CardDescription>R&D ETF outperformance vs S&P 500 each year</CardDescription>
+              <CardDescription>ETF{nHoldings} outperformance vs S&P 500 each year</CardDescription>
             </CardHeader>
             <CardContent style={{ height: 256, minHeight: 256 }}>
               {chartsReady && activeTab === "performance" && yearlyDataForCharts && yearlyDataForCharts.length > 0 ? (

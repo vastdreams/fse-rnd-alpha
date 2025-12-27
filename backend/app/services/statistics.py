@@ -1079,10 +1079,10 @@ class StatisticalAnalyzer:
                 existing.tukey_results = anova_result.tukey_results
                 existing.high_low_diff = high_low_diff
             else:
-            db_result = AnovaResult(
-                window_type=window_type,
-                period=period,
-                test_type="one_way_anova",
+                db_result = AnovaResult(
+                    window_type=window_type,
+                    period=period,
+                    test_type="one_way_anova",
                     return_convention=return_convention,
                     data_tier=self.data_tier,
                 f_statistic=anova_result.f_statistic,
@@ -1092,11 +1092,11 @@ class StatisticalAnalyzer:
                 significant_005=anova_result.significant_005,
                 significant_001=anova_result.significant_001,
                 group_means=anova_result.group_means,
-                group_stds=anova_result.group_stds,
-                group_ns=anova_result.group_ns,
-                tukey_results=anova_result.tukey_results,
+                    group_stds=anova_result.group_stds,
+                    group_ns=anova_result.group_ns,
+                    tukey_results=anova_result.tukey_results,
                     high_low_diff=high_low_diff,
-            )
+                )
                 self.session.add(db_result)
 
             await self.session.commit()

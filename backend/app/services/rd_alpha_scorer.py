@@ -8,33 +8,41 @@ PURPOSE:
 ROLE IN ARCHITECTURE:
   - Core scoring service for ETF portfolio construction
   - Used by portfolio_optimizer.py and portfolio API endpoints
+  - Works with etf_universe.py for point-in-time eligibility
 
 MAIN EXPORTS:
   - RDAlphaScore: Dataclass for individual company scores
   - RDAlphaScorer: Main scoring engine class
 
 NON-RESPONSIBILITIES:
-  - Does not handle portfolio backtesting (see portfolio_optimizer.py)
+  - Does not handle portfolio backtesting (see portfolio_optimizer.py, etf_backtester.py)
   - Does not manage market forecasts (see market_forecasts.py)
+  - Does not determine universe eligibility (see etf_universe.py)
 
 NOTES FOR FUTURE AI:
   - The formula weights are calibrated based on research findings
   - Sector adjustments prevent natural tech/biotech overweight
   - Update SP500_SECTOR_WEIGHTS periodically from S&P data
+  
+POINT-IN-TIME RULES (Dec 2025 Update):
+  - For backtests, use FY(T-1) financials for R&D intensity (not avg_rd_intensity)
+  - Formation date is July 1 of as_of_year (Fama-French convention)
+  - ETFUniverseBuilder handles eligibility gates; scorer only scores eligible symbols
 """
 
 import logging
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, date as date_type
 import numpy as np
-from sqlalchemy import select, func, desc, and_, case
+from sqlalchemy import select, func, desc, and_, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
     ResearchCohort, FMPIncomeStatement, 
     FMPAnnualReturn, SP500Company,
-    MomentumCache, VolatilityCache
+    MomentumCache, VolatilityCache,
+    SP500HistoricalConstituent
 )
 from app.services.sanity_checks import (
     cap_rd_intensity, 
@@ -44,6 +52,7 @@ from app.services.sanity_checks import (
 )
 from app.services.momentum_service import MomentumCalculator
 from app.services.volatility_service import VolatilityCalculator
+from app.services.etf_universe import ETFUniverseBuilder, EligibilityResult, EligibilityMode
 from app.core.logging import get_logger
 from app.core.formulas import validate_formula_output
 
@@ -107,8 +116,8 @@ class RDAlphaScore:
     industry: Optional[str] = None
     
     # Component scores
-    rd_intensity: float = 0.0              # Raw R&D/Revenue ratio
-    rd_intensity_capped: float = 0.0       # After sector-specific cap
+    rd_intensity: float = 0.0              # Raw R&D/Revenue ratio (%)
+    rd_intensity_capped: float = 0.0       # After sector-specific cap (%)
     sector_adjustment: float = 1.0         # Diversification factor
     momentum_factor: float = 1.0           # Based on prior performance
     quality_score: float = 1.0             # Data quality (0-1)
@@ -124,6 +133,10 @@ class RDAlphaScore:
     years_of_data: int = 0
     latest_revenue: float = 0.0
     latest_rd_expense: float = 0.0
+    
+    # Point-in-time tracking (Dec 2025)
+    fiscal_year_used: Optional[int] = None  # FY(T-1) for backtest
+    data_source: str = "cohort_avg"         # "cohort_avg" or "point_in_time"
 
 
 @dataclass 
@@ -204,8 +217,10 @@ class RDAlphaScorer:
         universe: str = "sp500",
         as_of_year: Optional[int] = None,
         min_years_data: int = 3,
-        min_revenue: float = MIN_REVENUE_THRESHOLD
-    ) -> List[RDAlphaScore]:
+        min_revenue: float = MIN_REVENUE_THRESHOLD,
+        strict_point_in_time: bool = False,
+        eligible_symbols: Optional[List[str]] = None,
+    ) -> Tuple[List[RDAlphaScore], Optional[EligibilityResult]]:
         """
         Calculate R&D Alpha scores for all eligible companies.
         
@@ -214,63 +229,115 @@ class RDAlphaScorer:
             as_of_year: Point-in-time year for selection (None = latest)
             min_years_data: Minimum years of R&D data required
             min_revenue: Minimum revenue threshold
+            strict_point_in_time: If True, fail if point-in-time data unavailable
+            eligible_symbols: Pre-computed eligible symbols (bypasses universe builder)
             
         Returns:
-            List of RDAlphaScore objects, sorted by final_score descending
+            Tuple of (List of RDAlphaScore objects sorted by final_score, EligibilityResult or None)
             
-        SURVIVORSHIP BIAS FIX (Dec 2025):
-            When as_of_year is provided, filters by historical S&P 500 constituents
-            to ensure only companies that were in the index at that time are included.
-            This prevents look-ahead bias from including future IPOs like HOOD, COIN, MRNA.
+        POINT-IN-TIME RULES (Dec 2025):
+            When as_of_year is provided:
+            - Uses ETFUniverseBuilder for eligibility (anti-lookahead gates)
+            - R&D intensity computed from FY(T-1) financials, not avg_rd_intensity
+            - Momentum/volatility computed point-in-time (already correct)
         """
         import time
-        from datetime import date
         start_time = time.perf_counter()
         
         logger.log_step(
             "Calculate R&D Alpha Scores",
             step_number=1,
-            total_steps=3,
-            data={"universe": universe, "as_of_year": as_of_year}
+            total_steps=4,
+            data={"universe": universe, "as_of_year": as_of_year, "strict_pit": strict_point_in_time}
         )
         
-        # SURVIVORSHIP BIAS FIX: Get point-in-time S&P 500 constituents
-        # This prevents including companies like HOOD, COIN, MRNA in historical backtests
-        # when they weren't public/in the index yet
-        historical_constituents: Optional[set] = None
+        eligibility_result: Optional[EligibilityResult] = None
+        point_in_time_financials: Dict[str, Dict] = {}
+        
+        # -------------------------------------------------------------------------
+        # Step 1: Determine eligible universe
+        # -------------------------------------------------------------------------
+        if as_of_year is not None and eligible_symbols is None:
+            # Use ETFUniverseBuilder for point-in-time eligibility
+            universe_builder = ETFUniverseBuilder(self.session)
+            eligibility_result = await universe_builder.build_eligible_universe(
+                as_of_year=as_of_year,
+                min_revenue=min_revenue,
+                require_risk_data=False,  # We compute on-the-fly if needed
+            )
+            
+            if not eligibility_result.eligible_symbols:
+                logger.warning(f"No eligible symbols for {as_of_year}")
+                return [], eligibility_result
+            
+            logger.log_step(
+                f"Universe eligibility determined: {eligibility_result.mode.value}",
+                step_number=2,
+                total_steps=4,
+                data={
+                    "mode": eligibility_result.mode.value,
+                    "eligible_count": len(eligibility_result.eligible_symbols),
+                    "gates": eligibility_result.gates_applied,
+                }
+            )
+            
+            eligible_symbols = eligibility_result.eligible_symbols
+        
+        # -------------------------------------------------------------------------
+        # Step 2: Get point-in-time FY(T-1) financials for R&D intensity
+        # -------------------------------------------------------------------------
         if as_of_year is not None:
-            from app.db.models import SP500HistoricalConstituent
-            point_in_time_date = date(as_of_year, 7, 1)  # July 1 of selection year (Fama-French convention)
-            try:
-                hist_result = await self.session.execute(
-                    select(SP500HistoricalConstituent.symbol)
-                    .where(
-                        SP500HistoricalConstituent.added_date <= point_in_time_date,
-                        (SP500HistoricalConstituent.removed_date == None) | 
-                        (SP500HistoricalConstituent.removed_date >= point_in_time_date)
+            data_year = as_of_year - 1  # FY(T-1) for T-year formation
+            
+            # Get FY(T-1) income statements for all eligible symbols
+            if eligible_symbols:
+                fin_result = await self.session.execute(
+                    select(
+                        FMPIncomeStatement.symbol,
+                        FMPIncomeStatement.revenue,
+                        FMPIncomeStatement.rd_expenses,
+                    ).where(
+                        FMPIncomeStatement.symbol.in_(eligible_symbols),
+                        FMPIncomeStatement.fiscal_year == data_year,
+                        or_(
+                            FMPIncomeStatement.period == None,
+                            FMPIncomeStatement.period == "FY",
+                        ),
+                        FMPIncomeStatement.revenue.isnot(None),
+                        FMPIncomeStatement.revenue >= min_revenue,
+                        FMPIncomeStatement.rd_expenses.isnot(None),
+                        FMPIncomeStatement.rd_expenses > 0,
                     )
                 )
-                historical_constituents = {r[0] for r in hist_result.fetchall() if r[0]}
                 
-                if historical_constituents:
-                    logger.info(f"Point-in-time filter: {len(historical_constituents)} S&P 500 constituents as of {as_of_year}")
-                else:
-                    # No historical data - fall back to using all companies but log warning
-                    logger.warning(f"No historical S&P 500 data for {as_of_year} - backtest may have survivorship bias")
-                    historical_constituents = None
-            except Exception as e:
-                logger.warning(f"Could not load historical constituents: {e} - backtest may have survivorship bias")
-                historical_constituents = None
+                for row in fin_result.fetchall():
+                    symbol, revenue, rd_expenses = row
+                    if symbol and revenue and rd_expenses and revenue > 0:
+                        rd_intensity_pct = (rd_expenses / revenue) * 100.0
+                        # Cap at max absolute intensity
+                        rd_intensity_pct = min(rd_intensity_pct, MAX_RD_INTENSITY_ABSOLUTE)
+                        point_in_time_financials[symbol] = {
+                            "rd_intensity_pct": rd_intensity_pct,
+                            "revenue": float(revenue),
+                            "rd_expenses": float(rd_expenses),
+                            "fiscal_year": data_year,
+                        }
+                
+                logger.info(f"Point-in-time FY{data_year} financials: {len(point_in_time_financials)}/{len(eligible_symbols)} symbols")
+                
+                # Filter eligible symbols to only those with point-in-time financials
+                eligible_symbols = [s for s in eligible_symbols if s in point_in_time_financials]
         
-        # Get eligible companies from research cohort
+        # -------------------------------------------------------------------------
+        # Step 3: Get company metadata from research cohort
+        # -------------------------------------------------------------------------
         query = select(ResearchCohort).where(
             ResearchCohort.years_with_data >= min_years_data,
             ResearchCohort.avg_rd_intensity > 0
         )
         
-        # Apply historical constituent filter if available
-        if historical_constituents:
-            query = query.where(ResearchCohort.symbol.in_(historical_constituents))
+        if eligible_symbols:
+            query = query.where(ResearchCohort.symbol.in_(eligible_symbols))
         
         result = await self.session.execute(query)
         cohort_companies = result.scalars().all()
@@ -282,8 +349,8 @@ class RDAlphaScorer:
             duration_ms=(time.perf_counter() - start_time) * 1000
         )
         
-        # Calculate sector representation in high-R&D universe
-        sector_counts = {}
+        # Calculate sector representation in eligible universe
+        sector_counts: Dict[str, int] = {}
         for c in cohort_companies:
             sector = c.sector or "Unknown"
             sector_counts[sector] = sector_counts.get(sector, 0) + 1
@@ -292,15 +359,22 @@ class RDAlphaScorer:
         high_rd_sector_weights = {
             s: count / total_companies 
             for s, count in sector_counts.items()
-        }
+        } if total_companies > 0 else {}
         
-        scores = []
+        # -------------------------------------------------------------------------
+        # Step 4: Calculate scores
+        # -------------------------------------------------------------------------
+        scores: List[RDAlphaScore] = []
         
         for company in cohort_companies:
+            # Get point-in-time financials if available
+            pit_fin = point_in_time_financials.get(company.symbol) if as_of_year else None
+            
             score = await self._calculate_company_score(
-                company,
-                high_rd_sector_weights,
-                as_of_year
+                company=company,
+                high_rd_sector_weights=high_rd_sector_weights,
+                as_of_year=as_of_year,
+                pit_financials=pit_fin,
             )
             if score:
                 scores.append(score)
@@ -314,30 +388,56 @@ class RDAlphaScorer:
         
         logger.log_step(
             "Scores calculated and ranked",
-            step_number=3,
-            total_steps=3,
+            step_number=4,
+            total_steps=4,
             data={
                 "total_scored": len(scores),
                 "top_score": scores[0].final_score if scores else 0,
-                "sectors_represented": len(set(s.sector for s in scores))
+                "sectors_represented": len(set(s.sector for s in scores)),
+                "point_in_time_coverage": len(point_in_time_financials) if as_of_year else None,
             },
             duration_ms=(time.perf_counter() - start_time) * 1000
         )
         
-        return scores
+        return scores, eligibility_result
     
     async def _calculate_company_score(
         self,
         company: ResearchCohort,
         high_rd_sector_weights: Dict[str, float],
-        as_of_year: Optional[int] = None
+        as_of_year: Optional[int] = None,
+        pit_financials: Optional[Dict] = None,
     ) -> Optional[RDAlphaScore]:
-        """Calculate score for a single company."""
+        """
+        Calculate score for a single company.
         
+        Args:
+            company: ResearchCohort record with company metadata
+            high_rd_sector_weights: Sector representation in eligible universe
+            as_of_year: Year for point-in-time scoring
+            pit_financials: Point-in-time FY(T-1) financials dict with:
+                - rd_intensity_pct: R&D/Revenue * 100
+                - revenue: FY(T-1) revenue
+                - rd_expenses: FY(T-1) R&D expenses
+                - fiscal_year: The fiscal year used
+        """
         sector = company.sector or "Unknown"
         
         # 1. R&D Intensity (capped by sector)
-        rd_intensity = float(company.avg_rd_intensity) if company.avg_rd_intensity else 0.0
+        # POINT-IN-TIME: Use FY(T-1) financials when available, else cohort average
+        if pit_financials:
+            rd_intensity = float(pit_financials["rd_intensity_pct"])
+            data_source = "point_in_time"
+            fiscal_year_used = pit_financials.get("fiscal_year")
+            latest_revenue = pit_financials.get("revenue", 0.0)
+            latest_rd_expense = pit_financials.get("rd_expenses", 0.0)
+        else:
+            rd_intensity = float(company.avg_rd_intensity) if company.avg_rd_intensity else 0.0
+            data_source = "cohort_avg"
+            fiscal_year_used = None
+            latest_revenue = 0.0
+            latest_rd_expense = 0.0
+        
         sector_cap = SECTOR_RD_CAPS.get(sector, SECTOR_RD_CAPS["default"])
         rd_intensity_capped = min(rd_intensity / 100.0, sector_cap)  # Convert from % to ratio
         
@@ -354,7 +454,7 @@ class RDAlphaScorer:
         sector_adjustment = min(sp500_weight / max(high_rd_weight, 0.01), 2.0)
         
         # 3. Momentum Factor (from Paper 3 - Pricing Factor research)
-        # Uses real 3-year excess returns vs benchmark
+        # Uses real 3-year excess returns vs benchmark (already point-in-time)
         momentum_factor = await self._get_real_momentum(
             company.symbol, 
             as_of_year or datetime.now().year
@@ -364,7 +464,7 @@ class RDAlphaScorer:
         quality_score = float(company.data_quality_score or 50) / 100.0
         
         # 5. Volatility (from Paper 4 - Value Creation research)
-        # Uses real 3-year historical volatility from daily prices
+        # Uses real 3-year historical volatility from daily prices (already point-in-time)
         volatility = await self._get_real_volatility(
             company.symbol,
             as_of_year or datetime.now().year
@@ -382,7 +482,7 @@ class RDAlphaScorer:
             symbol=company.symbol,
             name=company.name or company.symbol,
             sector=sector,
-            industry=None,  # Would need additional data
+            industry=None,
             rd_intensity=rd_intensity,
             rd_intensity_capped=rd_intensity_capped * 100,  # Back to percentage for display
             sector_adjustment=sector_adjustment,
@@ -394,8 +494,10 @@ class RDAlphaScorer:
             weight=0.0,
             selection_rank=0,
             years_of_data=company.years_with_data or 0,
-            latest_revenue=0.0,  # Would need to fetch
-            latest_rd_expense=0.0,  # Would need to fetch
+            latest_revenue=latest_revenue,
+            latest_rd_expense=latest_rd_expense,
+            fiscal_year_used=fiscal_year_used,
+            data_source=data_source,
         )
     
     async def _get_real_momentum(
@@ -600,15 +702,15 @@ class RDAlphaScorer:
         self,
         as_of_year: Optional[int] = None,
         limit: int = 100
-    ) -> List[RDAlphaScore]:
+    ) -> Tuple[List[RDAlphaScore], Optional[EligibilityResult]]:
         """
         Get all candidate companies with their scores for transparency.
         
         Returns full list so users can see why companies were/weren't selected.
         """
-        scores = await self.calculate_alpha_scores(
+        scores, eligibility = await self.calculate_alpha_scores(
             universe="sp500",
             as_of_year=as_of_year
         )
-        return scores[:limit]
+        return scores[:limit], eligibility
 

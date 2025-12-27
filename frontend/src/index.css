@@ -266,13 +266,25 @@ body {
     margin: 0;
   }
 
-  /* Hide everything except print view */
-  body > *:not(.whitepaper-print-view) {
+  /* Hide UI elements but keep print view */
+  .no-print,
+  nav,
+  aside,
+  header,
+  footer {
     display: none !important;
   }
 
-  /* Hide UI elements */
-  .no-print {
+  /* When whitepaper-print-view exists, hide everything else in the document */
+  body:has(.whitepaper-print-view) > #root > *:not(:has(.whitepaper-print-view)) {
+    display: none !important;
+  }
+  
+  /* Hide sidebar and navbar when printing whitepaper */
+  body:has(.whitepaper-print-view) [class*="sidebar"],
+  body:has(.whitepaper-print-view) [class*="Sidebar"],
+  body:has(.whitepaper-print-view) [class*="navbar"],
+  body:has(.whitepaper-print-view) [class*="Navbar"] {
     display: none !important;
   }
 
@@ -281,18 +293,23 @@ body {
     display: block !important;
     position: static !important;
     overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
   }
 
   /* Whitepaper slide pages */
   .whitepaper-print-slide {
     page-break-after: always;
     page-break-inside: avoid;
-    display: block;
-    width: 210mm;
-    height: 297mm;
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
     padding: 0;
-    margin: 0;
+    margin: 0 auto;
     overflow: hidden;
+    background: white !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -307,8 +324,12 @@ body {
     border-radius: 0 !important;
     width: 210mm !important;
     height: 297mm !important;
+    min-width: 210mm !important;
+    min-height: 297mm !important;
     max-width: 210mm !important;
     max-height: 297mm !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   /* Force all colors to print */
@@ -318,16 +339,12 @@ body {
   }
 }
 
-/* Legacy print view support */
+/* Legacy print view support (kept for backward compatibility) */
 .print-view {
   display: none;
 }
 
 @media print {
-  body > *:not(.print-view):not(.whitepaper-print-view) {
-    /* Don't hide when printing whitepaper */
-  }
-  
   .print-view {
     display: block !important;
   }

@@ -55,21 +55,26 @@ export function RightTableOfContents({
   onCollapseChange,
 }: RightTableOfContentsProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [userToggled, setUserToggled] = useState(false)
 
-  // Handle responsive auto-collapse
+  // Handle responsive auto-collapse (only on initial load, not after user toggle)
   useEffect(() => {
     const handleResize = () => {
-      const shouldCollapse = window.innerWidth < 1280
-      setCollapsed(shouldCollapse)
-      onCollapseChange?.(shouldCollapse)
+      // Only auto-collapse if user hasn't manually toggled
+      if (!userToggled) {
+        const shouldCollapse = window.innerWidth < 1280
+        setCollapsed(shouldCollapse)
+        onCollapseChange?.(shouldCollapse)
+      }
     }
 
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [onCollapseChange])
+  }, [onCollapseChange, userToggled])
 
   const handleToggle = () => {
+    setUserToggled(true) // Mark that user has manually toggled
     const newCollapsed = !collapsed
     setCollapsed(newCollapsed)
     onCollapseChange?.(newCollapsed)

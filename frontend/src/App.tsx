@@ -26,6 +26,7 @@ import { Donate } from "@/pages/Donate"
 import { cn } from "@/lib/utils"
 import { usePageView } from "@/lib/analytics"
 import { SessionIndicator } from "@/components/SessionIndicator"
+import { SubscribePopup } from "@/components/SubscribePopup"
 
 // Configure React Query with aggressive caching
 const queryClient = new QueryClient({
@@ -63,6 +64,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* Session indicator - dev only */}
       <SessionIndicator />
+      {/* Subscribe popup - appears after 20s */}
+      <SubscribePopup />
     </div>
   )
 }
