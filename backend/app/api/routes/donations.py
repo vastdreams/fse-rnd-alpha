@@ -6,11 +6,14 @@ ROLE IN ARCHITECTURE: Payment processing layer
 """
 
 import os
+import json
 import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 from typing import Optional
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request, Header
 from pydantic import BaseModel
 
@@ -23,8 +26,55 @@ logger = logging.getLogger(__name__)
 # Email configuration (same as subscribe.py)
 SMTP_HOST = "smtp.hostinger.com"
 SMTP_PORT = 465
-SMTP_USER = "Abhishek@finsoeasy.com"
+SMTP_USER = "abhishek@finsoeasy.com"  # Lowercase
 SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
+
+# Persistent storage path
+DATA_DIR = Path("/home/ubuntu/fse-rnd-alpha/data")
+DONATIONS_FILE = DATA_DIR / "donations.json"
+
+def _ensure_data_dir():
+    """Ensure data directory exists."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+def _load_donations() -> list[dict]:
+    """Load donations from JSON file."""
+    try:
+        if DONATIONS_FILE.exists():
+            with open(DONATIONS_FILE, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load donations: {e}")
+    return []
+
+def _save_donations(donations: list[dict]):
+    """Save donations to JSON file."""
+    try:
+        _ensure_data_dir()
+        with open(DONATIONS_FILE, "w") as f:
+            json.dump(donations, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save donations: {e}")
+
+# Load donations on startup
+donations_list: list[dict] = _load_donations()
+
+def record_donation(email: str, amount: float, is_recurring: bool, session_id: str):
+    """Record a donation to persistent storage."""
+    global donations_list
+    donations_list.append({
+        "email": email,
+        "amount": amount,
+        "is_recurring": is_recurring,
+        "session_id": session_id,
+        "created_at": datetime.utcnow().isoformat(),
+    })
+    _save_donations(donations_list)
+    logger.info(f"Recorded donation: {email}, ${amount}, recurring={is_recurring}")
+
+def get_all_donations() -> list[dict]:
+    """Get all donations (used by admin routes)."""
+    return donations_list
 
 # Lazy import stripe to avoid errors if not configured
 _stripe = None
@@ -321,6 +371,14 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None, 
         
         logger.info(f"Payment completed: {session.id}, amount: ${amount_dollars}, email: {customer_email}")
         
+        # Record donation to persistent storage
+        record_donation(
+            email=customer_email or "unknown",
+            amount=amount_dollars,
+            is_recurring=is_recurring,
+            session_id=session.id
+        )
+        
         if customer_email:
             # Send thank you email
             send_donation_thank_you_email(customer_email, amount_dollars, is_recurring)
@@ -339,6 +397,14 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None, 
         customer_email = invoice.get("customer_email")
         
         logger.info(f"Subscription payment: {invoice.id}, amount: ${amount_dollars}")
+        
+        # Record recurring donation
+        record_donation(
+            email=customer_email or "unknown",
+            amount=amount_dollars,
+            is_recurring=True,
+            session_id=invoice.id
+        )
         
         # Send thank you email for recurring payment
         if customer_email:

@@ -2,17 +2,20 @@
 Subscribe API Routes
 
 Handles newsletter subscriptions and sends thank you emails.
+Persists subscribers to JSON file for durability.
 
 Publication: https://research.finsoeasy.com
 """
 
 import os
+import json
 import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
 from pydantic import BaseModel, EmailStr
 from fastapi import APIRouter, HTTPException
 
@@ -22,11 +25,38 @@ logger = logging.getLogger(__name__)
 # Email configuration
 SMTP_HOST = "smtp.hostinger.com"
 SMTP_PORT = 465
-SMTP_USER = "Abhishek@finsoeasy.com"
+SMTP_USER = "abhishek@finsoeasy.com"  # Lowercase for Hostinger compatibility
 SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
 
-# In-memory storage for demo (use database in production)
-subscribers: dict[str, dict] = {}
+# Persistent storage path
+DATA_DIR = Path("/home/ubuntu/fse-rnd-alpha/data")
+SUBSCRIBERS_FILE = DATA_DIR / "subscribers.json"
+
+def _ensure_data_dir():
+    """Ensure data directory exists."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+def _load_subscribers() -> dict[str, dict]:
+    """Load subscribers from JSON file."""
+    try:
+        if SUBSCRIBERS_FILE.exists():
+            with open(SUBSCRIBERS_FILE, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load subscribers: {e}")
+    return {}
+
+def _save_subscribers(subscribers: dict[str, dict]):
+    """Save subscribers to JSON file."""
+    try:
+        _ensure_data_dir()
+        with open(SUBSCRIBERS_FILE, "w") as f:
+            json.dump(subscribers, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save subscribers: {e}")
+
+# Load subscribers on startup
+subscribers: dict[str, dict] = _load_subscribers()
 
 
 class SubscribeRequest(BaseModel):
@@ -156,6 +186,7 @@ def add_subscriber_to_list(email: str, source: str = "donation") -> bool:
     Returns:
         True if newly added, False if already existed
     """
+    global subscribers
     email = email.lower()
     
     if email in subscribers:
@@ -167,6 +198,7 @@ def add_subscriber_to_list(email: str, source: str = "donation") -> bool:
         "source": source,
         "subscribed_at": datetime.utcnow().isoformat(),
     }
+    _save_subscribers(subscribers)  # Persist to file
     
     logger.info(f"Auto-subscribed donor: {email} (source: {source})")
     return True
@@ -179,6 +211,7 @@ async def subscribe(request: SubscribeRequest):
     
     Stores the email and sends a thank you email.
     """
+    global subscribers
     email = request.email.lower()
     
     # Check if already subscribed
@@ -194,6 +227,7 @@ async def subscribe(request: SubscribeRequest):
         "source": request.source,
         "subscribed_at": datetime.utcnow().isoformat(),
     }
+    _save_subscribers(subscribers)  # Persist to file
     
     logger.info(f"New subscriber: {email} (source: {request.source})")
     
@@ -216,4 +250,9 @@ async def subscribe(request: SubscribeRequest):
 async def get_subscriber_count():
     """Get total subscriber count (admin only in production)."""
     return {"count": len(subscribers)}
+
+
+def get_all_subscribers() -> list[dict]:
+    """Get all subscribers (used by admin routes)."""
+    return list(subscribers.values())
 

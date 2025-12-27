@@ -270,3 +270,34 @@ async def clear_cache(current_admin: AdminUser = Depends(get_current_admin)):
         "timestamp": datetime.utcnow().isoformat(),
     }
 
+
+@router.get("/subscribers", tags=["Admin"])
+async def get_subscribers(current_admin: AdminUser = Depends(get_current_admin)):
+    """
+    Get all subscribers.
+    
+    Requires valid admin authentication.
+    """
+    from app.api.routes.subscribe import get_all_subscribers
+    subscribers = get_all_subscribers()
+    return {
+        "count": len(subscribers),
+        "subscribers": sorted(subscribers, key=lambda x: x.get("subscribed_at", ""), reverse=True),
+    }
+
+
+@router.get("/donations", tags=["Admin"])
+async def get_donations(current_admin: AdminUser = Depends(get_current_admin)):
+    """
+    Get all donations.
+    
+    Requires valid admin authentication.
+    """
+    from app.api.routes.donations import get_all_donations
+    donations = get_all_donations()
+    return {
+        "count": len(donations),
+        "total_amount": sum(d.get("amount", 0) for d in donations),
+        "donations": sorted(donations, key=lambda x: x.get("created_at", ""), reverse=True),
+    }
+

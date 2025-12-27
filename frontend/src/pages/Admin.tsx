@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Lock, 
   LogIn, 
@@ -31,7 +32,11 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Users,
+  Heart,
+  Mail,
+  DollarSign
 } from "lucide-react"
 
 // API base URL
@@ -61,6 +66,31 @@ interface DashboardData {
   }>
 }
 
+interface Subscriber {
+  email: string
+  source: string
+  subscribed_at: string
+}
+
+interface Donation {
+  email: string
+  amount: number
+  is_recurring: boolean
+  session_id: string
+  created_at: string
+}
+
+interface SubscribersData {
+  count: number
+  subscribers: Subscriber[]
+}
+
+interface DonationsData {
+  count: number
+  total_amount: number
+  donations: Donation[]
+}
+
 export function Admin() {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -78,6 +108,11 @@ export function Admin() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [cacheClearing, setCacheClearing] = useState(false)
   const [cacheMessage, setCacheMessage] = useState("")
+  
+  // Subscribers and donations state
+  const [subscribersData, setSubscribersData] = useState<SubscribersData | null>(null)
+  const [donationsData, setDonationsData] = useState<DonationsData | null>(null)
+  const [activeTab, setActiveTab] = useState<"overview" | "subscribers" | "donations">("overview")
 
   // Check for existing token on mount
   useEffect(() => {
@@ -178,6 +213,52 @@ export function Admin() {
       console.error("Failed to fetch dashboard data")
     }
   }
+
+  // Fetch subscribers
+  const fetchSubscribers = async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/subscribers`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSubscribersData(data)
+      }
+    } catch {
+      console.error("Failed to fetch subscribers")
+    }
+  }
+
+  // Fetch donations
+  const fetchDonations = async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/donations`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setDonationsData(data)
+      }
+    } catch {
+      console.error("Failed to fetch donations")
+    }
+  }
+
+  // Fetch all data when authenticated
+  useEffect(() => {
+    if (token) {
+      fetchSubscribers(token)
+      fetchDonations(token)
+    }
+  }, [token])
 
   // Clear cache
   const handleClearCache = async () => {
@@ -337,29 +418,29 @@ export function Admin() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => setActiveTab("subscribers")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Platform</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
+            <Users className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardData?.stats.platform || "R&D Alpha"}
+            <div className="text-2xl font-bold text-emerald-500">
+              {subscribersData?.count || 0}
             </div>
-            <p className="text-xs text-muted-foreground">Research Platform</p>
+            <p className="text-xs text-muted-foreground">Newsletter signups</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:border-pink-500 transition-colors" onClick={() => setActiveTab("donations")}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Version</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Donations</CardTitle>
+            <Heart className="h-4 w-4 text-pink-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              v{dashboardData?.stats.api_version || "2.1.0"}
+            <div className="text-2xl font-bold text-pink-500">
+              ${donationsData?.total_amount?.toFixed(2) || "0.00"}
             </div>
-            <p className="text-xs text-muted-foreground">Current Release</p>
+            <p className="text-xs text-muted-foreground">{donationsData?.count || 0} donations received</p>
           </CardContent>
         </Card>
 
@@ -376,89 +457,219 @@ export function Admin() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Auth Status</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">API Version</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">Admin</div>
-            <p className="text-xs text-muted-foreground">Full access granted</p>
+            <div className="text-2xl font-bold">
+              v{dashboardData?.stats.api_version || "2.1.0"}
+            </div>
+            <p className="text-xs text-muted-foreground">Current Release</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Admin Actions */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b">
+        <Button
+          variant={activeTab === "overview" ? "default" : "ghost"}
+          onClick={() => setActiveTab("overview")}
+          className="rounded-b-none"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Overview
+        </Button>
+        <Button
+          variant={activeTab === "subscribers" ? "default" : "ghost"}
+          onClick={() => setActiveTab("subscribers")}
+          className="rounded-b-none"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Subscribers ({subscribersData?.count || 0})
+        </Button>
+        <Button
+          variant={activeTab === "donations" ? "default" : "ghost"}
+          onClick={() => setActiveTab("donations")}
+          className="rounded-b-none"
+        >
+          <Heart className="w-4 h-4 mr-2" />
+          Donations ({donationsData?.count || 0})
+        </Button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "overview" && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cache Management</CardTitle>
+              <CardDescription>
+                Clear application cache to refresh data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={handleClearCache}
+                disabled={cacheClearing}
+                variant="outline"
+                className="w-full"
+              >
+                {cacheClearing ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Clearing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Clear Cache
+                  </span>
+                )}
+              </Button>
+              {cacheMessage && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  {cacheMessage}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Links</CardTitle>
+              <CardDescription>
+                Navigate to key sections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                <a 
+                  href="/api/docs" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Database className="w-4 h-4 text-blue-500" />
+                  <span>API Documentation</span>
+                </a>
+                <a 
+                  href="/" 
+                  className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Activity className="w-4 h-4 text-green-500" />
+                  <span>Main Paper</span>
+                </a>
+                <a 
+                  href="/portfolio" 
+                  className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-purple-500" />
+                  <span>R&D ETF</span>
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "subscribers" && (
         <Card>
           <CardHeader>
-            <CardTitle>Cache Management</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-emerald-500" />
+              Newsletter Subscribers
+            </CardTitle>
             <CardDescription>
-              Clear application cache to refresh data
+              {subscribersData?.count || 0} total subscribers
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={handleClearCache}
-              disabled={cacheClearing}
-              variant="outline"
-              className="w-full"
-            >
-              {cacheClearing ? (
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Clearing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4" />
-                  Clear Cache
-                </span>
-              )}
-            </Button>
-            {cacheMessage && (
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                {cacheMessage}
+          <CardContent>
+            {subscribersData?.subscribers && subscribersData.subscribers.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Subscribed At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscribersData.subscribers.map((sub, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{sub.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {sub.source?.replace(/_/g, " ") || "website"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(sub.subscribed_at).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No subscribers yet</p>
               </div>
             )}
           </CardContent>
         </Card>
+      )}
 
+      {activeTab === "donations" && (
         <Card>
           <CardHeader>
-            <CardTitle>Quick Links</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-pink-500" />
+              Donations History
+            </CardTitle>
             <CardDescription>
-              Navigate to key sections
+              {donationsData?.count || 0} donations totaling ${donationsData?.total_amount?.toFixed(2) || "0.00"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
-              <a 
-                href="/api/docs" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-              >
-                <Database className="w-4 h-4 text-blue-500" />
-                <span>API Documentation</span>
-              </a>
-              <a 
-                href="/research" 
-                className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-              >
-                <Activity className="w-4 h-4 text-green-500" />
-                <span>Research Dashboard</span>
-              </a>
-              <a 
-                href="/portfolio" 
-                className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-              >
-                <Settings className="w-4 h-4 text-purple-500" />
-                <span>Portfolio Tool</span>
-              </a>
-            </div>
+            {donationsData?.donations && donationsData.donations.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {donationsData.donations.map((donation, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{donation.email}</TableCell>
+                      <TableCell className="text-emerald-600 font-semibold">
+                        ${donation.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={donation.is_recurring ? "default" : "outline"}>
+                          {donation.is_recurring ? "Monthly" : "One-time"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(donation.created_at).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No donations yet</p>
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   )
 }
