@@ -188,7 +188,7 @@ class Analytics {
     gaTrackEvent("search", "search", query, resultCount)
   }
 
-  trackClick(element: string, context?: Record<string, unknown>) {
+  trackClick(element: string, _context?: Record<string, unknown>) {
     this.session.interactions++
     gaTrackEvent("click", "interaction", element)
   }
