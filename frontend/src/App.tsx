@@ -23,6 +23,7 @@ import { MainPaper } from "@/pages/papers/MainPaper"
 import { Whitepaper } from "@/pages/Whitepaper"
 import { Subscribe } from "@/pages/Subscribe"
 import { Donate } from "@/pages/Donate"
+import { Admin } from "@/pages/Admin"
 import { cn } from "@/lib/utils"
 import { usePageView } from "@/lib/analytics"
 import { SessionIndicator } from "@/components/SessionIndicator"
@@ -99,6 +100,7 @@ function App() {
                   <Route path="/whitepaper" element={<Whitepaper />} />
                   <Route path="/subscribe" element={<Subscribe />} />
                   <Route path="/donate" element={<Donate />} />
+                  <Route path="/admin" element={<Admin />} />
                 </Routes>
               </AppLayout>
             </AnalyticsProvider>
