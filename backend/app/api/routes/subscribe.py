@@ -28,8 +28,8 @@ SMTP_PORT = 465
 SMTP_USER = "abhishek@finsoeasy.com"  # Lowercase for Hostinger compatibility
 SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
 
-# Persistent storage path
-DATA_DIR = Path("/home/ubuntu/fse-rnd-alpha/data")
+# Persistent storage path (mounted via Docker volume)
+DATA_DIR = Path("/app/data")
 SUBSCRIBERS_FILE = DATA_DIR / "subscribers.json"
 
 def _ensure_data_dir():

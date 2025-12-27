@@ -91,7 +91,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../data:/app/data:ro
+      - ../data:/app/data
       - ../papers:/app/papers:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
