@@ -80,7 +80,9 @@ function App() {
             <AnalyticsProvider>
               <AppLayout>
                 <Routes>
-                  <Route path="/" element={<Overview />} />
+                  {/* Main Paper is the landing page */}
+                  <Route path="/" element={<MainPaper />} />
+                  <Route path="/overview" element={<Overview />} />
                   <Route path="/companies" element={<Companies />} />
                   <Route path="/companies/:ticker" element={<CompanyDetail />} />
                   <Route path="/factors" element={<Factors />} />
@@ -91,8 +93,8 @@ function App() {
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="/methodology" element={<Methodology />} />
-                  {/* Paper Routes */}
-                  <Route path="/papers/main" element={<MainPaper />} />
+                  {/* Paper Routes - /papers/main redirects to home */}
+                  <Route path="/papers/main" element={<Navigate to="/" replace />} />
                   <Route path="/papers/1" element={<Paper1 />} />
                   <Route path="/papers/2" element={<Paper2 />} />
                   <Route path="/papers/3" element={<Paper3 />} />

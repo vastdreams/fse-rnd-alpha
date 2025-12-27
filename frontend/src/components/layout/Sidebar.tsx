@@ -31,23 +31,29 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// Navigation structure: Research Papers at top, then ETF, then data exploration
 const navItems = [
-  { path: "/", label: "Overview", icon: LayoutDashboard },
+  // Primary: Main Paper (landing page)
+  { path: "/", label: "Main Paper", icon: Presentation },
+  // Products
+  { path: "/portfolio", label: "R&D ETF", icon: Briefcase },
+  { path: "/whitepaper", label: "Whitepaper", icon: ScrollText },
+  // Data exploration
+  { path: "/overview", label: "Overview", icon: LayoutDashboard },
   { path: "/companies", label: "Companies", icon: Building2 },
   { path: "/research", label: "Analysis", icon: GraduationCap },
-  { path: "/portfolio", label: "R&D ETF", icon: Briefcase },
 ]
 
-// Main Paper (consolidated, publication-ready)
-const mainPaperItem = { path: "/papers/main", label: "Main Paper", icon: Presentation }
-
-// Sub-research papers (supporting detail)
+// Sub-research papers (under collapsible section)
 const paperItems = [
   { path: "/papers/1", label: "Sub: Returns", icon: FileText },
   { path: "/papers/2", label: "Sub: Sectors", icon: FileText },
   { path: "/papers/3", label: "Sub: Factors", icon: FileText },
   { path: "/papers/4", label: "Sub: Mechanisms", icon: FileText },
 ]
+
+// Keep for backward compatibility
+const mainPaperItem = { path: "/", label: "Main Paper", icon: Presentation }
 
 export function Sidebar() {
   const location = useLocation()
