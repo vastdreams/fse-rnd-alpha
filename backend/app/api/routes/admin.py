@@ -46,7 +46,7 @@ security = HTTPBearer()
 
 # Pre-hashed password for "FSE@123" using bcrypt
 # Generated with: bcrypt.hashpw(b'FSE@123', bcrypt.gensalt())
-ADMIN_PASSWORD_HASH = "$2b$12$hrFXP2eLKfBfwgMQZ0I4IO2Dj4mOfcqoiykugiufDr9wzW0PeSjAK"
+ADMIN_PASSWORD_HASH = "$2b$12$nkj42rSdpRNFa3nOyYscOe.JCNKFx.zHGKw2KFgzuoAHgU3wGSYAK"
 
 # Admin username
 ADMIN_USERNAME = "admin"
