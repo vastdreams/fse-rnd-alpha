@@ -596,13 +596,14 @@ export function MainPaper() {
   }, [investableBacktest])
 
   return (
-    <div className="flex gap-8 min-h-0">
-      <div
-        className={cn(
-          "flex-1 min-w-0 space-y-12 pb-24 transition-all duration-300 print-content",
-          rightNavCollapsed ? "max-w-none" : "max-w-4xl"
-        )}
-      >
+    <div className="flex justify-center min-h-0">
+      <div className="flex w-full max-w-screen-2xl gap-8">
+        <div
+          className={cn(
+            "flex-1 min-w-0 space-y-12 pb-24 transition-all duration-300 print-content",
+            rightNavCollapsed ? "max-w-none" : "max-w-4xl mx-auto"
+          )}
+        >
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border border-slate-200 dark:border-zinc-700 p-8">
           <div className="absolute inset-0 bg-grid-slate-100/[0.04] dark:bg-grid-zinc-500/[0.02]" />
@@ -4180,14 +4181,15 @@ export function MainPaper() {
         </section>
       </div>
 
-      {/* Right navigation */}
-      <RightTableOfContents
-        sections={sections}
-        activeSection={activeSection}
-        onSectionClick={scrollToSection}
-        keyMetrics={[]}
-        onCollapseChange={setRightNavCollapsed}
-      />
+        {/* Right navigation */}
+        <RightTableOfContents
+          sections={sections}
+          activeSection={activeSection}
+          onSectionClick={scrollToSection}
+          keyMetrics={[]}
+          onCollapseChange={setRightNavCollapsed}
+        />
+      </div>
     </div>
   )
 }
