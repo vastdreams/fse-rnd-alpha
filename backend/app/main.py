@@ -21,7 +21,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 
-from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations, admin
+from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations, admin, analytics
 from app.core.config import settings
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.db.session import engine, create_tables
@@ -111,6 +111,10 @@ TAGS_METADATA = [
         "name": "Admin",
         "description": "Admin authentication and dashboard",
     },
+    {
+        "name": "Analytics",
+        "description": "Page view tracking and analytics",
+    },
 ]
 
 
@@ -188,6 +192,7 @@ app.include_router(papers.router, prefix="/api/papers", tags=["Papers"])
 app.include_router(subscribe.router, prefix="/api", tags=["Subscribe"])
 app.include_router(donations.router, prefix="/api", tags=["Donations"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
 
 
 @app.get("/health", tags=["Health"])

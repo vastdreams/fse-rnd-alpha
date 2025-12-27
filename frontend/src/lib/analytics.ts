@@ -1,28 +1,18 @@
 /**
- * PATH: frontend/src/lib/analytics.ts
- * PURPOSE: Analytics and session tracking for user behavior
- * ROLE IN ARCHITECTURE: Logging layer for page views, interactions, and sessions
- * MAIN EXPORTS:
- *   - analytics: Analytics singleton with tracking methods
- *   - usePageView: Hook for automatic page view tracking
- *   - useSessionTracking: Hook for session management
+ * Analytics and Session Tracking
  * 
- * INTEGRATIONS:
- *   - Google Analytics 4 (G-3RYSL77PJF)
- *   - Internal session tracking
+ * Tracks page views, session duration, and user behavior.
+ * Integrates with both Google Analytics and our PostgreSQL backend.
  * 
- * NOTES FOR FUTURE AI:
- *   - Extend sendEvent() to POST to /api/analytics endpoint when ready
- *   - Add user identification when auth is implemented
+ * Publication: https://research.finsoeasy.com
  */
 
 import { useEffect, useRef } from "react"
 import { useLocation } from "react-router-dom"
 
-// Google Analytics 4 configuration
+const API_BASE = import.meta.env.VITE_API_URL || ''
 const GA_TRACKING_ID = 'G-3RYSL77PJF'
 
-// Declare gtag on window
 declare global {
   interface Window {
     gtag: (...args: unknown[]) => void
@@ -30,9 +20,33 @@ declare global {
   }
 }
 
-/**
- * Send page view to Google Analytics
- */
+// Generate or retrieve visitor ID (persisted in localStorage)
+function getVisitorId(): string {
+  const key = 'rd_alpha_visitor_id'
+  let visitorId = localStorage.getItem(key)
+  
+  if (!visitorId) {
+    visitorId = 'v_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    localStorage.setItem(key, visitorId)
+  }
+  
+  return visitorId
+}
+
+// Generate session ID (persisted for browser session)
+function getSessionId(): string {
+  const key = 'rd_alpha_session_id'
+  let sessionId = sessionStorage.getItem(key)
+  
+  if (!sessionId) {
+    sessionId = 's_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    sessionStorage.setItem(key, sessionId)
+  }
+  
+  return sessionId
+}
+
+// Send page view to Google Analytics
 function gaTrackPageView(path: string, title?: string) {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('config', GA_TRACKING_ID, {
@@ -42,9 +56,7 @@ function gaTrackPageView(path: string, title?: string) {
   }
 }
 
-/**
- * Send custom event to Google Analytics
- */
+// Send custom event to Google Analytics
 function gaTrackEvent(action: string, category: string, label?: string, value?: number) {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', action, {
@@ -55,12 +67,48 @@ function gaTrackEvent(action: string, category: string, label?: string, value?: 
   }
 }
 
-interface AnalyticsEvent {
-  type: "page_view" | "click" | "search" | "export" | "session_start" | "session_end" | "interaction"
-  timestamp: string
-  sessionId: string
-  path?: string
-  data?: Record<string, unknown>
+// Send page view to backend
+async function backendTrackPageView(pagePath: string, pageTitle?: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/analytics/pageview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page_path: pagePath,
+        page_title: pageTitle || document.title,
+        referrer: document.referrer || undefined,
+        session_id: getSessionId(),
+        visitor_id: getVisitorId(),
+      }),
+    })
+  } catch (error) {
+    // Silently fail - analytics should not break the app
+    console.debug('Backend analytics tracking failed:', error)
+  }
+}
+
+// Update duration on backend
+async function backendUpdateDuration(pagePath: string, duration: number): Promise<void> {
+  try {
+    const data = JSON.stringify({
+      session_id: getSessionId(),
+      page_path: pagePath,
+      duration_seconds: Math.round(duration),
+    })
+    
+    // Use sendBeacon for reliable delivery on page unload
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(`${API_BASE}/api/analytics/duration`, data)
+    } else {
+      await fetch(`${API_BASE}/api/analytics/duration`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: data,
+      })
+    }
+  } catch (error) {
+    console.debug('Duration update failed:', error)
+  }
 }
 
 interface Session {
@@ -73,43 +121,33 @@ interface Session {
 
 class Analytics {
   private sessionId: string
+  private visitorId: string
   private session: Session
-  private eventQueue: AnalyticsEvent[] = []
+  private currentPath: string = ''
+  private pageStartTime: number = Date.now()
   private isProduction: boolean
 
   constructor() {
     this.isProduction = import.meta.env.PROD
-    this.sessionId = this.getOrCreateSessionId()
+    this.sessionId = getSessionId()
+    this.visitorId = getVisitorId()
     this.session = this.initSession()
-    
-    // Track session start
-    this.trackEvent("session_start", { 
-      userAgent: navigator.userAgent,
-      screenSize: `${window.innerWidth}x${window.innerHeight}`,
-      referrer: document.referrer || "direct"
-    })
 
-    // Track session end on page unload
+    // Track session end and duration on page unload
     window.addEventListener("beforeunload", () => {
-      this.trackEvent("session_end", {
-        duration: Date.now() - new Date(this.session.startTime).getTime(),
-        pageViews: this.session.pageViews,
-        interactions: this.session.interactions
-      })
-      this.flush()
+      if (this.currentPath) {
+        const duration = (Date.now() - this.pageStartTime) / 1000
+        backendUpdateDuration(this.currentPath, duration)
+      }
     })
 
-    // Flush events periodically
-    setInterval(() => this.flush(), 30000) // Every 30 seconds
-  }
-
-  private getOrCreateSessionId(): string {
-    const stored = sessionStorage.getItem("analytics_session_id")
-    if (stored) return stored
-    
-    const newId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    sessionStorage.setItem("analytics_session_id", newId)
-    return newId
+    // Track when tab becomes hidden
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && this.currentPath) {
+        const duration = (Date.now() - this.pageStartTime) / 1000
+        backendUpdateDuration(this.currentPath, duration)
+      }
+    })
   }
 
   private initSession(): Session {
@@ -122,96 +160,56 @@ class Analytics {
     }
   }
 
-  private sendEvent(event: AnalyticsEvent) {
-    // In development, log to console
-    if (!this.isProduction) {
-      console.log("[Analytics]", event.type, event.path || "", event.data || "")
-    }
-
-    // Add to queue for batch sending
-    this.eventQueue.push(event)
-
-    // In production, could send to backend:
-    // fetch("/api/analytics", { method: "POST", body: JSON.stringify(event) })
-  }
-
-  private flush() {
-    if (this.eventQueue.length === 0) return
-    
-    // In production, batch send to backend
-    if (this.isProduction && this.eventQueue.length > 0) {
-      // Could send batch to /api/analytics/batch
-      // For now, just clear the queue
-    }
-    
-    this.eventQueue = []
-  }
-
-  trackEvent(type: AnalyticsEvent["type"], data?: Record<string, unknown>) {
-    this.session.lastActivity = new Date().toISOString()
-    if (type !== "page_view") this.session.interactions++
-
-    this.sendEvent({
-      type,
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      data
-    })
-  }
-
   trackPageView(path: string, title?: string) {
+    // Update duration for previous page
+    if (this.currentPath && this.currentPath !== path) {
+      const duration = (Date.now() - this.pageStartTime) / 1000
+      backendUpdateDuration(this.currentPath, duration)
+    }
+
     this.session.pageViews++
     this.session.lastActivity = new Date().toISOString()
+    this.currentPath = path
+    this.pageStartTime = Date.now()
 
-    // Send to internal analytics
-    this.sendEvent({
-      type: "page_view",
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      path,
-      data: { title: title || document.title }
-    })
+    // Send to backend PostgreSQL
+    backendTrackPageView(path, title)
     
     // Send to Google Analytics
     gaTrackPageView(path, title)
+
+    if (!this.isProduction) {
+      console.log("[Analytics] Page view:", path)
+    }
   }
 
   trackSearch(query: string, resultCount: number) {
-    this.trackEvent("search", { query, resultCount })
+    this.session.interactions++
     gaTrackEvent("search", "search", query, resultCount)
   }
 
   trackClick(element: string, context?: Record<string, unknown>) {
-    this.trackEvent("click", { element, ...context })
+    this.session.interactions++
     gaTrackEvent("click", "interaction", element)
   }
 
   trackExport(type: string, itemCount: number) {
-    this.trackEvent("export", { type, itemCount })
+    this.session.interactions++
     gaTrackEvent("export", "data_export", type, itemCount)
   }
   
-  /**
-   * Track paper views (for research content)
-   */
   trackPaperView(paperId: string, paperTitle: string) {
-    this.trackEvent("interaction", { action: "paper_view", paperId, paperTitle })
+    this.session.interactions++
     gaTrackEvent("view", "paper", `${paperId}: ${paperTitle}`)
   }
   
-  /**
-   * Track company research views
-   */
   trackCompanyView(ticker: string, companyName: string) {
-    this.trackEvent("interaction", { action: "company_view", ticker, companyName })
+    this.session.interactions++
     gaTrackEvent("view", "company", `${ticker}: ${companyName}`)
   }
   
-  /**
-   * Track portfolio/ETF interactions
-   */
   trackPortfolioAction(action: string, details?: string) {
-    this.trackEvent("interaction", { action: "portfolio", portfolioAction: action, details })
+    this.session.interactions++
     gaTrackEvent(action, "portfolio", details)
   }
 
@@ -221,6 +219,10 @@ class Analytics {
 
   getSessionId(): string {
     return this.sessionId
+  }
+
+  getVisitorId(): string {
+    return this.visitorId
   }
 }
 
@@ -233,9 +235,10 @@ export function usePageView() {
   const previousPath = useRef<string>("")
 
   useEffect(() => {
-    if (location.pathname !== previousPath.current) {
-      analytics.trackPageView(location.pathname + location.search)
-      previousPath.current = location.pathname
+    const currentPath = location.pathname + location.search
+    if (currentPath !== previousPath.current) {
+      analytics.trackPageView(currentPath)
+      previousPath.current = currentPath
     }
   }, [location])
 }
@@ -245,3 +248,7 @@ export function useSession() {
   return analytics.getSession()
 }
 
+// Get visitor ID for admin to identify themselves
+export function getMyVisitorId(): string {
+  return analytics.getVisitorId()
+}

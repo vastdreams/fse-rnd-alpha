@@ -1,195 +1,148 @@
 /**
- * PATH: frontend/src/hooks/useAnalytics.ts
- * PURPOSE: Google Analytics 4 tracking hooks for SPA navigation
+ * Analytics Tracking Hook
  * 
- * FEATURES:
- *   - Page view tracking on route changes
- *   - Custom event tracking
- *   - Session duration tracking
- *   - Scroll depth tracking
- * 
- * TRACKING ID: G-3RYSL77PJF
+ * Tracks page views and time spent on each page.
+ * Data stored in PostgreSQL for persistence.
  */
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const GA_TRACKING_ID = 'G-3RYSL77PJF'
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
-// Declare gtag on window
-declare global {
-  interface Window {
-    gtag: (...args: unknown[]) => void
-    dataLayer: unknown[]
+// Generate or retrieve visitor ID (persisted in localStorage)
+function getVisitorId(): string {
+  const key = 'rd_alpha_visitor_id'
+  let visitorId = localStorage.getItem(key)
+  
+  if (!visitorId) {
+    // Generate a unique visitor ID
+    visitorId = 'v_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    localStorage.setItem(key, visitorId)
   }
+  
+  return visitorId
 }
 
-/**
- * Track a page view
- */
-export function trackPageView(path: string, title?: string) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', GA_TRACKING_ID, {
-      page_path: path,
-      page_title: title || document.title,
+// Generate session ID (persisted for browser session)
+function getSessionId(): string {
+  const key = 'rd_alpha_session_id'
+  let sessionId = sessionStorage.getItem(key)
+  
+  if (!sessionId) {
+    sessionId = 's_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    sessionStorage.setItem(key, sessionId)
+  }
+  
+  return sessionId
+}
+
+interface TrackingData {
+  page_path: string
+  page_title?: string
+  referrer?: string
+  session_id: string
+  visitor_id: string
+}
+
+async function trackPageView(data: TrackingData): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/analytics/pageview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     })
+  } catch (error) {
+    // Silently fail - analytics should not break the app
+    console.debug('Analytics tracking failed:', error)
   }
 }
 
-/**
- * Track a custom event
- */
-export function trackEvent(
-  action: string,
-  category: string,
-  label?: string,
-  value?: number
-) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', action, {
-      event_category: category,
-      event_label: label,
-      value: value,
+async function updateDuration(sessionId: string, pagePath: string, duration: number): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/analytics/duration`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        page_path: pagePath,
+        duration_seconds: Math.round(duration),
+      }),
     })
+  } catch (error) {
+    console.debug('Duration update failed:', error)
   }
 }
 
-/**
- * Track a conversion (form submission, subscription, etc.)
- */
-export function trackConversion(conversionName: string, value?: number) {
-  trackEvent('conversion', conversionName, undefined, value)
-}
-
-/**
- * Track outbound link clicks
- */
-export function trackOutboundLink(url: string, label: string) {
-  trackEvent('click', 'outbound_link', `${label} (${url})`)
-}
-
-/**
- * Track research paper downloads/views
- */
-export function trackPaperView(paperId: string, paperTitle: string) {
-  trackEvent('view', 'paper', `${paperId}: ${paperTitle}`)
-}
-
-/**
- * Track company research views
- */
-export function trackCompanyView(ticker: string, companyName: string) {
-  trackEvent('view', 'company', `${ticker}: ${companyName}`)
-}
-
-/**
- * Track portfolio/ETF interactions
- */
-export function trackPortfolioAction(action: string, details?: string) {
-  trackEvent(action, 'portfolio', details)
-}
-
-/**
- * Hook to track page views on route changes
- */
-export function usePageTracking() {
+export function useAnalytics() {
   const location = useLocation()
+  const startTimeRef = useRef<number>(Date.now())
+  const currentPathRef = useRef<string>(location.pathname)
+  const sessionId = useRef<string>(getSessionId())
+  const visitorId = useRef<string>(getVisitorId())
 
+  // Track page view on location change
   useEffect(() => {
-    // Track page view on route change
-    trackPageView(location.pathname + location.search)
-  }, [location])
-}
+    const pagePath = location.pathname + location.search
+    
+    // Update duration for previous page
+    if (currentPathRef.current && currentPathRef.current !== pagePath) {
+      const duration = (Date.now() - startTimeRef.current) / 1000
+      updateDuration(sessionId.current, currentPathRef.current, duration)
+    }
+    
+    // Track new page view
+    trackPageView({
+      page_path: pagePath,
+      page_title: document.title,
+      referrer: document.referrer || undefined,
+      session_id: sessionId.current,
+      visitor_id: visitorId.current,
+    })
+    
+    // Reset timer for new page
+    startTimeRef.current = Date.now()
+    currentPathRef.current = pagePath
+  }, [location.pathname, location.search])
 
-/**
- * Hook to track scroll depth
- */
-export function useScrollTracking() {
+  // Track duration when user leaves the page
   useEffect(() => {
-    let maxScroll = 0
-    const thresholds = [25, 50, 75, 90, 100]
-    const trackedThresholds = new Set<number>()
+    const handleBeforeUnload = () => {
+      const duration = (Date.now() - startTimeRef.current) / 1000
+      // Use sendBeacon for reliable delivery on page unload
+      const data = JSON.stringify({
+        session_id: sessionId.current,
+        page_path: currentPathRef.current,
+        duration_seconds: Math.round(duration),
+      })
+      navigator.sendBeacon(`${API_BASE}/api/analytics/duration`, data)
+    }
 
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-      if (scrollHeight <= 0) return
-      
-      const scrollPercent = Math.round((window.scrollY / scrollHeight) * 100)
-
-      if (scrollPercent > maxScroll) {
-        maxScroll = scrollPercent
-
-        thresholds.forEach((threshold) => {
-          if (scrollPercent >= threshold && !trackedThresholds.has(threshold)) {
-            trackedThresholds.add(threshold)
-            trackEvent('scroll', 'scroll_depth', `${threshold}%`, threshold)
-          }
-        })
+    // Also track when tab becomes hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const duration = (Date.now() - startTimeRef.current) / 1000
+        updateDuration(sessionId.current, currentPathRef.current, duration)
       }
     }
 
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-}
-
-/**
- * Hook to track session duration
- */
-export function useSessionTracking() {
-  useEffect(() => {
-    let sessionDuration = 0
-    let isVisible = true
-
-    const handleVisibilityChange = () => {
-      isVisible = document.visibilityState === 'visible'
-    }
-
+    window.addEventListener('beforeunload', handleBeforeUnload)
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
-    // Send heartbeat every 30 seconds
-    const interval = setInterval(() => {
-      if (isVisible) {
-        sessionDuration += 30
-        // Send event every minute
-        if (sessionDuration % 60 === 0) {
-          trackEvent('timing', 'session_duration', `${sessionDuration}s`, sessionDuration)
-        }
-      }
-    }, 30000)
-
-    // Send final duration on unload
-    const handleUnload = () => {
-      if (sessionDuration > 0) {
-        trackEvent('timing', 'session_duration_final', `${sessionDuration}s`, sessionDuration)
-      }
-    }
-
-    window.addEventListener('beforeunload', handleUnload)
-
     return () => {
-      clearInterval(interval)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('beforeunload', handleUnload)
     }
   }, [])
+
+  // Expose visitor ID for admin to identify themselves
+  const getMyVisitorId = useCallback(() => visitorId.current, [])
+
+  return { getMyVisitorId }
 }
 
-/**
- * Combined analytics hook - use this in your App component
- */
-export function useAnalytics() {
-  usePageTracking()
-  useScrollTracking()
-  useSessionTracking()
+// Component wrapper for easy integration
+export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  useAnalytics()
+  return <>{children}</>
 }
-
-/**
- * Hook for tracking button/link clicks
- */
-export function useTrackClick() {
-  return useCallback((category: string, label: string, action = 'click') => {
-    trackEvent(action, category, label)
-  }, [])
-}
-
