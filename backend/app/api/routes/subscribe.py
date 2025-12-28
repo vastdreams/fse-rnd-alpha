@@ -49,55 +49,134 @@ class SubscriberInfo(BaseModel):
 
 def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> bool:
     """
-    Send a thank you email to new subscriber via Resend.
+    Send a welcome email to new newsletter subscriber via Resend.
+    Branded as FSE Research and Investments.
     """
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured, skipping email")
         return False
     
     try:
-        greeting = f"Hi {first_name}," if first_name else "Hi there,"
+        greeting = f"Hi {first_name}," if first_name else "Hello,"
         
         html_content = f"""
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9;">
-    <div style="background: linear-gradient(135deg, #059669 0%, #0d9488 100%); padding: 40px 32px; border-radius: 16px 16px 0 0; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Welcome to R&D Alpha</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Factor-Based Investment Research</p>
-    </div>
-    <div style="background: white; padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 16px 16px;">
-        <p style="font-size: 16px; margin-top: 0;">{greeting}</p>
-        <p>Thank you for subscribing to R&D Alpha Research! You're now part of a community exploring the relationship between <strong>R&D investment intensity</strong> and <strong>long-term stock returns</strong>.</p>
-        
-        <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin: 24px 0;">
-            <h3 style="color: #059669; margin-top: 0; font-size: 16px;">What you'll receive:</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-                <li style="margin-bottom: 8px;">Research updates when we publish new findings</li>
-                <li style="margin-bottom: 8px;">Market insights on R&D factor performance</li>
-                <li style="margin-bottom: 0;">Early access to new features and data</li>
-            </ul>
-        </div>
-        
-        <div style="text-align: center; margin: 32px 0;">
-            <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #0d9488 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Explore the Research</a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-        <p style="color: #64748b; font-size: 14px; margin-bottom: 0;">Best regards,<br><strong>Abhishek Sehgal</strong><br>R&D Alpha Research<br><a href="https://finsoeasy.com" style="color: #059669;">finsoeasy.com</a></p>
-    </div>
-    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
-        © 2025 R&D Alpha Research. All rights reserved.
-    </p>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0f172a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 48px 40px 32px 40px; text-align: center; border-bottom: 1px solid #334155;">
+                            <div style="font-size: 28px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 8px;">
+                                FSE Research
+                            </div>
+                            <div style="font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px;">
+                                Research & Investments
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700; color: #f8fafc;">
+                                Welcome to our Newsletter
+                            </h1>
+                            
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.7; color: #cbd5e1;">
+                                {greeting}
+                            </p>
+                            
+                            <p style="margin: 0 0 28px 0; font-size: 16px; line-height: 1.7; color: #cbd5e1;">
+                                Thank you for subscribing. You're now on the list to receive our latest research updates, market insights, and investment analysis.
+                            </p>
+                            
+                            <!-- What to Expect Box -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.15) 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #10b981;">
+                                        <div style="font-size: 14px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
+                                            What to Expect
+                                        </div>
+                                        <table role="presentation" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Original research & analysis
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Market insights & commentary
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Investment ideas & strategies
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Early access to new publications
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td align="center">
+                                        <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; border-radius: 8px;">
+                                            View Latest Research
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 40px; background-color: #0f172a; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #94a3b8;">
+                                Abhishek Sehgal
+                            </p>
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b;">
+                                FSE Research and Investments
+                            </p>
+                            <a href="https://finsoeasy.com" style="color: #10b981; font-size: 13px; text-decoration: none;">
+                                finsoeasy.com
+                            </a>
+                        </td>
+                    </tr>
+                    
+                </table>
+                
+                <!-- Bottom Text -->
+                <p style="margin: 24px 0 0 0; font-size: 12px; color: #475569; text-align: center;">
+                    © 2025 FSE Research and Investments. All rights reserved.
+                </p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
         """.strip()
         
         params = {
-            "from": "R&D Alpha Research <abhishek@finsoeasy.com>",
+            "from": "FSE Research <abhishek@finsoeasy.com>",
             "to": [to_email],
-            "subject": "Welcome to R&D Alpha Research 🚀",
+            "subject": "Welcome to FSE Research Newsletter",
             "html": html_content,
         }
         

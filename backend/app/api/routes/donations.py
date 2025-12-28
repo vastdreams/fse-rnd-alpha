@@ -41,57 +41,129 @@ def get_stripe():
 
 
 def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bool = False) -> bool:
-    """Send a beautiful thank you email to donor via Resend."""
+    """Send a thank you email to donor via Resend. Branded as FSE Research."""
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured, skipping donation email")
         return False
     
-    donation_type = "monthly" if is_recurring else "one-time"
+    donation_type = "monthly supporter" if is_recurring else "one-time"
     amount_str = f"${amount:.2f}"
     
     try:
         html_content = f"""
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9;">
-    <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); padding: 40px 32px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 16px;">💖</div>
-            <h1 style="color: white; margin: 0; font-size: 28px;">Thank You!</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 18px;">
-                Your {amount_str} {donation_type} donation has been received
-            </p>
-        </div>
-        <div style="padding: 32px;">
-            <p style="font-size: 16px; margin-top: 0;">Your generosity directly supports free, open research for everyone.</p>
-            <div style="background: #fdf2f8; border-left: 4px solid #ec4899; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 24px 0;">
-                <h3 style="color: #be185d; margin: 0 0 12px 0;">Your donation supports:</h3>
-                <ul style="margin: 0; padding-left: 20px; color: #64748b;">
-                    <li style="margin-bottom: 6px;">Premium financial data feeds</li>
-                    <li style="margin-bottom: 6px;">Server infrastructure 24/7</li>
-                    <li style="margin-bottom: 6px;">New factor strategies and markets</li>
-                    <li>Open-source research tools</li>
-                </ul>
-            </div>
-            <div style="text-align: center; margin: 32px 0;">
-                <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">Explore the Research</a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 0;">With gratitude,<br><strong>Abhishek Sehgal</strong><br>Founder, R&D Alpha Research<br><a href="https://finsoeasy.com" style="color: #ec4899;">finsoeasy.com</a></p>
-        </div>
-    </div>
-    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
-        © 2025 R&D Alpha Research. All rights reserved.
-    </p>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0f172a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 48px 40px 32px 40px; text-align: center; background: linear-gradient(135deg, rgba(236,72,153,0.2) 0%, rgba(244,63,94,0.2) 100%); border-bottom: 1px solid #334155;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">💖</div>
+                            <div style="font-size: 28px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 8px;">
+                                Thank You!
+                            </div>
+                            <div style="font-size: 16px; color: #f472b6;">
+                                Your {amount_str} {donation_type} donation received
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #cbd5e1;">
+                                Your generosity means the world to us. This donation directly supports our mission to provide free, high-quality investment research to everyone.
+                            </p>
+                            
+                            <!-- What Your Donation Supports -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(244,63,94,0.1) 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #ec4899;">
+                                        <div style="font-size: 14px; font-weight: 600; color: #f472b6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
+                                            Your Support Enables
+                                        </div>
+                                        <table role="presentation" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #f472b6; margin-right: 10px;">→</span> Premium financial data & analytics
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #f472b6; margin-right: 10px;">→</span> Server infrastructure 24/7
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #f472b6; margin-right: 10px;">→</span> New research & strategies
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
+                                                    <span style="color: #f472b6; margin-right: 10px;">→</span> Open-source tools for all
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td align="center">
+                                        <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; border-radius: 8px;">
+                                            Explore the Research
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 40px; background-color: #0f172a; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #94a3b8;">
+                                With gratitude,
+                            </p>
+                            <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #f8fafc;">
+                                Abhishek Sehgal
+                            </p>
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b;">
+                                FSE Research and Investments
+                            </p>
+                            <a href="https://finsoeasy.com" style="color: #f472b6; font-size: 13px; text-decoration: none;">
+                                finsoeasy.com
+                            </a>
+                        </td>
+                    </tr>
+                    
+                </table>
+                
+                <!-- Bottom Text -->
+                <p style="margin: 24px 0 0 0; font-size: 12px; color: #475569; text-align: center;">
+                    © 2025 FSE Research and Investments. All rights reserved.
+                </p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
         """.strip()
         
         params = {
-            "from": "Abhishek Sehgal <abhishek@finsoeasy.com>",
+            "from": "FSE Research <abhishek@finsoeasy.com>",
             "to": [to_email],
-            "subject": f"Thank You for Your {amount_str} Donation 💖",
+            "subject": f"Thank You for Your Support – {amount_str} Donation Received",
             "html": html_content,
         }
         
