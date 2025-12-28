@@ -54,7 +54,7 @@ def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bo
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9;">
+<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9;">
     <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); padding: 40px 32px; text-align: center;">
             <div style="font-size: 48px; margin-bottom: 16px;">💖</div>
@@ -68,31 +68,35 @@ def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bo
             <div style="background: #fdf2f8; border-left: 4px solid #ec4899; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 24px 0;">
                 <h3 style="color: #be185d; margin: 0 0 12px 0;">Your donation supports:</h3>
                 <ul style="margin: 0; padding-left: 20px; color: #64748b;">
-                    <li>Premium financial data feeds</li>
-                    <li>Server infrastructure 24/7</li>
-                    <li>New factor strategies and markets</li>
+                    <li style="margin-bottom: 6px;">Premium financial data feeds</li>
+                    <li style="margin-bottom: 6px;">Server infrastructure 24/7</li>
+                    <li style="margin-bottom: 6px;">New factor strategies and markets</li>
                     <li>Open-source research tools</li>
                 </ul>
             </div>
             <div style="text-align: center; margin: 32px 0;">
-                <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Your Impact</a>
+                <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">Explore the Research</a>
             </div>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-            <p style="color: #64748b; font-size: 14px;">With gratitude,<br><strong>Abhishek Sehgal</strong><br>Founder, R&D Alpha Research</p>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 0;">With gratitude,<br><strong>Abhishek Sehgal</strong><br>Founder, R&D Alpha Research<br><a href="https://finsoeasy.com" style="color: #ec4899;">finsoeasy.com</a></p>
         </div>
     </div>
+    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
+        © 2025 R&D Alpha Research. All rights reserved.
+    </p>
 </body>
 </html>
         """.strip()
         
-        response = resend.Emails.send({
+        params = {
             "from": "Abhishek Sehgal <abhishek@finsoeasy.com>",
             "to": [to_email],
-            "subject": f"Thank You for Your {amount_str} Donation to R&D Alpha Research",
-            "html": html_content
-        })
+            "subject": f"Thank You for Your {amount_str} Donation 💖",
+            "html": html_content,
+        }
         
-        logger.info(f"Donation thank you email sent to {to_email} via Resend: {response}")
+        response = resend.Emails.send(params)
+        logger.info(f"Donation email sent to {to_email}, id: {response.get('id', 'unknown')}")
         return True
         
     except Exception as e:
