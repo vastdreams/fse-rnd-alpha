@@ -2,16 +2,14 @@
 Donations API Routes
 
 Handles Stripe donations with PostgreSQL persistence.
-Sends thank you emails and auto-subscribes donors.
+Sends thank you emails via Resend and auto-subscribes donors.
 
 Publication: https://research.finsoeasy.com
 """
 
 import os
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, Header, Depends
@@ -26,11 +24,9 @@ from app.api.routes.subscribe import add_subscriber_to_db
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Email configuration
-SMTP_HOST = "smtp.hostinger.com"
-SMTP_PORT = 465
-SMTP_USER = "abhishek@finsoeasy.com"
-SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
+# Resend API configuration
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+resend.api_key = RESEND_API_KEY
 
 # Lazy import stripe
 _stripe = None
@@ -45,39 +41,15 @@ def get_stripe():
 
 
 def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bool = False) -> bool:
-    """Send a beautiful thank you email to donor."""
-    if not SMTP_PASSWORD:
-        logger.warning("SMTP password not configured, skipping donation email")
+    """Send a beautiful thank you email to donor via Resend."""
+    if not RESEND_API_KEY:
+        logger.warning("Resend API key not configured, skipping donation email")
         return False
     
     donation_type = "monthly" if is_recurring else "one-time"
     amount_str = f"${amount:.2f}"
     
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Thank You for Your {amount_str} Donation to R&D Alpha Research"
-        msg["From"] = f"Abhishek Sehgal <{SMTP_USER}>"
-        msg["To"] = to_email
-        
-        text_content = f"""
-Thank you for your generous {amount_str} {donation_type} donation!
-
-Your support means the world to us and directly helps keep R&D Alpha Research free and accessible to everyone.
-
-What your donation supports:
-- Premium financial data feeds for accurate research
-- Server infrastructure to keep the platform running
-- Expansion into new factor strategies and markets
-- Open-source tools for the research community
-
-Visit our research: https://research.finsoeasy.com
-
-With gratitude,
-Abhishek Sehgal
-Founder, R&D Alpha Research
-https://finsoeasy.com
-        """.strip()
-        
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -113,14 +85,14 @@ https://finsoeasy.com
 </html>
         """.strip()
         
-        msg.attach(MIMEText(text_content, "plain"))
-        msg.attach(MIMEText(html_content, "html"))
+        response = resend.Emails.send({
+            "from": "Abhishek Sehgal <abhishek@finsoeasy.com>",
+            "to": [to_email],
+            "subject": f"Thank You for Your {amount_str} Donation to R&D Alpha Research",
+            "html": html_content
+        })
         
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, to_email, msg.as_string())
-        
-        logger.info(f"Donation thank you email sent to {to_email}")
+        logger.info(f"Donation thank you email sent to {to_email} via Resend: {response}")
         return True
         
     except Exception as e:

@@ -2,16 +2,14 @@
 Subscribe API Routes
 
 Handles newsletter subscriptions with PostgreSQL persistence.
-Sends thank you emails to new subscribers.
+Sends thank you emails to new subscribers via Resend.
 
 Publication: https://research.finsoeasy.com
 """
 
 import os
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
@@ -24,11 +22,9 @@ from app.api.deps import get_db
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Email configuration
-SMTP_HOST = "smtp.hostinger.com"
-SMTP_PORT = 465
-SMTP_USER = "abhishek@finsoeasy.com"
-SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
+# Resend API configuration
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+resend.api_key = RESEND_API_KEY
 
 
 class SubscribeRequest(BaseModel):
@@ -52,36 +48,13 @@ class SubscriberInfo(BaseModel):
 
 def send_thank_you_email(to_email: str) -> bool:
     """
-    Send a thank you email to new subscriber.
+    Send a thank you email to new subscriber via Resend.
     """
-    if not SMTP_PASSWORD:
-        logger.warning("SMTP password not configured, skipping email")
+    if not RESEND_API_KEY:
+        logger.warning("Resend API key not configured, skipping email")
         return False
     
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Welcome to R&D Alpha Research"
-        msg["From"] = f"R&D Alpha Research <{SMTP_USER}>"
-        msg["To"] = to_email
-        
-        text_content = """
-Thank you for subscribing to R&D Alpha Research!
-
-You're now part of a community exploring the relationship between R&D investment intensity and long-term stock returns.
-
-What you'll receive:
-- Research updates when we publish new findings
-- Market insights on R&D factor performance
-- Early access to new features and data
-
-Visit our research platform: https://research.finsoeasy.com
-
-Best regards,
-Abhishek Sehgal
-R&D Alpha Research
-https://finsoeasy.com
-        """.strip()
-        
         html_content = """
 <!DOCTYPE html>
 <html>
@@ -105,14 +78,14 @@ https://finsoeasy.com
 </html>
         """.strip()
         
-        msg.attach(MIMEText(text_content, "plain"))
-        msg.attach(MIMEText(html_content, "html"))
+        response = resend.Emails.send({
+            "from": "R&D Alpha Research <abhishek@finsoeasy.com>",
+            "to": [to_email],
+            "subject": "Welcome to R&D Alpha Research",
+            "html": html_content
+        })
         
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, to_email, msg.as_string())
-        
-        logger.info(f"Thank you email sent to {to_email}")
+        logger.info(f"Thank you email sent to {to_email} via Resend: {response}")
         return True
         
     except Exception as e:
