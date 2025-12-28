@@ -74,6 +74,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-change-in-production}
       API_KEY_REQUIRED: ${API_KEY_REQUIRED:-false}
       FINSOEASY_EMAIL_PASSWORD: ${FINSOEASY_EMAIL_PASSWORD:-}
+      # Resend email API
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       # Stripe payment processing
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
