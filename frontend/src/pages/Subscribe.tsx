@@ -14,7 +14,8 @@ import { Mail, Check, Bell, FileText, TrendingUp, Shield, User, Briefcase } from
 
 export function Subscribe() {
   const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [profession, setProfession] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -31,7 +32,8 @@ export function Subscribe() {
         body: JSON.stringify({ 
           email, 
           source: "subscribe_page",
-          name: name || undefined,
+          first_name: firstName || undefined,
+          last_name: lastName || undefined,
           profession: profession || undefined
         }),
       })
@@ -118,20 +120,35 @@ export function Subscribe() {
                 </div>
               </div>
               
-              {/* Name (optional) */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Name <span className="text-muted-foreground">(optional)</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {/* First Name & Last Name (optional) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label htmlFor="firstName" className="text-sm font-medium">
+                    First Name <span className="text-muted-foreground text-xs">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="First name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="h-12 pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="lastName" className="text-sm font-medium">
+                    Last Name <span className="text-muted-foreground text-xs">(optional)</span>
+                  </label>
                   <Input
-                    id="name"
+                    id="lastName"
                     type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-12 pl-10"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="h-12"
                   />
                 </div>
               </div>
