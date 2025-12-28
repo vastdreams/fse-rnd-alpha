@@ -3,6 +3,7 @@ Subscribe API Routes
 
 Handles newsletter subscriptions with PostgreSQL persistence.
 Sends thank you emails to new subscribers via Resend.
+Includes unsubscribe functionality with secure tokens.
 
 Publication: https://research.finsoeasy.com
 """
@@ -10,10 +11,12 @@ Publication: https://research.finsoeasy.com
 import os
 import logging
 import resend
+import hashlib
+import base64
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
@@ -25,6 +28,29 @@ logger = logging.getLogger(__name__)
 # Resend API configuration
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 resend.api_key = RESEND_API_KEY
+
+# Secret for generating unsubscribe tokens
+UNSUBSCRIBE_SECRET = os.getenv("SECRET_KEY", "fse-research-secret-2025")
+
+
+def generate_unsubscribe_token(email: str) -> str:
+    """Generate a secure token for unsubscribe links."""
+    data = f"{email.lower()}:{UNSUBSCRIBE_SECRET}"
+    hash_bytes = hashlib.sha256(data.encode()).digest()
+    return base64.urlsafe_b64encode(hash_bytes[:16]).decode().rstrip("=")
+
+
+def verify_unsubscribe_token(email: str, token: str) -> bool:
+    """Verify that an unsubscribe token is valid for the given email."""
+    expected_token = generate_unsubscribe_token(email)
+    return token == expected_token
+
+
+def get_unsubscribe_url(email: str) -> str:
+    """Generate the full unsubscribe URL for an email."""
+    token = generate_unsubscribe_token(email)
+    encoded_email = base64.urlsafe_b64encode(email.lower().encode()).decode().rstrip("=")
+    return f"https://research.finsoeasy.com/unsubscribe?e={encoded_email}&t={token}"
 
 
 class SubscribeRequest(BaseModel):
@@ -40,6 +66,11 @@ class SubscribeResponse(BaseModel):
     message: str
 
 
+class UnsubscribeRequest(BaseModel):
+    email: str
+    token: str
+
+
 class SubscriberInfo(BaseModel):
     email: str
     source: str
@@ -50,7 +81,7 @@ class SubscriberInfo(BaseModel):
 def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> bool:
     """
     Send a welcome email to new newsletter subscriber via Resend.
-    Branded as FSE Research and Investments.
+    Includes R&D Alpha research highlights and unsubscribe link.
     """
     if not RESEND_API_KEY:
         logger.warning("Resend API key not configured, skipping email")
@@ -58,6 +89,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
     
     try:
         greeting = f"Hi {first_name}," if first_name else "Hello,"
+        unsubscribe_url = get_unsubscribe_url(to_email)
         
         html_content = f"""
 <!DOCTYPE html>
@@ -76,10 +108,10 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                     <tr>
                         <td style="padding: 48px 40px 32px 40px; text-align: center; border-bottom: 1px solid #334155;">
                             <div style="font-size: 28px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 8px;">
-                                FSE Research
+                                R&D Alpha
                             </div>
                             <div style="font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px;">
-                                Research & Investments
+                                FSE Research & Investments
                             </div>
                         </td>
                     </tr>
@@ -88,7 +120,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                     <tr>
                         <td style="padding: 40px;">
                             <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700; color: #f8fafc;">
-                                Welcome to our Newsletter
+                                Welcome to R&D Alpha
                             </h1>
                             
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.7; color: #cbd5e1;">
@@ -96,35 +128,58 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                             </p>
                             
                             <p style="margin: 0 0 28px 0; font-size: 16px; line-height: 1.7; color: #cbd5e1;">
-                                Thank you for subscribing. You're now on the list to receive our latest research updates, market insights, and investment analysis.
+                                Thank you for subscribing. You've joined a community of investors and researchers exploring <strong style="color: #f8fafc;">hidden alpha in R&D-intensive companies</strong>.
                             </p>
+                            
+                            <!-- Key Research Findings -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(99,102,241,0.15) 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #3b82f6;">
+                                        <div style="font-size: 14px; font-weight: 600; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
+                                            📊 Our Key Findings
+                                        </div>
+                                        <table role="presentation" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
+                                                    <strong style="color: #60a5fa;">+4.2% annual alpha</strong> — R&D-intensive portfolios outperform market benchmarks
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
+                                                    <strong style="color: #60a5fa;">Hidden value</strong> — R&D is expensed, not capitalized, creating systematic undervaluation
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
+                                                    <strong style="color: #60a5fa;">25-year backtest</strong> — Rigorous point-in-time testing with real SEC filings
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
                             
                             <!-- What to Expect Box -->
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
                                 <tr>
                                     <td style="background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.15) 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #10b981;">
                                         <div style="font-size: 14px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
-                                            What to Expect
+                                            What You'll Receive
                                         </div>
                                         <table role="presentation" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
-                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Original research & analysis
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Monthly research updates & new findings
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
-                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Market insights & commentary
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> R&D factor performance & market insights
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
-                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Investment ideas & strategies
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding: 6px 0; color: #e2e8f0; font-size: 15px;">
-                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Early access to new publications
+                                                    <span style="color: #10b981; margin-right: 10px;">→</span> Early access to whitepapers & tools
                                                 </td>
                                             </tr>
                                         </table>
@@ -137,7 +192,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                                 <tr>
                                     <td align="center">
                                         <a href="https://research.finsoeasy.com" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; border-radius: 8px;">
-                                            View Latest Research
+                                            Explore the Research
                                         </a>
                                     </td>
                                 </tr>
@@ -147,24 +202,31 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 32px 40px; background-color: #0f172a; text-align: center;">
+                        <td style="padding: 32px 40px; background-color: #0f172a; text-align: center; border-top: 1px solid #334155;">
                             <p style="margin: 0 0 8px 0; font-size: 14px; color: #94a3b8;">
                                 Abhishek Sehgal
                             </p>
                             <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b;">
                                 FSE Research and Investments
                             </p>
-                            <a href="https://finsoeasy.com" style="color: #10b981; font-size: 13px; text-decoration: none;">
-                                finsoeasy.com
-                            </a>
+                            <div style="margin-bottom: 16px;">
+                                <a href="https://research.finsoeasy.com" style="color: #10b981; font-size: 13px; text-decoration: none; margin: 0 8px;">Research</a>
+                                <span style="color: #475569;">|</span>
+                                <a href="https://research.finsoeasy.com/privacy" style="color: #64748b; font-size: 13px; text-decoration: none; margin: 0 8px;">Privacy</a>
+                                <span style="color: #475569;">|</span>
+                                <a href="https://research.finsoeasy.com/terms" style="color: #64748b; font-size: 13px; text-decoration: none; margin: 0 8px;">Terms</a>
+                            </div>
+                            <p style="margin: 0; font-size: 12px; color: #475569;">
+                                © 2025 FSE Research and Investments. All rights reserved.
+                            </p>
                         </td>
                     </tr>
                     
                 </table>
                 
-                <!-- Bottom Text -->
-                <p style="margin: 24px 0 0 0; font-size: 12px; color: #475569; text-align: center;">
-                    © 2025 FSE Research and Investments. All rights reserved.
+                <!-- Unsubscribe -->
+                <p style="margin: 20px 0 0 0; font-size: 12px; color: #64748b; text-align: center;">
+                    Don't want these emails? <a href="{unsubscribe_url}" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a>
                 </p>
             </td>
         </tr>
@@ -174,9 +236,9 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
         """.strip()
         
         params = {
-            "from": "FSE Research <abhishek@finsoeasy.com>",
+            "from": "R&D Alpha <abhishek@finsoeasy.com>",
             "to": [to_email],
-            "subject": "Welcome to FSE Research Newsletter",
+            "subject": "Welcome to R&D Alpha — Factor-Based Investment Research",
             "html": html_content,
         }
         
@@ -308,3 +370,72 @@ async def get_all_subscribers(db: AsyncSession) -> List[dict]:
         }
         for row in rows
     ]
+
+
+@router.post("/unsubscribe", response_model=SubscribeResponse)
+async def unsubscribe(request: UnsubscribeRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Unsubscribe from the newsletter.
+    Requires a valid token to prevent unauthorized unsubscribes.
+    """
+    # Decode email from base64
+    try:
+        # Add padding if needed
+        padded = request.email + "=" * (4 - len(request.email) % 4)
+        email = base64.urlsafe_b64decode(padded).decode().lower()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
+    # Verify token
+    if not verify_unsubscribe_token(email, request.token):
+        raise HTTPException(status_code=400, detail="Invalid unsubscribe token")
+    
+    # Check if subscriber exists
+    result = await db.execute(
+        text("SELECT id, is_active FROM subscribers WHERE email = :email"),
+        {"email": email}
+    )
+    subscriber = result.fetchone()
+    
+    if not subscriber:
+        return SubscribeResponse(
+            success=True,
+            message="Email not found in our list."
+        )
+    
+    if not subscriber[1]:  # is_active is False
+        return SubscribeResponse(
+            success=True,
+            message="You have already been unsubscribed."
+        )
+    
+    # Mark as inactive (soft delete)
+    await db.execute(
+        text("UPDATE subscribers SET is_active = false WHERE email = :email"),
+        {"email": email}
+    )
+    await db.commit()
+    
+    logger.info(f"User unsubscribed: {email}")
+    
+    return SubscribeResponse(
+        success=True,
+        message="You have been successfully unsubscribed. We're sorry to see you go!"
+    )
+
+
+@router.get("/unsubscribe/verify")
+async def verify_unsubscribe(e: str, t: str):
+    """
+    Verify an unsubscribe link (for the frontend to check before showing UI).
+    """
+    try:
+        padded = e + "=" * (4 - len(e) % 4)
+        email = base64.urlsafe_b64decode(padded).decode().lower()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request")
+    
+    if not verify_unsubscribe_token(email, t):
+        raise HTTPException(status_code=400, detail="Invalid link")
+    
+    return {"valid": True, "email": email}

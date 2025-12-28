@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider, useSidebar } from "@/components/sidebar-context"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
+import { Footer } from "@/components/layout/Footer"
 import { Overview } from "@/pages/Overview"
 import { Companies } from "@/pages/Companies"
 import { CompanyDetail } from "@/pages/CompanyDetail"
@@ -24,6 +25,9 @@ import { Whitepaper } from "@/pages/Whitepaper"
 import { Subscribe } from "@/pages/Subscribe"
 import { Donate } from "@/pages/Donate"
 import { Admin } from "@/pages/Admin"
+import { Unsubscribe } from "@/pages/Unsubscribe"
+import { Terms } from "@/pages/Terms"
+import { Privacy } from "@/pages/Privacy"
 import { cn } from "@/lib/utils"
 import { usePageView } from "@/lib/analytics"
 import { SessionIndicator } from "@/components/SessionIndicator"
@@ -53,15 +57,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const { collapsed, isMobile } = useSidebar()
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Sidebar />
       {/* Main content area - adjusts based on sidebar state and mobile */}
       <div className={cn(
-        "transition-all duration-300",
+        "transition-all duration-300 flex-1 flex flex-col",
         isMobile ? "ml-0" : (collapsed ? "ml-16" : "ml-64")
       )}>
         <Navbar />
-        <main className="p-4 md:p-6">{children}</main>
+        <main className="p-4 md:p-6 flex-1">{children}</main>
+        <Footer />
       </div>
       {/* Session indicator - dev only */}
       <SessionIndicator />
@@ -103,6 +108,9 @@ function App() {
                   <Route path="/subscribe" element={<Subscribe />} />
                   <Route path="/donate" element={<Donate />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/unsubscribe" element={<Unsubscribe />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
                 </Routes>
               </AppLayout>
             </AnalyticsProvider>
