@@ -6,7 +6,6 @@
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
-import { createPortal } from "react-dom"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -251,7 +250,6 @@ function GrowthChart({
 export function Whitepaper() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isPrinting, setIsPrinting] = useState(false)
   const slideContainerRef = useRef<HTMLDivElement>(null)
 
   // Keep slide navigation from feeling "blank" when the user is scrolled down the page:
@@ -479,15 +477,15 @@ export function Whitepaper() {
   const TOTAL_SLIDES = 11
 
   // Print all slides - opens browser print dialog for PDF export
-  // Print function - shows all slides and triggers browser print
+  // Uses CSS @media print to show the always-rendered print view
   const handlePrint = useCallback(() => {
-    setIsPrinting(true)
-    // Wait for React to render the print view, then print
+    // Add class to body for print-specific styling
+    document.body.classList.add('printing-whitepaper')
+    window.print()
+    // Remove class after print dialog closes
     setTimeout(() => {
-      window.print()
-      // Reset after print dialog closes
-      setTimeout(() => setIsPrinting(false), 100)
-    }, 100)
+      document.body.classList.remove('printing-whitepaper')
+    }, 500)
   }, [])
 
   const nextSlide = useCallback(() => {
@@ -500,8 +498,6 @@ export function Whitepaper() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (isPrinting) return
-
       if (e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault()
         nextSlide()
@@ -527,7 +523,7 @@ export function Whitepaper() {
         setIsFullscreen(false)
       }
     },
-    [isFullscreen, isPrinting, nextSlide, prevSlide]
+    [isFullscreen, nextSlide, prevSlide]
   )
 
   const slides = [
@@ -2039,17 +2035,14 @@ export function Whitepaper() {
         </div>
       )}
 
-      {/* Print View - renders all slides for PDF export via portal to body */}
-      {isPrinting && createPortal(
-        <div className="whitepaper-print-view" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflow: 'auto' }}>
-          {slides.map((slide, i) => (
-            <div key={i} className="whitepaper-print-slide">
-              {slide}
-            </div>
-          ))}
-        </div>,
-        document.body
-      )}
+      {/* Print View - always rendered but hidden, shown via CSS @media print */}
+      <div className="whitepaper-print-container">
+        {slides.map((slide, i) => (
+          <div key={i} className="whitepaper-print-slide">
+            {slide}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
