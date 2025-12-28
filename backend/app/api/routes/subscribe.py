@@ -2,14 +2,16 @@
 Subscribe API Routes
 
 Handles newsletter subscriptions with PostgreSQL persistence.
-Sends thank you emails to new subscribers via Resend.
+Sends thank you emails to new subscribers.
 
 Publication: https://research.finsoeasy.com
 """
 
 import os
 import logging
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
@@ -22,15 +24,18 @@ from app.api.deps import get_db
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Resend API configuration
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-resend.api_key = RESEND_API_KEY
+# Email configuration
+SMTP_HOST = "smtp.hostinger.com"
+SMTP_PORT = 465
+SMTP_USER = "abhishek@finsoeasy.com"
+SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
 
 
 class SubscribeRequest(BaseModel):
     email: EmailStr
     source: Optional[str] = "website"
-    name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     profession: Optional[str] = None
 
 
@@ -48,13 +53,36 @@ class SubscriberInfo(BaseModel):
 
 def send_thank_you_email(to_email: str) -> bool:
     """
-    Send a thank you email to new subscriber via Resend.
+    Send a thank you email to new subscriber.
     """
-    if not RESEND_API_KEY:
-        logger.warning("Resend API key not configured, skipping email")
+    if not SMTP_PASSWORD:
+        logger.warning("SMTP password not configured, skipping email")
         return False
     
     try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Welcome to R&D Alpha Research"
+        msg["From"] = f"R&D Alpha Research <{SMTP_USER}>"
+        msg["To"] = to_email
+        
+        text_content = """
+Thank you for subscribing to R&D Alpha Research!
+
+You're now part of a community exploring the relationship between R&D investment intensity and long-term stock returns.
+
+What you'll receive:
+- Research updates when we publish new findings
+- Market insights on R&D factor performance
+- Early access to new features and data
+
+Visit our research platform: https://research.finsoeasy.com
+
+Best regards,
+Abhishek Sehgal
+R&D Alpha Research
+https://finsoeasy.com
+        """.strip()
+        
         html_content = """
 <!DOCTYPE html>
 <html>
@@ -78,14 +106,14 @@ def send_thank_you_email(to_email: str) -> bool:
 </html>
         """.strip()
         
-        response = resend.Emails.send({
-            "from": "R&D Alpha Research <abhishek@finsoeasy.com>",
-            "to": [to_email],
-            "subject": "Welcome to R&D Alpha Research",
-            "html": html_content
-        })
+        msg.attach(MIMEText(text_content, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
         
-        logger.info(f"Thank you email sent to {to_email} via Resend: {response}")
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+        
+        logger.info(f"Thank you email sent to {to_email}")
         return True
         
     except Exception as e:
@@ -117,13 +145,14 @@ async def subscribe(request: SubscribeRequest, db: AsyncSession = Depends(get_db
     # Insert new subscriber
     await db.execute(
         text("""
-            INSERT INTO subscribers (email, source, name, profession, subscribed_at, is_active)
-            VALUES (:email, :source, :name, :profession, :subscribed_at, true)
+            INSERT INTO subscribers (email, source, first_name, last_name, profession, subscribed_at, is_active)
+            VALUES (:email, :source, :first_name, :last_name, :profession, :subscribed_at, true)
         """),
         {
             "email": email,
             "source": request.source,
-            "name": request.name,
+            "first_name": request.first_name,
+            "last_name": request.last_name,
             "profession": request.profession,
             "subscribed_at": datetime.utcnow()
         }
@@ -192,7 +221,7 @@ async def get_all_subscribers(db: AsyncSession) -> List[dict]:
     """Get all active subscribers (used by admin routes)."""
     result = await db.execute(
         text("""
-            SELECT email, source, name, profession, subscribed_at, is_active 
+            SELECT email, source, first_name, last_name, profession, subscribed_at, is_active 
             FROM subscribers 
             WHERE is_active = true 
             ORDER BY subscribed_at DESC
@@ -203,10 +232,11 @@ async def get_all_subscribers(db: AsyncSession) -> List[dict]:
         {
             "email": row[0],
             "source": row[1],
-            "name": row[2],
-            "profession": row[3],
-            "subscribed_at": row[4].isoformat() if row[4] else None,
-            "is_active": row[5]
+            "first_name": row[2],
+            "last_name": row[3],
+            "profession": row[4],
+            "subscribed_at": row[5].isoformat() if row[5] else None,
+            "is_active": row[6]
         }
         for row in rows
     ]

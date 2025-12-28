@@ -45,7 +45,8 @@ interface DashboardData {
 interface Subscriber {
   email: string
   source: string
-  name: string | null
+  first_name: string | null
+  last_name: string | null
   profession: string | null
   subscribed_at: string
 }
@@ -757,7 +758,8 @@ export function Admin() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead>First Name</TableHead>
+                    <TableHead>Last Name</TableHead>
                     <TableHead>Profession</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Subscribed At</TableHead>
@@ -767,7 +769,8 @@ export function Admin() {
                   {subscribersData.subscribers.map((sub, i) => (
                     <TableRow key={i}>
                       <TableCell className="font-medium">{sub.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{sub.name || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{sub.first_name || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{sub.last_name || "-"}</TableCell>
                       <TableCell className="text-muted-foreground">{sub.profession || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">

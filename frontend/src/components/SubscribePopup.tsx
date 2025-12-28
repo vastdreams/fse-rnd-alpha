@@ -20,7 +20,8 @@ const COOLDOWN_DAYS = 7
 export function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false)
   const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [profession, setProfession] = useState("")
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -72,7 +73,8 @@ export function SubscribePopup() {
         body: JSON.stringify({ 
           email, 
           source: "rnd_alpha_popup",
-          name: name || undefined,
+          first_name: firstName || undefined,
+          last_name: lastName || undefined,
           profession: profession || undefined
         }),
       })
@@ -81,7 +83,8 @@ export function SubscribePopup() {
       if (data.success) {
         setMessage("Thank you for subscribing!")
         setEmail("")
-        setName("")
+        setFirstName("")
+        setLastName("")
         setProfession("")
         localStorage.setItem("isSubscribed", "true")
         setTimeout(handleClose, 2000)
@@ -136,16 +139,26 @@ export function SubscribePopup() {
               />
             </div>
             
-            {/* Name (optional) */}
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Your name (optional)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="pl-10"
-              />
+            {/* First Name & Last Name (optional) */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
             </div>
             
             {/* Profession (optional) */}
