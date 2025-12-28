@@ -1,12 +1,15 @@
 /**
- * PATH: frontend/src/components/SubscribePopup.tsx
- * PURPOSE: Auto-subscribe popup that appears after 20 seconds of session time
- * ROLE IN ARCHITECTURE: User engagement and email collection
+ * Subscribe Popup
+ * 
+ * Auto-subscribe popup that appears after 20 seconds of session time.
+ * Collects email with optional name and profession fields.
+ * 
+ * Publication: https://research.finsoeasy.com
  */
 
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router-dom"
-import { X, Mail } from "lucide-react"
+import { X, Mail, User, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +20,8 @@ const COOLDOWN_DAYS = 7
 export function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false)
   const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [profession, setProfession] = useState("")
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const location = useLocation()
@@ -64,13 +69,20 @@ export function SubscribePopup() {
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "rnd_alpha_popup" }),
+        body: JSON.stringify({ 
+          email, 
+          source: "rnd_alpha_popup",
+          name: name || undefined,
+          profession: profession || undefined
+        }),
       })
       const data = await response.json()
       
       if (data.success) {
         setMessage("Thank you for subscribing!")
         setEmail("")
+        setName("")
+        setProfession("")
         localStorage.setItem("isSubscribed", "true")
         setTimeout(handleClose, 2000)
       } else {
@@ -97,7 +109,7 @@ export function SubscribePopup() {
         >
           <X className="h-4 w-4" />
         </Button>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center pb-4">
           <Mail className="h-10 w-10 text-emerald-500 mx-auto mb-4" />
           <CardTitle className="text-2xl">Stay ahead with R&D Alpha insights</CardTitle>
           <CardDescription>
@@ -110,17 +122,50 @@ export function SubscribePopup() {
             <li>Rigorous point-in-time testing avoids survivorship bias.</li>
             <li>Implementable ETF structure for real-world investment.</li>
           </ul>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="Your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
-              {isSubmitting ? "..." : "Subscribe"}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Email (required) */}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="email"
+                placeholder="Your email address *"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Name (optional) */}
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Your name (optional)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Profession (optional) */}
+            <div className="relative">
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Your profession (optional)"
+                value={profession}
+                onChange={(e) => setProfession(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={isSubmitting} 
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isSubmitting ? "Subscribing..." : "Subscribe"}
             </Button>
           </form>
           {message && (
@@ -138,4 +183,3 @@ export function SubscribePopup() {
     </div>
   )
 }
-

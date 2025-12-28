@@ -34,6 +34,8 @@ SMTP_PASSWORD = os.getenv("FINSOEASY_EMAIL_PASSWORD", "")
 class SubscribeRequest(BaseModel):
     email: EmailStr
     source: Optional[str] = "website"
+    name: Optional[str] = None
+    profession: Optional[str] = None
 
 
 class SubscribeResponse(BaseModel):
@@ -142,12 +144,14 @@ async def subscribe(request: SubscribeRequest, db: AsyncSession = Depends(get_db
     # Insert new subscriber
     await db.execute(
         text("""
-            INSERT INTO subscribers (email, source, subscribed_at, is_active)
-            VALUES (:email, :source, :subscribed_at, true)
+            INSERT INTO subscribers (email, source, name, profession, subscribed_at, is_active)
+            VALUES (:email, :source, :name, :profession, :subscribed_at, true)
         """),
         {
             "email": email,
             "source": request.source,
+            "name": request.name,
+            "profession": request.profession,
             "subscribed_at": datetime.utcnow()
         }
     )
@@ -215,7 +219,7 @@ async def get_all_subscribers(db: AsyncSession) -> List[dict]:
     """Get all active subscribers (used by admin routes)."""
     result = await db.execute(
         text("""
-            SELECT email, source, subscribed_at, is_active 
+            SELECT email, source, name, profession, subscribed_at, is_active 
             FROM subscribers 
             WHERE is_active = true 
             ORDER BY subscribed_at DESC
@@ -226,8 +230,10 @@ async def get_all_subscribers(db: AsyncSession) -> List[dict]:
         {
             "email": row[0],
             "source": row[1],
-            "subscribed_at": row[2].isoformat() if row[2] else None,
-            "is_active": row[3]
+            "name": row[2],
+            "profession": row[3],
+            "subscribed_at": row[4].isoformat() if row[4] else None,
+            "is_active": row[5]
         }
         for row in rows
     ]

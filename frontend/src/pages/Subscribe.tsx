@@ -1,11 +1,21 @@
+/**
+ * Subscribe Page
+ * 
+ * Full-page subscription form with optional name and profession fields.
+ * 
+ * Publication: https://research.finsoeasy.com
+ */
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail, Check, Bell, FileText, TrendingUp, Shield } from "lucide-react"
+import { Mail, Check, Bell, FileText, TrendingUp, Shield, User, Briefcase } from "lucide-react"
 
 export function Subscribe() {
   const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [profession, setProfession] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -18,11 +28,17 @@ export function Subscribe() {
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "subscribe_page" }),
+        body: JSON.stringify({ 
+          email, 
+          source: "subscribe_page",
+          name: name || undefined,
+          profession: profession || undefined
+        }),
       })
       const data = await response.json()
       if (data.success) {
         setSubmitted(true)
+        localStorage.setItem("isSubscribed", "true")
       }
     } catch (error) {
       console.error("Subscribe error:", error)
@@ -85,18 +101,59 @@ export function Subscribe() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email (required) */}
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email Address</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12"
-                />
+                <label htmlFor="email" className="text-sm font-medium">Email Address *</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12 pl-10"
+                  />
+                </div>
               </div>
+              
+              {/* Name (optional) */}
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Name <span className="text-muted-foreground">(optional)</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-12 pl-10"
+                  />
+                </div>
+              </div>
+              
+              {/* Profession (optional) */}
+              <div className="space-y-2">
+                <label htmlFor="profession" className="text-sm font-medium">
+                  Profession <span className="text-muted-foreground">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="profession"
+                    type="text"
+                    placeholder="e.g. Portfolio Manager, Researcher"
+                    value={profession}
+                    onChange={(e) => setProfession(e.target.value)}
+                    className="h-12 pl-10"
+                  />
+                </div>
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium"
@@ -144,4 +201,3 @@ export function Subscribe() {
     </div>
   )
 }
-

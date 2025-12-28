@@ -45,6 +45,8 @@ interface DashboardData {
 interface Subscriber {
   email: string
   source: string
+  name: string | null
+  profession: string | null
   subscribed_at: string
 }
 
@@ -119,7 +121,7 @@ export function Admin() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [cacheClearing, setCacheClearing] = useState(false)
   const [cacheMessage, setCacheMessage] = useState("")
-  
+
   const [subscribersData, setSubscribersData] = useState<SubscribersData | null>(null)
   const [donationsData, setDonationsData] = useState<DonationsData | null>(null)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsSummary | null>(null)
@@ -536,32 +538,32 @@ export function Admin() {
 
       {/* Tab Content */}
       {activeTab === "overview" && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cache Management</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cache Management</CardTitle>
               <CardDescription>Clear application cache to refresh data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          </CardHeader>
+          <CardContent className="space-y-4">
               <Button onClick={handleClearCache} disabled={cacheClearing} variant="outline" className="w-full">
-                {cacheClearing ? (
+              {cacheClearing ? (
                   <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" />Clearing...</span>
-                ) : (
+              ) : (
                   <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4" />Clear Cache</span>
-                )}
-              </Button>
-              {cacheMessage && (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  {cacheMessage}
-                </div>
               )}
-            </CardContent>
-          </Card>
+            </Button>
+            {cacheMessage && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {cacheMessage}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Links</CardTitle>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Links</CardTitle>
               <CardDescription>Navigate to key sections</CardDescription>
             </CardHeader>
             <CardContent>
@@ -755,6 +757,8 @@ export function Admin() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Profession</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Subscribed At</TableHead>
                   </TableRow>
@@ -763,6 +767,8 @@ export function Admin() {
                   {subscribersData.subscribers.map((sub, i) => (
                     <TableRow key={i}>
                       <TableCell className="font-medium">{sub.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{sub.name || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{sub.profession || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
                           {sub.source?.replace(/_/g, " ") || "website"}
@@ -828,7 +834,7 @@ export function Admin() {
               <div className="text-center py-8 text-muted-foreground">
                 <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No donations yet</p>
-              </div>
+            </div>
             )}
           </CardContent>
         </Card>
