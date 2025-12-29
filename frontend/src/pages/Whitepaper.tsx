@@ -167,10 +167,12 @@ function GrowthChart({
   data,
   width = 320,
   height = 140,
+  showLegend = true,
 }: {
   data: Array<{ year: number; portfolioIndex: number; benchmarkIndex: number; sp500Index?: number }>
   width?: number
   height?: number
+  showLegend?: boolean
 }) {
   if (!data || data.length < 2) {
     return (
@@ -192,7 +194,10 @@ function GrowthChart({
     )
   }
 
-  const pad = 12
+  const leftPad = 36 // space for Y-axis labels
+  const rightPad = 12
+  const topPad = 12
+  const bottomPad = 20 // space for X-axis labels
   const xs = data.map((_, i) => i)
   const pVals = data.map((d) => d.portfolioIndex)
   const bVals = data.map((d) => d.benchmarkIndex)
@@ -202,15 +207,21 @@ function GrowthChart({
   const max = Math.max(...all)
   const range = max - min || 1
 
-  const x = (i: number) => pad + (i / Math.max(1, xs.length - 1)) * (width - pad * 2)
-  const y = (v: number) => pad + (1 - (v - min) / range) * (height - pad * 2)
+  const x = (i: number) => leftPad + (i / Math.max(1, xs.length - 1)) * (width - leftPad - rightPad)
+  const y = (v: number) => topPad + (1 - (v - min) / range) * (height - topPad - bottomPad)
   const path = (vals: number[]) => vals.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ")
 
   const pPath = path(pVals)
   const bPath = path(bVals)
   const sPath = sVals.length === data.length ? path(data.map((d) => d.sp500Index as number)) : null
 
+  // Y-axis labels
+  const yLabels = [max, (max + min) / 2, min].map(v => v.toFixed(0) + "x")
+  const startYear = data[0]?.year || 2010
+  const endYear = data[data.length - 1]?.year || 2024
+
   return (
+    <div style={{ position: "relative" }}>
     <svg
       width={width}
       height={height}
@@ -222,14 +233,23 @@ function GrowthChart({
         borderRadius: 12,
       }}
     >
+        {/* Y-axis labels */}
+        <text x={leftPad - 4} y={topPad + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{yLabels[0]}</text>
+        <text x={leftPad - 4} y={(height - bottomPad + topPad) / 2 + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{yLabels[1]}</text>
+        <text x={leftPad - 4} y={height - bottomPad + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{yLabels[2]}</text>
+
+        {/* X-axis labels */}
+        <text x={leftPad} y={height - 6} textAnchor="start" fontSize="9" fill="#94a3b8">{startYear}</text>
+        <text x={width - rightPad} y={height - 6} textAnchor="end" fontSize="9" fill="#94a3b8">{endYear}</text>
+
       {/* grid */}
-      {[0.25, 0.5, 0.75].map((t) => (
+        {[0, 0.5, 1].map((t) => (
         <line
           key={t}
-          x1={pad}
-          x2={width - pad}
-          y1={pad + t * (height - pad * 2)}
-          y2={pad + t * (height - pad * 2)}
+            x1={leftPad}
+            x2={width - rightPad}
+            y1={topPad + t * (height - topPad - bottomPad)}
+            y2={topPad + t * (height - topPad - bottomPad)}
           stroke="#eef2f7"
           strokeWidth="1"
         />
@@ -241,9 +261,28 @@ function GrowthChart({
       <path d={pPath} fill="none" stroke="#059669" strokeWidth="3" />
 
       {/* endpoints */}
-      <circle cx={x(pVals.length - 1)} cy={y(pVals[pVals.length - 1])} r="3" fill="#059669" />
+        <circle cx={x(pVals.length - 1)} cy={y(pVals[pVals.length - 1])} r="4" fill="#059669" />
       <circle cx={x(bVals.length - 1)} cy={y(bVals[bVals.length - 1])} r="3" fill="#2563eb" />
     </svg>
+      {showLegend && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 12, height: 3, background: "#059669", borderRadius: 1 }} />
+            <span style={{ fontSize: 9, color: "#059669", fontWeight: 600 }}>R&D Portfolio</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 12, height: 3, background: "#2563eb", borderRadius: 1 }} />
+            <span style={{ fontSize: 9, color: "#2563eb", fontWeight: 600 }}>Benchmark</span>
+          </div>
+          {sPath && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 12, height: 2, background: "#94a3b8", borderRadius: 1, opacity: 0.7 }} />
+              <span style={{ fontSize: 9, color: "#94a3b8" }}>S&P 500</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -472,7 +511,7 @@ export function Whitepaper() {
   const handlePrint = useCallback(() => {
     // Add class to body for print-specific styling
     document.body.classList.add('printing-whitepaper')
-    window.print()
+      window.print()
     // Remove class after print dialog closes
     setTimeout(() => {
       document.body.classList.remove('printing-whitepaper')
@@ -1245,16 +1284,16 @@ export function Whitepaper() {
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>Annual R&D Premium (Q5 − Q1)</h3>
               <p style={{ fontSize: 11, color: "#64748b", margin: "4px 0 0 0" }}>High R&D quintile minus Low R&D quintile returns</p>
-            </div>
+                    </div>
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 2, background: "#22c55e" }} />
                 <span style={{ fontSize: 11, color: "#64748b" }}>{premiumTimeSeriesData.filter(d => d.premium >= 0).length} Positive</span>
-              </div>
+                  </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 2, background: "#ef4444" }} />
                 <span style={{ fontSize: 11, color: "#64748b" }}>{premiumTimeSeriesData.filter(d => d.premium < 0).length} Negative</span>
-              </div>
+                </div>
             </div>
           </div>
           
@@ -1267,35 +1306,35 @@ export function Whitepaper() {
             <div style={{ position: "absolute", left: 36, right: 0, top: "75%", height: 1, background: "#f1f5f9" }} />
             <div style={{ position: "absolute", left: 36, right: 0, bottom: 0, height: 1, background: "#f1f5f9" }} />
             
-            {/* Y-axis labels */}
+                {/* Y-axis labels */}
             <div style={{ position: "absolute", left: 0, top: -4, fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>+30%</div>
             <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#64748b", fontWeight: 600 }}>0%</div>
             <div style={{ position: "absolute", left: 0, bottom: -4, fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>−30%</div>
             
-            {/* Bars */}
+                {/* Bars */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "100%", marginLeft: 40, paddingRight: 4 }}>
               {premiumTimeSeriesData.map((item, i) => {
                 const maxVal = 30
                 const heightPct = Math.min(50, (Math.abs(item.premium) / maxVal) * 50)
-                const isPositive = item.premium >= 0
-                return (
+                  const isPositive = item.premium >= 0
+                  return (
                   <div key={i} style={{ height: "100%", flex: 1, position: "relative", maxWidth: 24 }}>
-                    <div style={{ 
-                      position: "absolute",
-                      left: "50%",
-                      transform: "translateX(-50%)",
+                        <div style={{ 
+                          position: "absolute",
+                          left: "50%",
+                          transform: "translateX(-50%)",
                       width: "70%",
                       maxWidth: 16,
-                      height: `${heightPct}%`,
+                          height: `${heightPct}%`,
                       background: isPositive ? "linear-gradient(180deg, #22c55e 0%, #16a34a 100%)" : "linear-gradient(0deg, #ef4444 0%, #dc2626 100%)",
                       borderRadius: 3,
                       ...(isPositive ? { bottom: "50%" } : { top: "50%" })
-                    }} />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+                        }} />
+                    </div>
+                  )
+                })}
+              </div>
+              </div>
           
           {/* X-axis */}
           <div style={{ display: "flex", justifyContent: "space-between", marginLeft: 40, paddingRight: 4, borderTop: "1px solid #e2e8f0", paddingTop: 8 }}>
@@ -1333,15 +1372,15 @@ export function Whitepaper() {
                     </div>
                   </div>
                   {item.label && <span style={{ fontSize: 9, color: "#64748b", width: 40 }}>{item.label}</span>}
-                </div>
-              ))}
             </div>
+                ))}
+          </div>
             <div style={{ marginTop: 10, background: "linear-gradient(90deg, #059669 0%, #10b981 100%)", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Spread (Q5−Q1)</span>
               <span style={{ fontSize: 18, fontWeight: 800, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
             </div>
-          </div>
-
+        </div>
+        
           {/* Track Record Details */}
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Track Record ({premiumTimeSeriesData.length} Years)</h3>
@@ -1365,10 +1404,10 @@ export function Whitepaper() {
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: 8, textAlign: "center" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{Math.min(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%</div>
                 <div style={{ fontSize: 9, color: "#64748b" }}>Worst Year</div>
-              </div>
             </div>
           </div>
-
+        </div>
+        
           {/* Key Stats */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "1px solid #a7f3d0", borderRadius: 10, padding: 12, textAlign: "center" }}>
@@ -1433,76 +1472,85 @@ export function Whitepaper() {
         </div>
 
         {/* Main content: sector list + insights */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {/* Sector R&D Intensity List */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16, borderBottom: "2px solid #9333ea", paddingBottom: 8 }}>R&D Intensity by Sector</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-              {(rdBySector || [
-                { sector: "Technology", avg_rd_intensity: 15.2, total_rd_spend: 180000000000, company_count: 78 },
-                { sector: "Healthcare", avg_rd_intensity: 12.8, total_rd_spend: 120000000000, company_count: 62 },
-                { sector: "Consumer Cyclical", avg_rd_intensity: 3.5, total_rd_spend: 25000000000, company_count: 58 },
-                { sector: "Industrials", avg_rd_intensity: 2.8, total_rd_spend: 35000000000, company_count: 72 },
-                { sector: "Communication Services", avg_rd_intensity: 8.2, total_rd_spend: 45000000000, company_count: 26 },
-                { sector: "Financial Services", avg_rd_intensity: 0.5, total_rd_spend: 12000000000, company_count: 68 },
-                { sector: "Consumer Defensive", avg_rd_intensity: 1.2, total_rd_spend: 8000000000, company_count: 34 },
-                { sector: "Energy", avg_rd_intensity: 0.4, total_rd_spend: 5000000000, company_count: 22 },
-              ]).slice(0, 8).map((sector, i) => {
-                const isHighRD = (sector.avg_rd_intensity || 0) > 8
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { sector: "Technology", avg_rd_intensity: 15.2, company_count: 78 },
+                { sector: "Healthcare", avg_rd_intensity: 12.8, company_count: 62 },
+                { sector: "Communication", avg_rd_intensity: 8.2, company_count: 26 },
+                { sector: "Consumer Cyclical", avg_rd_intensity: 3.5, company_count: 58 },
+                { sector: "Industrials", avg_rd_intensity: 2.8, company_count: 72 },
+                { sector: "Consumer Staples", avg_rd_intensity: 1.2, company_count: 34 },
+                { sector: "Financials", avg_rd_intensity: 0.5, company_count: 68 },
+                { sector: "Energy", avg_rd_intensity: 0.4, company_count: 22 },
+              ].map((sector, i) => {
+                const isHighRD = sector.avg_rd_intensity > 8
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 130, fontSize: 13, color: isHighRD ? "#7e22ce" : "#64748b", fontWeight: isHighRD ? 600 : 400 }}>{sector.sector}</div>
-                    <div style={{ flex: 1, height: 24, background: "#e2e8f0", borderRadius: 6, overflow: "hidden" }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 100, fontSize: 12, color: isHighRD ? "#7e22ce" : "#64748b", fontWeight: isHighRD ? 600 : 400 }}>{sector.sector}</div>
+                    <div style={{ flex: 1, height: 20, background: "#e2e8f0", borderRadius: 4, overflow: "hidden" }}>
                       <div style={{ 
                         height: "100%", 
-                        width: `${Math.min(100, (sector.avg_rd_intensity || 0) * 5)}%`,
+                        width: `${Math.min(100, sector.avg_rd_intensity * 5)}%`,
                         background: isHighRD ? "linear-gradient(90deg, #9333ea, #7c3aed)" : "#94a3b8",
-                        borderRadius: 6,
-                        display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8,
-                        minWidth: 40
+                        borderRadius: 4,
+                        display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 6,
+                        minWidth: 36
                       }}>
-                        <span style={{ color: "white", fontSize: 12, fontWeight: 600 }}>{(sector.avg_rd_intensity || 0).toFixed(1)}%</span>
+                        <span style={{ color: "white", fontSize: 11, fontWeight: 600 }}>{sector.avg_rd_intensity.toFixed(1)}%</span>
                       </div>
                     </div>
+                    <div style={{ width: 50, fontSize: 10, color: "#94a3b8", textAlign: "right" }}>{sector.company_count} firms</div>
                   </div>
                 )
               })}
             </div>
-            <div style={{ marginTop: 12, fontSize: 11, color: "#94a3b8", textAlign: "center" }}>
-              Sorted by average R&D intensity across all firms in sector
+            <div style={{ marginTop: 12, padding: 10, background: "#f1f5f9", borderRadius: 8 }}>
+              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Key insight</div>
+              <div style={{ fontSize: 12, color: "#334155" }}>
+                <strong>Tech + Healthcare = 70%</strong> of high-R&D firms. Consider sector caps for diversification.
+              </div>
             </div>
           </div>
           
           {/* Insights */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)", border: "2px solid #9333ea", borderRadius: 16, padding: 20, flex: 1 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#6b21a8", marginBottom: 16 }}>⚠️ Sector Concentration Risk</h3>
-              <p style={{ fontSize: 14, color: "#581c87", lineHeight: 1.7, marginBottom: 16 }}>
-                The top R&D quintile (Q5) is heavily weighted toward <strong>Technology (~45%)</strong> and <strong>Healthcare (~25%)</strong>. 
-                This means the R&D premium may partially reflect sector performance rather than pure R&D effects.
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)", border: "2px solid #9333ea", borderRadius: 16, padding: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#6b21a8", marginBottom: 10 }}>⚠️ Sector Concentration Risk</h3>
+              <p style={{ fontSize: 12, color: "#581c87", lineHeight: 1.6, marginBottom: 10 }}>
+                Q5 (top R&D quintile) is <strong>~70% Tech + Healthcare</strong>. The R&D premium may partially reflect sector tailwinds.
               </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div style={{ background: "white", borderRadius: 10, padding: 12, textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#9333ea" }}>~45%</div>
-                  <div style={{ fontSize: 11, color: "#7e22ce" }}>Technology in Q5</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ background: "white", borderRadius: 8, padding: 10, textAlign: "center" }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>~45%</div>
+                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Technology</div>
                 </div>
-                <div style={{ background: "white", borderRadius: 10, padding: 12, textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#9333ea" }}>~25%</div>
-                  <div style={{ fontSize: 11, color: "#7e22ce" }}>Healthcare in Q5</div>
+                <div style={{ background: "white", borderRadius: 8, padding: 10, textAlign: "center" }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>~25%</div>
+                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Healthcare</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 16, padding: 20, flex: 1 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#047857", marginBottom: 16 }}>✓ Within-Sector Effect Confirmed</h3>
-              <p style={{ fontSize: 14, color: "#065f46", lineHeight: 1.7, marginBottom: 16 }}>
-                <strong>Good news:</strong> The R&D-return relationship holds <em>within</em> sectors. 
-                High-R&D tech firms outperform low-R&D tech firms. Same pattern in Healthcare, Industrials, etc.
+            <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 16, padding: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#047857", marginBottom: 10 }}>✓ Within-Sector Effect Confirmed</h3>
+              <p style={{ fontSize: 12, color: "#065f46", lineHeight: 1.6, marginBottom: 10 }}>
+                The R&D-return relationship holds <em>within</em> sectors. High-R&D tech firms beat low-R&D tech firms.
               </p>
-              <div style={{ background: "#047857", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 13, color: "#a7f3d0", textAlign: "center" }}>
-                  R&D premium is not purely a sector bet: it captures innovation regardless of industry.
+              <div style={{ background: "#047857", borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 11, color: "#a7f3d0", textAlign: "center" }}>
+                  R&D premium captures innovation, not just sector exposure.
                 </div>
+              </div>
+            </div>
+
+            <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>💡 Practical Implication</div>
+              <div style={{ fontSize: 11, color: "#78350f", lineHeight: 1.5 }}>
+                To reduce sector concentration, apply <strong>20% sector caps</strong> during portfolio construction. This preserves ~85% of the R&D premium while improving diversification.
               </div>
             </div>
           </div>
@@ -1552,7 +1600,7 @@ export function Whitepaper() {
         </div>
         
         {/* Two hypotheses */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", border: "2px solid #f59e0b", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1630,11 +1678,11 @@ export function Whitepaper() {
         </div>
 
         {/* Main content */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {/* Portfolio Rules */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16, borderBottom: "2px solid #059669", paddingBottom: 8 }}>Portfolio Construction Rules</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { label: "Universe", value: "S&P 500 constituents", icon: "🏛️" },
                 { label: "Signal", value: "R&D Expense / Revenue (fiscal year)", icon: "📊" },
@@ -1745,7 +1793,7 @@ export function Whitepaper() {
             </div>
             
         {/* Two columns: Methodological + Practical */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {/* Methodological Limitations */}
           <div style={{ background: "#fef2f2", border: "2px solid #fca5a5", borderRadius: 16, padding: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#991b1b", marginBottom: 16, borderBottom: "2px solid #dc2626", paddingBottom: 8 }}>Methodological Limitations</h3>
@@ -1875,24 +1923,34 @@ export function Whitepaper() {
         </div>
 
         {/* Call to action */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", border: "2px solid #3b82f6", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", border: "2px solid #3b82f6", borderRadius: 16, padding: 20 }}>
             <h4 style={{ fontSize: 16, fontWeight: 700, color: "#1e40af", marginBottom: 12 }}>📖 Further Reading</h4>
             <p style={{ fontSize: 13, color: "#1e3a8a", lineHeight: 1.6, marginBottom: 12 }}>
               Full methodology, interactive charts, and company-level data available at:
             </p>
-            <div style={{ background: "#1e40af", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ background: "#1e40af", borderRadius: 10, padding: 12, textAlign: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 16, fontWeight: 600, color: "white" }}>research.finsoeasy.com</span>
+            </div>
+            <div style={{ fontSize: 12, color: "#3b82f6", lineHeight: 1.5 }}>
+              <div style={{ marginBottom: 6 }}>✓ Interactive portfolio builder</div>
+              <div style={{ marginBottom: 6 }}>✓ 500+ company R&D profiles</div>
+              <div>✓ Downloadable data exports</div>
             </div>
           </div>
 
-          <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 16, padding: 20 }}>
             <h4 style={{ fontSize: 16, fontWeight: 700, color: "#047857", marginBottom: 12 }}>📧 Get in Touch</h4>
             <p style={{ fontSize: 13, color: "#065f46", lineHeight: 1.6, marginBottom: 12 }}>
               Questions, feedback, or collaboration opportunities:
             </p>
-            <div style={{ background: "#047857", borderRadius: 10, padding: 12, textAlign: "center" }}>
+            <div style={{ background: "#047857", borderRadius: 10, padding: 12, textAlign: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 16, fontWeight: 600, color: "white" }}>abhishek@finsoeasy.com</span>
+            </div>
+            <div style={{ fontSize: 12, color: "#059669", lineHeight: 1.5 }}>
+              <div style={{ marginBottom: 6 }}>• Institutional inquiries welcome</div>
+              <div style={{ marginBottom: 6 }}>• Research collaboration</div>
+              <div>• Media and speaking requests</div>
             </div>
           </div>
         </div>
@@ -2036,12 +2094,12 @@ export function Whitepaper() {
 
       {/* Print View - always rendered but hidden, shown via CSS @media print */}
       <div className="whitepaper-print-container">
-        {slides.map((slide, i) => (
-          <div key={i} className="whitepaper-print-slide">
-            {slide}
-          </div>
-        ))}
-      </div>
+          {slides.map((slide, i) => (
+            <div key={i} className="whitepaper-print-slide">
+              {slide}
+            </div>
+          ))}
+        </div>
     </div>
   )
 }
