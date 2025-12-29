@@ -1302,7 +1302,7 @@ export function Whitepaper() {
           </div>
           
           {/* Win Rate Track Record */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 12 }}>Track Record: {winRate}% Win Rate</h3>
             
             {/* Win/Loss Summary */}
@@ -1328,18 +1328,18 @@ export function Whitepaper() {
         </div>
         
             {/* Bar Chart - Annual Premium */}
-            <div style={{ background: "white", borderRadius: 8, padding: 12, border: "1px solid #e2e8f0", flex: 1, display: "flex", flexDirection: "column" }}>
+            <div style={{ background: "white", borderRadius: 8, padding: 12, border: "1px solid #e2e8f0", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>Annual R&D Premium (Q5-Q1)</div>
               {/* Chart area */}
-              <div style={{ position: "relative", flex: 1, minHeight: 170 }}>
+              <div style={{ position: "relative", flex: 1, minHeight: 150, maxHeight: 180, overflow: "hidden" }}>
                 {/* Zero line */}
-                <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "#94a3b8" }} />
+                <div style={{ position: "absolute", left: 28, right: 0, top: "50%", height: 1, background: "#94a3b8" }} />
                 {/* Y-axis labels */}
-                <div style={{ position: "absolute", left: -2, top: 0, fontSize: 9, color: "#94a3b8" }}>+25%</div>
-                <div style={{ position: "absolute", left: -2, top: "50%", transform: "translateY(-50%)", fontSize: 9, color: "#94a3b8" }}>0%</div>
-                <div style={{ position: "absolute", left: -2, bottom: 0, fontSize: 9, color: "#94a3b8" }}>-25%</div>
+                <div style={{ position: "absolute", left: 0, top: 0, fontSize: 9, color: "#94a3b8" }}>+25%</div>
+                <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 9, color: "#94a3b8" }}>0%</div>
+                <div style={{ position: "absolute", left: 0, bottom: 0, fontSize: 9, color: "#94a3b8" }}>-25%</div>
                 {/* Bars */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", height: "100%", paddingLeft: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", height: "100%", paddingLeft: 28 }}>
                 {premiumTimeSeriesData.slice(-15).map((item, i) => {
                     const maxVal = 25
                     const heightPct = Math.min(100, (Math.abs(item.premium) / maxVal) * 50)
@@ -1366,14 +1366,14 @@ export function Whitepaper() {
               </div>
               </div>
               {/* X-axis labels */}
-              <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 24, marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 28, marginTop: 4 }}>
                 {premiumTimeSeriesData.slice(-15).map((item, i) => (
                   <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 8, color: "#64748b" }}>
                     {String(item.year).slice(-2)}
-            </div>
+                  </div>
                 ))}
-          </div>
-        </div>
+              </div>
+            </div>
         
             {/* Key insight */}
             <div style={{ marginTop: 8, background: "#eff6ff", borderRadius: 6, padding: 8, textAlign: "center" }}>
@@ -1687,11 +1687,11 @@ export function Whitepaper() {
                   },
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #e2e8f0" }}>
-                    <div>
-                      <div style={{ fontSize: 14, color: "#334155" }}>{item.label}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#334155" }}>{item.label}</div>
                       <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.note}</div>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>{item.value}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "#3b82f6", textAlign: "right", minWidth: 100, flexShrink: 0 }}>{item.value}</div>
                   </div>
                 ))}
               </div>
