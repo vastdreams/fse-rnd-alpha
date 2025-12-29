@@ -1306,7 +1306,7 @@ export function Whitepaper() {
         </div>
 
         {/* Row 2: Quintile Returns + Track Record + Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr", gap: 14, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr", gap: 14 }}>
           
           {/* Quintile Returns */}
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
