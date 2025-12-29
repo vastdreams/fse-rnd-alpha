@@ -412,15 +412,6 @@ export function Whitepaper() {
   // Cap end year at last full calendar year (avoid partial-current-year figures in the whitepaper)
   const sampleEndYear = Math.min(sampleEndYearRaw, 2024)
   
-  // Prepare chart data for quintile returns with fallback defaults
-  const quintileChartData = useMemo(() => [
-    { name: "Q1", return: getQuintileReturn(1) || 8.2, fill: "#f87171" },
-    { name: "Q2", return: getQuintileReturn(2) || 10.1, fill: "#94a3b8" },
-    { name: "Q3", return: getQuintileReturn(3) || 11.8, fill: "#94a3b8" },
-    { name: "Q4", return: getQuintileReturn(4) || 13.4, fill: "#94a3b8" },
-    { name: "Q5", return: getQuintileReturn(5) || 15.3, fill: "#22c55e" },
-  ], [quintileData5yr])
-  
   // Prepare annual premium time series for chart with fallback defaults
   const premiumTimeSeriesData = useMemo(() => {
     if (!factorPremiums || "error" in factorPremiums || factorPremiums.length === 0) {
