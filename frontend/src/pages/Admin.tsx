@@ -1,10 +1,27 @@
 /**
- * Admin Dashboard
+ * PATH: research/frontend/src/pages/Admin.tsx
+ * PURPOSE: Unified Admin Dashboard for Finsoeasy properties
  * 
- * Secure admin interface for platform management.
- * Includes analytics, subscribers, and donations tracking.
+ * WHY: Single admin interface to manage both research.finsoeasy.com and finsoeasy.com
+ *      with consolidated analytics, subscribers, and donations tracking.
  * 
- * Publication: https://research.finsoeasy.com
+ * FLOW:
+ *   ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+ *   │ JWT Login   │───▶│ Site Select  │───▶│ Dashboard   │
+ *   └─────────────┘    └──────────────┘    └─────────────┘
+ *                            │
+ *                    ┌───────┴───────┐
+ *                    ▼               ▼
+ *              Research Site    Main Site
+ *              (API Backend)    (GA4 Only)
+ * 
+ * SITES MANAGED:
+ *   - research.finsoeasy.com (full backend access)
+ *   - finsoeasy.com (GA4 analytics view)
+ * 
+ * DEPENDENCIES:
+ *   - JWT auth via backend /api/admin/* endpoints
+ *   - GA4 property G-3RYSL77PJF for unified analytics
  */
 
 import { useState, useEffect } from "react"
@@ -16,9 +33,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Lock, LogIn, LogOut, Shield, Settings, Database, Activity, RefreshCw,
   CheckCircle, XCircle, Eye, EyeOff, Users, Heart, Mail, DollarSign,
-  BarChart3, Clock, Monitor, Smartphone, Globe, Ban, UserX
+  BarChart3, Clock, Monitor, Smartphone, Globe, Ban, UserX, Building2, FlaskConical, ExternalLink
 } from "lucide-react"
 import { getMyVisitorId } from "@/lib/analytics"
+
+// Unified GA4 Property ID for all Finsoeasy sites
+const UNIFIED_GA4_PROPERTY = "G-3RYSL77PJF"
+
+// Site definitions
+type SiteKey = "research" | "main"
+interface SiteConfig {
+  key: SiteKey
+  name: string
+  domain: string
+  icon: React.ReactNode
+  hasBackend: boolean
+  description: string
+}
+
+const SITES: Record<SiteKey, SiteConfig> = {
+  research: {
+    key: "research",
+    name: "R&D Alpha",
+    domain: "research.finsoeasy.com",
+    icon: <FlaskConical className="w-4 h-4" />,
+    hasBackend: true,
+    description: "Research platform with full backend access"
+  },
+  main: {
+    key: "main",
+    name: "Main Site",
+    domain: "finsoeasy.com",
+    icon: <Building2 className="w-4 h-4" />,
+    hasBackend: false,
+    description: "Main website - GA4 analytics only"
+  }
+}
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
 
@@ -128,6 +178,10 @@ export function Admin() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsSummary | null>(null)
   const [visitorsData, setVisitorsData] = useState<VisitorsData | null>(null)
   const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "subscribers" | "donations">("overview")
+  
+  // Site selector state - allows switching between Finsoeasy properties
+  const [activeSite, setActiveSite] = useState<SiteKey>("research")
+  const currentSite = SITES[activeSite]
 
   const myVisitorId = getMyVisitorId()
 
@@ -426,9 +480,9 @@ export function Admin() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <Shield className="w-8 h-8 text-blue-500" />
-            Admin Dashboard
+            Unified Admin Dashboard
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your R&D Alpha platform</p>
+          <p className="text-muted-foreground mt-1">Manage all Finsoeasy properties</p>
         </div>
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="px-3 py-1">
@@ -442,103 +496,300 @@ export function Admin() {
         </div>
       </div>
 
-      {/* Welcome Card */}
-      {dashboardData && (
-        <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <span className="font-semibold text-lg">{dashboardData.message}</span>
+      {/* Site Selector */}
+      <Card className="bg-gradient-to-r from-slate-900/50 to-slate-800/50 border-slate-700">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="w-4 h-4" />
+              <span>Select Property:</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Last login: {new Date(dashboardData.timestamp).toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
+            <div className="flex gap-2">
+              {Object.values(SITES).map((site) => (
+                <Button
+                  key={site.key}
+                  variant={activeSite === site.key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveSite(site.key)}
+                  className={activeSite === site.key 
+                    ? "bg-blue-600 hover:bg-blue-700" 
+                    : "hover:bg-slate-700"
+                  }
+                >
+                  {site.icon}
+                  <span className="ml-2">{site.name}</span>
+                  {!site.hasBackend && (
+                    <Badge variant="secondary" className="ml-2 text-[10px] px-1">GA4</Badge>
+                  )}
+                </Button>
+              ))}
+            </div>
+            <a 
+              href={`https://${currentSite.domain}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-blue-400 transition-colors"
+            >
+              {currentSite.domain}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Welcome Card - Context aware */}
+      <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                {currentSite.icon}
+                <span className="font-semibold text-lg">
+                  {currentSite.name} Dashboard
+                </span>
+                {currentSite.hasBackend && dashboardData && (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {currentSite.description}
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              GA4: {UNIFIED_GA4_PROPERTY}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Grid - Research Site (with backend) */}
+      {activeSite === "research" && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card className="cursor-pointer hover:border-blue-500 transition-colors" onClick={() => setActiveTab("analytics")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Page Views</CardTitle>
+              <BarChart3 className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-500">{analyticsData?.totals.views || 0}</div>
+              <p className="text-xs text-muted-foreground">Last 30 days</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:border-purple-500 transition-colors" onClick={() => setActiveTab("analytics")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Visitors</CardTitle>
+              <Globe className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-500">{analyticsData?.totals.unique_visitors || 0}</div>
+              <p className="text-xs text-muted-foreground">Unique visitors</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => setActiveTab("subscribers")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
+              <Users className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-500">{subscribersData?.count || 0}</div>
+              <p className="text-xs text-muted-foreground">Newsletter signups</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:border-pink-500 transition-colors" onClick={() => setActiveTab("donations")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Donations</CardTitle>
+              <Heart className="h-4 w-4 text-pink-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-pink-500">${donationsData?.total_amount?.toFixed(2) || "0.00"}</div>
+              <p className="text-xs text-muted-foreground">{donationsData?.count || 0} donations</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg. Time</CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-500">
+                {formatDuration(analyticsData?.totals.avg_duration_seconds || 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Per page</p>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="cursor-pointer hover:border-blue-500 transition-colors" onClick={() => setActiveTab("analytics")}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Page Views</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{analyticsData?.totals.views || 0}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
-          </CardContent>
-        </Card>
+      {/* Main Site Dashboard - GA4 Only */}
+      {activeSite === "main" && (
+        <div className="space-y-6">
+          {/* GA4 Integration Status */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">GA4 Status</CardTitle>
+                <Activity className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold text-amber-500">Pending Setup</div>
+                <p className="text-xs text-muted-foreground">Add tracking code to site</p>
+              </CardContent>
+            </Card>
 
-        <Card className="cursor-pointer hover:border-purple-500 transition-colors" onClick={() => setActiveTab("analytics")}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Visitors</CardTitle>
-            <Globe className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-500">{analyticsData?.totals.unique_visitors || 0}</div>
-            <p className="text-xs text-muted-foreground">Unique visitors</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Property ID</CardTitle>
+                <BarChart3 className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-mono font-semibold text-blue-500">{UNIFIED_GA4_PROPERTY}</div>
+                <p className="text-xs text-muted-foreground">Shared with research site</p>
+              </CardContent>
+            </Card>
 
-        <Card className="cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => setActiveTab("subscribers")}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
-            <Users className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">{subscribersData?.count || 0}</div>
-            <p className="text-xs text-muted-foreground">Newsletter signups</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Server</CardTitle>
+                <Monitor className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-mono font-semibold text-purple-500">13.210.239.75</div>
+                <p className="text-xs text-muted-foreground">Sydney (ap-southeast-2)</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card className="cursor-pointer hover:border-pink-500 transition-colors" onClick={() => setActiveTab("donations")}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Donations</CardTitle>
-            <Heart className="h-4 w-4 text-pink-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-pink-500">${donationsData?.total_amount?.toFixed(2) || "0.00"}</div>
-            <p className="text-xs text-muted-foreground">{donationsData?.count || 0} donations</p>
-          </CardContent>
-        </Card>
+          {/* GA4 Setup Instructions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-500" />
+                GA4 Tracking Setup for finsoeasy.com
+              </CardTitle>
+              <CardDescription>
+                Add unified analytics tracking to the main site
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                <p className="text-xs text-muted-foreground mb-2">Add this to the &lt;head&gt; section:</p>
+                <pre className="text-xs font-mono text-green-400 overflow-x-auto whitespace-pre-wrap">
+{`<!-- Google Analytics - Unified Finsoeasy Property -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${UNIFIED_GA4_PROPERTY}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${UNIFIED_GA4_PROPERTY}', {
+    'cookie_domain': '.finsoeasy.com'
+  });
+</script>`}
+                </pre>
+              </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Time</CardTitle>
-            <Clock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-500">
-              {formatDuration(analyticsData?.totals.avg_duration_seconds || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Per page</p>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex gap-3">
+                <Button variant="outline" asChild>
+                  <a 
+                    href="https://analytics.google.com/analytics/web/#/report-home/a123456789w123456789p123456789" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Open GA4 Dashboard
+                    <ExternalLink className="w-3 h-3 ml-2" />
+                  </a>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(UNIFIED_GA4_PROPERTY)
+                    setCacheMessage("Copied GA4 ID!")
+                    setTimeout(() => setCacheMessage(""), 2000)
+                  }}
+                >
+                  Copy Property ID
+                </Button>
+              </div>
+              
+              {cacheMessage && (
+                <div className="p-2 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                  {cacheMessage}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b overflow-x-auto">
-        <Button variant={activeTab === "overview" ? "default" : "ghost"} onClick={() => setActiveTab("overview")} className="rounded-b-none">
-          <Settings className="w-4 h-4 mr-2" />
-          Overview
-        </Button>
-        <Button variant={activeTab === "analytics" ? "default" : "ghost"} onClick={() => setActiveTab("analytics")} className="rounded-b-none">
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Analytics
-        </Button>
-        <Button variant={activeTab === "subscribers" ? "default" : "ghost"} onClick={() => setActiveTab("subscribers")} className="rounded-b-none">
-          <Users className="w-4 h-4 mr-2" />
-          Subscribers ({subscribersData?.count || 0})
-        </Button>
-        <Button variant={activeTab === "donations" ? "default" : "ghost"} onClick={() => setActiveTab("donations")} className="rounded-b-none">
-          <Heart className="w-4 h-4 mr-2" />
-          Donations ({donationsData?.count || 0})
-        </Button>
-      </div>
+          {/* Quick Links for Main Site */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Deployment Info</CardTitle>
+                <CardDescription>Main site server details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-2 rounded bg-muted">
+                  <span className="text-sm">EC2 Instance</span>
+                  <code className="text-xs font-mono">i-0fa8fcc0259caa8e9</code>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-muted">
+                  <span className="text-sm">Region</span>
+                  <code className="text-xs font-mono">ap-southeast-2</code>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-muted">
+                  <span className="text-sm">SSH Key</span>
+                  <code className="text-xs font-mono">finsoeasy-key.pem</code>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Tab Content */}
-      {activeTab === "overview" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>View Combined Analytics</CardTitle>
+                <CardDescription>See data from both sites in GA4</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Once tracking is added, view combined analytics by:
+                </p>
+                <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                  <li>Go to GA4 → Reports → Engagement</li>
+                  <li>Add comparison by Hostname</li>
+                  <li>Compare research.finsoeasy.com vs finsoeasy.com</li>
+                </ol>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Navigation - Research Site Only */}
+      {activeSite === "research" && (
+        <div className="flex gap-2 border-b overflow-x-auto">
+          <Button variant={activeTab === "overview" ? "default" : "ghost"} onClick={() => setActiveTab("overview")} className="rounded-b-none">
+            <Settings className="w-4 h-4 mr-2" />
+            Overview
+          </Button>
+          <Button variant={activeTab === "analytics" ? "default" : "ghost"} onClick={() => setActiveTab("analytics")} className="rounded-b-none">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Analytics
+          </Button>
+          <Button variant={activeTab === "subscribers" ? "default" : "ghost"} onClick={() => setActiveTab("subscribers")} className="rounded-b-none">
+            <Users className="w-4 h-4 mr-2" />
+            Subscribers ({subscribersData?.count || 0})
+          </Button>
+          <Button variant={activeTab === "donations" ? "default" : "ghost"} onClick={() => setActiveTab("donations")} className="rounded-b-none">
+            <Heart className="w-4 h-4 mr-2" />
+            Donations ({donationsData?.count || 0})
+          </Button>
+        </div>
+      )}
+
+      {/* Tab Content - Research Site Only */}
+      {activeSite === "research" && activeTab === "overview" && (
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -587,7 +838,7 @@ export function Admin() {
         </div>
       )}
 
-      {activeTab === "analytics" && (
+      {activeSite === "research" && activeTab === "analytics" && (
         <div className="space-y-6">
           {/* Page Views by Page */}
           <Card>
@@ -743,7 +994,7 @@ export function Admin() {
         </div>
       )}
 
-      {activeTab === "subscribers" && (
+      {activeSite === "research" && activeTab === "subscribers" && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -794,7 +1045,7 @@ export function Admin() {
         </Card>
       )}
 
-      {activeTab === "donations" && (
+      {activeSite === "research" && activeTab === "donations" && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
