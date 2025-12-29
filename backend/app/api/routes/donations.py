@@ -103,7 +103,7 @@ def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bo
                                             📊 Research Highlight
                                         </div>
                                         <p style="margin: 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
-                                            Our R&D Alpha factor has generated <strong style="color: #60a5fa;">+4.2% annual excess returns</strong> over 25 years by identifying undervalued R&D-intensive companies before the market recognizes their true worth.
+                                            Our R&D Alpha factor has generated <strong style="color: #60a5fa;">~5% annual excess returns</strong> over 25 years by identifying undervalued R&D-intensive companies before the market recognizes their true worth.
                                         </p>
                                     </td>
                                 </tr>

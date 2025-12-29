@@ -764,7 +764,7 @@ async def get_forecast_distribution(
         premium_std = (premium_data[5].get("std", 0) ** 2 + premium_data[1].get("std", 0) ** 2) ** 0.5
     else:
         # Fallback based on research findings
-        base_premium = 7.0  # ~7% annual premium (from Paper 1)
+        base_premium = 5.0  # ~5% annual premium (conservative estimate)
         premium_std = 5.0   # Approximate historical dispersion
     
     # Calculate expected return distribution

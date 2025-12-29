@@ -907,8 +907,8 @@ export function Paper1() {
 
               <h3 className="text-lg font-semibold text-foreground">6.1 Economic Interpretation</h3>
               <p className="text-muted-foreground leading-relaxed">
-                The +7.1% (5yr) to +2.6% (20yr) annual premium for high-R&D companies is economically meaningful. 
-                Over a 20-year period, even the smaller +2.6% annual premium translates to significant cumulative 
+                The ~5% (5yr) to ~2% (20yr) annual premium for high-R&D companies is economically meaningful. 
+                Over a 20-year period, even the smaller ~2% annual premium translates to significant cumulative 
                 outperformance. The magnitude suggests that R&D investment contributes to competitive advantages.
               </p>
 

@@ -144,7 +144,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                                         <table role="presentation" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
-                                                    <strong style="color: #60a5fa;">+4.2% annual alpha</strong> — R&D-intensive portfolios outperform market benchmarks
+                                                    <strong style="color: #60a5fa;">~5% annual alpha</strong> — R&D-intensive portfolios outperform market benchmarks
                                                 </td>
                                             </tr>
                                             <tr>

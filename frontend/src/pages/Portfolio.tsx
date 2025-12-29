@@ -276,8 +276,8 @@ export function Portfolio() {
     if (!backtest?.yearly_data || backtest.yearly_data.length === 0) return []
     
     const lastActualYear = CURRENT_YEAR - 1 // 2024 is the last year with complete data
-    // Use canonical 5-year R&D premium from research (7.11% verified)
-    const forecastPremium = forecastVsActual?.forecast_premium ?? 7.1
+    // Use canonical R&D premium from research (~5% conservative estimate)
+    const forecastPremium = forecastVsActual?.forecast_premium ?? 5.0
     
     
     // Calculate cumulative values starting at 100
@@ -845,7 +845,7 @@ export function Portfolio() {
               <p className="text-xs text-muted-foreground mt-1">
                 This portfolio implements the findings from our <Link to="/papers/main" className="text-blue-500 hover:underline font-medium">R&D Alpha research paper</Link>: 
                 <strong> R&D intensity</strong> (R&D/Revenue) predicts future stock returns with a statistically significant premium of 
-                <strong> +7.5% annually</strong> (t-stat 2.78). Holdings are selected using the July-June return convention 
+                <strong> ~5% annually</strong> (t-stat 2.78). Holdings are selected using the July-June return convention 
                 to avoid look-ahead bias, with delisting adjustments for survivorship correction.
               </p>
             </div>
@@ -1163,7 +1163,7 @@ export function Portfolio() {
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10">
               <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                +{(forecastVsActual?.forecast_premium ?? 7.1).toFixed(1)}%
+                +{(forecastVsActual?.forecast_premium ?? 5.0).toFixed(1)}%
               </p>
               <p className="text-xs text-muted-foreground">R&D Premium</p>
             </div>

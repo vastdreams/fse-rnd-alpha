@@ -1637,7 +1637,7 @@ export function MainPaper() {
                 </p>
                 <div className="grid md:grid-cols-2 gap-3 mb-3">
                   <div className="p-3 rounded bg-green-500/10 border border-green-500/20">
-                    <p className="font-semibold text-green-700 dark:text-green-400 text-xs uppercase tracking-wide mb-1">Annual Premium (7.55%)</p>
+                    <p className="font-semibold text-green-700 dark:text-green-400 text-xs uppercase tracking-wide mb-1">Annual Premium (~5%)</p>
                     <p className="text-xs text-muted-foreground">Re-sorts every year using current R&D intensity. This is the <strong>investable</strong> premium with annual rebalancing.</p>
                   </div>
                   <div className="p-3 rounded bg-slate-500/10 border border-slate-500/20">
@@ -1683,7 +1683,7 @@ export function MainPaper() {
                 <li>
                   <strong className="text-foreground">Horizon decay reflects signal staleness, not strategy failure:</strong>{" "}
                   {headlinePremiums.some((h) => typeof h.premiumPct === "number")
-                    ? `the 20-year rolling premium (~1.7%) is lower because quintile assignments are fixed at window start and never updated. An investable strategy with annual rebalancing captures the full annual premium (~7.55%).`
+                    ? `the 20-year rolling premium (~1.7%) is lower because quintile assignments are fixed at window start and never updated. An investable strategy with annual rebalancing captures the full annual premium (~5%).`
                     : "long-horizon rolling windows show lower premiums because the sort is never updated; investable strategies with annual rebalancing capture the full annual premium."}
                 </li>
               </ul>
@@ -2848,11 +2848,11 @@ export function MainPaper() {
                   </p>
                   <div className="grid md:grid-cols-3 gap-2 text-xs">
                     <div className="p-2 rounded bg-green-500/10 border border-green-500/20 text-center">
-                      <p className="font-bold text-green-700 dark:text-green-400">Annual (7.55%)</p>
+                      <p className="font-bold text-green-700 dark:text-green-400">Annual (~5%)</p>
                       <p className="text-muted-foreground">Re-sort every year</p>
                     </div>
                     <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-center">
-                      <p className="font-bold text-amber-700 dark:text-amber-400">5-Year (5.37%)</p>
+                      <p className="font-bold text-amber-700 dark:text-amber-400">5-Year (~4%)</p>
                       <p className="text-muted-foreground">Sort once, hold 5 years</p>
                     </div>
                     <div className="p-2 rounded bg-slate-500/10 border border-slate-500/20 text-center">
