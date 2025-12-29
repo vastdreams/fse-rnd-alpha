@@ -1,23 +1,26 @@
 /**
  * PATH: research/frontend/src/pages/Admin.tsx
- * PURPOSE: Unified Admin Dashboard for Finsoeasy properties
+ * PURPOSE: Unified Admin Dashboard for Finsoeasy properties and clients
  * 
- * WHY: Single admin interface to manage both research.finsoeasy.com and finsoeasy.com
- *      with consolidated analytics, subscribers, and donations tracking.
+ * WHY: Single admin interface to manage:
+ *      - research.finsoeasy.com (R&D Alpha research platform)
+ *      - finsoeasy.com (main corporate site)
+ *      - Client portals (Oz Premium Finance, EcoJV Project)
  * 
  * FLOW:
  *   ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
- *   │ JWT Login   │───▶│ Site Select  │───▶│ Dashboard   │
- *   └─────────────┘    └──────────────┘    └─────────────┘
+ *   │ JWT Login   │───▶│ Site/Client  │───▶│ Dashboard   │
+ *   └─────────────┘    │   Select     │    └─────────────┘
+ *                      └──────────────┘
  *                            │
- *                    ┌───────┴───────┐
- *                    ▼               ▼
- *              Research Site    Main Site
- *              (API Backend)    (GA4 Only)
+ *          ┌─────────────────┼─────────────────┐
+ *          ▼                 ▼                 ▼
+ *     Research Site    Main Site         Client Portals
+ *     (Full API)       (GA4 Only)        (Portal Mgmt)
  * 
- * SITES MANAGED:
- *   - research.finsoeasy.com (full backend access)
- *   - finsoeasy.com (GA4 analytics view)
+ * CLIENTS MANAGED:
+ *   - Oz Premium Finance (Australian warehouse credit)
+ *   - EcoJV Project (Indonesia/Brunei renewable energy)
  * 
  * DEPENDENCIES:
  *   - JWT auth via backend /api/admin/* endpoints
@@ -33,7 +36,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Lock, LogIn, LogOut, Shield, Settings, Database, Activity, RefreshCw,
   CheckCircle, XCircle, Eye, EyeOff, Users, Heart, Mail, DollarSign,
-  BarChart3, Clock, Monitor, Smartphone, Globe, Ban, UserX, Building2, FlaskConical, ExternalLink
+  BarChart3, Clock, Monitor, Smartphone, Globe, Ban, UserX, Building2, FlaskConical, ExternalLink,
+  Briefcase, Leaf, CreditCard, FileText, Key, Copy, Link2
 } from "lucide-react"
 import { getMyVisitorId } from "@/lib/analytics"
 
@@ -41,7 +45,7 @@ import { getMyVisitorId } from "@/lib/analytics"
 const UNIFIED_GA4_PROPERTY = "G-3RYSL77PJF"
 
 // Site definitions
-type SiteKey = "research" | "main"
+type SiteKey = "research" | "main" | "clients"
 interface SiteConfig {
   key: SiteKey
   name: string
@@ -67,8 +71,72 @@ const SITES: Record<SiteKey, SiteConfig> = {
     icon: <Building2 className="w-4 h-4" />,
     hasBackend: false,
     description: "Main website - GA4 analytics only"
+  },
+  clients: {
+    key: "clients",
+    name: "Clients",
+    domain: "finsoeasy.com",
+    icon: <Briefcase className="w-4 h-4" />,
+    hasBackend: false,
+    description: "Manage client portals and access"
   }
 }
+
+// Client portal definitions
+interface ClientPortal {
+  id: string
+  name: string
+  slug: string
+  description: string
+  icon: React.ReactNode
+  password: string
+  portalUrl: string
+  status: "active" | "pending" | "inactive"
+  sector: string
+  location: string
+  afsl?: string
+  documents: string[]
+}
+
+const CLIENT_PORTALS: ClientPortal[] = [
+  {
+    id: "ozpremium",
+    name: "Oz Premium Finance",
+    slug: "ozpremium",
+    description: "Warehouse Credit Package - Premium funding trust for insurance premium financing",
+    icon: <CreditCard className="w-5 h-5 text-blue-400" />,
+    password: "Oz123",
+    portalUrl: "https://finsoeasy.com/ozpremium",
+    status: "active",
+    sector: "Financial Services",
+    location: "Sydney, Australia",
+    afsl: "556051",
+    documents: [
+      "Information Memorandum V7a",
+      "Warehouse Model (Draft)",
+      "Credit Underwriting Policy",
+      "AML-CTF Policy",
+      "Compliance Plan & Framework"
+    ]
+  },
+  {
+    id: "ecojv",
+    name: "EcoJV Project",
+    slug: "ecojvproject", 
+    description: "Indonesia/Brunei renewable energy joint venture - Solar and sustainability infrastructure",
+    icon: <Leaf className="w-5 h-5 text-green-400" />,
+    password: "eco",
+    portalUrl: "https://finsoeasy.com/ecojvproject",
+    status: "active",
+    sector: "Renewable Energy",
+    location: "Indonesia / Brunei",
+    documents: [
+      "Investor Deck",
+      "Project Overview",
+      "JV Structure"
+    ]
+  }
+]
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
 
@@ -763,6 +831,224 @@ export function Admin() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* Clients Dashboard */}
+      {activeSite === "clients" && (
+        <div className="space-y-6">
+          {/* Client Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
+                <Briefcase className="h-4 w-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-500">
+                  {CLIENT_PORTALS.filter(c => c.status === "active").length}
+                </div>
+                <p className="text-xs text-muted-foreground">With live investor portals</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+                <FileText className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-500">
+                  {CLIENT_PORTALS.reduce((acc, c) => acc + c.documents.length, 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">Across all client portals</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Sectors</CardTitle>
+                <Globe className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-500">
+                  {new Set(CLIENT_PORTALS.map(c => c.sector)).size}
+                </div>
+                <p className="text-xs text-muted-foreground">Financial Services, Renewables</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Client Portals List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-blue-500" />
+                Client Portals
+              </CardTitle>
+              <CardDescription>Manage investor portals and access credentials</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {CLIENT_PORTALS.map((client) => (
+                  <div 
+                    key={client.id}
+                    className="p-4 rounded-lg border border-slate-700 bg-slate-900/50 hover:border-slate-600 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center">
+                          {client.icon}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg">{client.name}</h3>
+                            <Badge 
+                              variant={client.status === "active" ? "default" : "secondary"}
+                              className={client.status === "active" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : ""}
+                            >
+                              {client.status}
+                            </Badge>
+                            {client.afsl && (
+                              <Badge variant="outline" className="text-xs">
+                                AFSL {client.afsl}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">{client.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Globe className="w-3 h-3" />
+                              {client.location}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3 h-3" />
+                              {client.documents.length} documents
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => window.open(client.portalUrl, '_blank')}
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View Portal
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Credentials Section */}
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="p-3 rounded-lg bg-slate-800/50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Portal URL</p>
+                              <code className="text-sm font-mono text-blue-400">{client.portalUrl}</code>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                navigator.clipboard.writeText(client.portalUrl)
+                                setCacheMessage(`Copied ${client.name} URL!`)
+                                setTimeout(() => setCacheMessage(""), 2000)
+                              }}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-slate-800/50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Access Password</p>
+                              <code className="text-sm font-mono text-amber-400">{client.password}</code>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                navigator.clipboard.writeText(client.password)
+                                setCacheMessage(`Copied ${client.name} password!`)
+                                setTimeout(() => setCacheMessage(""), 2000)
+                              }}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Documents List */}
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                      <p className="text-xs text-muted-foreground mb-2">Available Documents:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {client.documents.map((doc, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            <FileText className="w-3 h-3 mr-1" />
+                            {doc}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Access Control</CardTitle>
+                <CardDescription>Manage client portal credentials</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Client passwords are stored in the main finsoeasy.com codebase:
+                </p>
+                <div className="p-3 bg-slate-800/50 rounded-lg">
+                  <code className="text-xs text-muted-foreground">
+                    /src/app/ozpremium/page.tsx<br/>
+                    /src/app/ecojvproject/page.tsx
+                  </code>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  To change passwords, update the CORRECT_PASSWORD constant in each file and redeploy.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Add New Client</CardTitle>
+                <CardDescription>Steps to onboard a new investor portal</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                  <li>Create investor deck (HTML or embedded doc)</li>
+                  <li>Add route in <code className="text-xs">/src/app/[client]/page.tsx</code></li>
+                  <li>Set password protection</li>
+                  <li>Deploy and test portal access</li>
+                  <li>Update this admin (CLIENT_PORTALS array)</li>
+                </ol>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Copy Notification */}
+          {cacheMessage && (
+            <div className="fixed bottom-4 right-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-center gap-2 animate-in slide-in-from-bottom-4">
+              <CheckCircle className="w-4 h-4" />
+              {cacheMessage}
+            </div>
+          )}
         </div>
       )}
 
