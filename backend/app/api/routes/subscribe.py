@@ -25,9 +25,8 @@ from app.api.deps import get_db
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Resend API configuration
+# Resend API configuration - set dynamically in function to ensure env is loaded
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-resend.api_key = RESEND_API_KEY
 
 # Secret for generating unsubscribe tokens
 UNSUBSCRIBE_SECRET = os.getenv("SECRET_KEY", "fse-research-secret-2025")
@@ -83,9 +82,13 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
     Send a welcome email to new newsletter subscriber via Resend.
     Includes R&D Alpha research highlights and unsubscribe link.
     """
-    if not RESEND_API_KEY:
+    # Set API key dynamically to ensure env is loaded
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
         logger.warning("Resend API key not configured, skipping email")
         return False
+    
+    resend.api_key = api_key
     
     try:
         greeting = f"Hi {first_name}," if first_name else "Hello,"

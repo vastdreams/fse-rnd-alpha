@@ -24,9 +24,7 @@ from app.api.routes.subscribe import add_subscriber_to_db
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Resend API configuration
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-resend.api_key = RESEND_API_KEY
+# Resend API configuration - set dynamically in function to ensure env is loaded
 
 # Lazy import stripe
 _stripe = None
@@ -42,10 +40,13 @@ def get_stripe():
 
 def send_donation_thank_you_email(to_email: str, amount: float, is_recurring: bool = False) -> bool:
     """Send a thank you email to donor via Resend. Includes R&D Alpha research highlights."""
-    if not RESEND_API_KEY:
+    # Set API key dynamically to ensure env is loaded
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
         logger.warning("Resend API key not configured, skipping donation email")
         return False
     
+    resend.api_key = api_key
     donation_type = "monthly supporter" if is_recurring else "one-time"
     amount_str = f"${amount:.2f}"
     
