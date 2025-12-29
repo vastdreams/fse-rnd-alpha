@@ -312,11 +312,6 @@ export function Whitepaper() {
     queryFn: () => api.getCohortSummary(),
   })
 
-  const { data: rdBySector } = useQuery({
-    queryKey: ["rdBySector"],
-    queryFn: () => api.getRDBySector(),
-  })
-
   // Extract metrics from snapshot
   const payload = snapshot?.payload
   const anovaData = payload?.aggregate_anova
