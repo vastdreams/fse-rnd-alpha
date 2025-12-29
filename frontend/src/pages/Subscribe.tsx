@@ -2,11 +2,13 @@
  * Subscribe Page
  * 
  * Full-page subscription form with optional name and profession fields.
+ * Redirects back to referrer page after successful subscription.
  * 
  * Publication: https://research.finsoeasy.com
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +21,22 @@ export function Subscribe() {
   const [profession, setProfession] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [countdown, setCountdown] = useState(3)
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  
+  // Get the return URL from query params or default to home
+  const returnTo = searchParams.get("from") || "/"
+
+  // Countdown and redirect after successful subscription
+  useEffect(() => {
+    if (submitted && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (submitted && countdown === 0) {
+      navigate(returnTo)
+    }
+  }, [submitted, countdown, navigate, returnTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,9 +88,20 @@ export function Subscribe() {
             <p className="text-muted-foreground mb-4">
               Thank you for subscribing to R&D Alpha research updates.
             </p>
-            <p className="text-sm text-muted-foreground">
-              Check your inbox at <strong className="text-foreground">{email}</strong> for a confirmation email.
+            <p className="text-sm text-muted-foreground mb-4">
+              Check your inbox at <strong className="text-foreground">{email}</strong> for a welcome email.
             </p>
+            <p className="text-xs text-muted-foreground">
+              Redirecting in {countdown}...
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+              onClick={() => navigate(returnTo)}
+            >
+              Continue Now
+            </Button>
           </CardContent>
         </Card>
       </div>

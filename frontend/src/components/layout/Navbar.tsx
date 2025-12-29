@@ -230,7 +230,7 @@ export function Navbar() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link to="/subscribe">
+                <Link to={`/subscribe?from=${encodeURIComponent(location.pathname)}`}>
                   <Button
                     variant="ghost"
                     size="sm"

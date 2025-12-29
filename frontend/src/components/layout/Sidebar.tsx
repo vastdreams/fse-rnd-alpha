@@ -420,20 +420,20 @@ export function Sidebar() {
         {/* Subscribe & Donate Row */}
         {!collapsed && (
           <div className="flex gap-2">
-            <a
-              href="/subscribe"
+            <Link
+              to={`/subscribe?from=${encodeURIComponent(location.pathname)}`}
               className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20"
             >
               <Mail className="w-3.5 h-3.5" />
               Subscribe
-            </a>
-            <a
-              href="/donate"
+            </Link>
+            <Link
+              to="/donate"
               className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-500/20"
             >
               <Heart className="w-3.5 h-3.5" />
               Donate
-            </a>
+            </Link>
           </div>
         )}
         
@@ -442,9 +442,9 @@ export function Sidebar() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a href="/subscribe" className="flex items-center justify-center p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                  <Link to={`/subscribe?from=${encodeURIComponent(location.pathname)}`} className="flex items-center justify-center p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400">
                     <Mail className="w-4 h-4" />
-                  </a>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">Subscribe to Research</TooltipContent>
               </Tooltip>
@@ -452,9 +452,9 @@ export function Sidebar() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a href="/donate" className="flex items-center justify-center p-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400">
+                  <Link to="/donate" className="flex items-center justify-center p-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400">
                     <Heart className="w-4 h-4" />
-                  </a>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">Support Our Research</TooltipContent>
               </Tooltip>
