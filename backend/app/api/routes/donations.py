@@ -325,21 +325,26 @@ async def stripe_webhook(
                 "created_at": datetime.utcnow()
             }
         )
+        await db.commit()
+        logger.info(f"Donation stored in database: {stripe_session_id}")
         
         if customer_email:
             # Send thank you email
-            send_donation_thank_you_email(customer_email, amount_dollars, is_recurring)
+            email_sent = send_donation_thank_you_email(customer_email, amount_dollars, is_recurring)
+            logger.info(f"Thank you email sent: {email_sent}")
             # Auto-subscribe donor
             source = "recurring_donation" if is_recurring else "one_time_donation"
             await add_subscriber_to_db(db, customer_email, source)
+            logger.info(f"Donor auto-subscribed: {customer_email}")
     
     elif event.type == "invoice.paid":
         invoice = event.data.object
         amount_cents = invoice.get("amount_paid", 0)
         amount_dollars = amount_cents / 100 if amount_cents else 0
         customer_email = invoice.get("customer_email")
+        invoice_id = invoice.get("id")
         
-        logger.info(f"Subscription payment: {invoice.id}, ${amount_dollars}")
+        logger.info(f"Subscription invoice paid: {invoice_id}, ${amount_dollars}, {customer_email}")
         
         # Store recurring payment
         await db.execute(
@@ -350,13 +355,26 @@ async def stripe_webhook(
             {
                 "email": customer_email or "unknown",
                 "amount": amount_dollars,
-                "stripe_session_id": invoice.get("id"),
+                "stripe_session_id": invoice_id,
                 "created_at": datetime.utcnow()
             }
         )
+        await db.commit()
+        logger.info(f"Recurring payment stored: {invoice_id}")
         
         if customer_email:
-            send_donation_thank_you_email(customer_email, amount_dollars, is_recurring=True)
+            email_sent = send_donation_thank_you_email(customer_email, amount_dollars, is_recurring=True)
+            logger.info(f"Monthly thank you email sent: {email_sent}")
+    
+    elif event.type == "customer.subscription.deleted":
+        subscription = event.data.object
+        customer_email = subscription.get("customer_email")
+        logger.info(f"Subscription cancelled: {subscription.get('id')}, {customer_email}")
+    
+    elif event.type == "invoice.payment_failed":
+        invoice = event.data.object
+        customer_email = invoice.get("customer_email")
+        logger.warning(f"Payment failed for subscription: {invoice.get('id')}, {customer_email}")
     
     return {"status": "success", "event": event.type}
 
