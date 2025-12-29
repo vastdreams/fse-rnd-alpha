@@ -1305,13 +1305,13 @@ export function Whitepaper() {
           </div>
         </div>
 
-        {/* Row 2: Quintile Returns + Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, flex: 1 }}>
+        {/* Row 2: Quintile Returns + Track Record + Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr", gap: 14, flex: 1 }}>
           
           {/* Quintile Returns */}
-          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>Quintile Returns (5-Year Rolling)</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Quintile Returns (5-Year Rolling)</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {[
                 { name: "Q5", label: "High R&D", color: "#22c55e", return: getQuintileReturn(5) },
                 { name: "Q4", label: "", color: "#84cc16", return: getQuintileReturn(4) },
@@ -1319,48 +1319,73 @@ export function Whitepaper() {
                 { name: "Q2", label: "", color: "#f97316", return: getQuintileReturn(2) },
                 { name: "Q1", label: "Low R&D", color: "#ef4444", return: getQuintileReturn(1) },
               ].map((item) => (
-                <div key={item.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, fontSize: 13, fontWeight: 700, color: item.color }}>{item.name}</div>
-                  <div style={{ flex: 1, height: 28, background: "#f1f5f9", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                <div key={item.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 26, fontSize: 12, fontWeight: 700, color: item.color }}>{item.name}</div>
+                  <div style={{ flex: 1, height: 22, background: "#f1f5f9", borderRadius: 4, overflow: "hidden", position: "relative" }}>
                     <div style={{ 
                       position: "absolute", left: 0, top: 0, height: "100%",
-                      width: `${Math.max(25, (item.return / 20) * 100)}%`,
+                      width: `${Math.max(30, (item.return / 18) * 100)}%`,
                       background: `linear-gradient(90deg, ${item.color}, ${item.color}cc)`,
-                      borderRadius: 6,
-                      display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10
+                      borderRadius: 4,
+                      display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8
                     }}>
-                      <span style={{ color: "white", fontSize: 13, fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>{item.return.toFixed(1)}%</span>
+                      <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>{item.return.toFixed(1)}%</span>
                     </div>
                   </div>
-                  {item.label && <span style={{ fontSize: 10, color: "#64748b", width: 50 }}>{item.label}</span>}
+                  {item.label && <span style={{ fontSize: 9, color: "#64748b", width: 40 }}>{item.label}</span>}
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 12, background: "linear-gradient(90deg, #059669 0%, #10b981 100%)", borderRadius: 8, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Premium (Q5 − Q1)</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
+            <div style={{ marginTop: 10, background: "linear-gradient(90deg, #059669 0%, #10b981 100%)", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Spread (Q5−Q1)</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
             </div>
           </div>
 
-          {/* Stats Summary */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Win Rate Big Number */}
-            <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "1px solid #a7f3d0", borderRadius: 12, padding: 20, textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 48, fontWeight: 800, color: "#059669", lineHeight: 1 }}>{winRate}%</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#047857", marginTop: 4 }}>Win Rate</div>
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{premiumTimeSeriesData.filter(d => d.premium >= 0).length} of {premiumTimeSeriesData.length} years positive</div>
+          {/* Track Record Details */}
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Track Record ({premiumTimeSeriesData.length} Years)</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: 10, textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#16a34a" }}>{premiumTimeSeriesData.filter(d => d.premium >= 0).length}</div>
+                <div style={{ fontSize: 10, color: "#15803d", fontWeight: 600 }}>Winning</div>
+                <div style={{ fontSize: 9, color: "#64748b" }}>Avg +{(premiumTimeSeriesData.filter(d => d.premium >= 0).reduce((a, b) => a + b.premium, 0) / Math.max(1, premiumTimeSeriesData.filter(d => d.premium >= 0).length)).toFixed(1)}%</div>
+              </div>
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 10, textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#dc2626" }}>{premiumTimeSeriesData.filter(d => d.premium < 0).length}</div>
+                <div style={{ fontSize: 10, color: "#b91c1c", fontWeight: 600 }}>Losing</div>
+                <div style={{ fontSize: 9, color: "#64748b" }}>Avg {(premiumTimeSeriesData.filter(d => d.premium < 0).reduce((a, b) => a + b.premium, 0) / Math.max(1, premiumTimeSeriesData.filter(d => d.premium < 0).length)).toFixed(1)}%</div>
+              </div>
             </div>
-            
-            {/* Key Stats Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#2563eb" }}>+{rdPremium.toFixed(1)}%</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>Avg Premium</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>+{Math.max(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%</div>
+                <div style={{ fontSize: 9, color: "#64748b" }}>Best Year</div>
               </div>
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#7c3aed" }}>t={tStat.toFixed(1)}</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>t-statistic</div>
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{Math.min(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%</div>
+                <div style={{ fontSize: 9, color: "#64748b" }}>Worst Year</div>
               </div>
+            </div>
+          </div>
+
+          {/* Key Stats */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "1px solid #a7f3d0", borderRadius: 10, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: "#059669", lineHeight: 1 }}>{winRate}%</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#047857", marginTop: 2 }}>Win Rate</div>
+            </div>
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>+{rdPremium.toFixed(1)}%</div>
+              <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>Avg Annual Premium</div>
+            </div>
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>t={tStat.toFixed(1)}</div>
+              <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>t-statistic (NW)</div>
+            </div>
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0891b2" }}>{etaSquared20yr.toFixed(2)}</div>
+              <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>Effect Size (η²)</div>
             </div>
           </div>
         </div>
