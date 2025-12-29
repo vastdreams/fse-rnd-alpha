@@ -1246,165 +1246,147 @@ export function Whitepaper() {
     // SLIDE 6: VISUAL EVIDENCE - Charts and time series (full page)
     // ═══════════════════════════════════════════════════════════════════════════
     <Slide key="charts" slideNumber={6} totalSlides={TOTAL_SLIDES} title="Visual Evidence" subtitle="Premium persistence across time and quintiles" accent="blue">
-      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        {/* Top stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
-          <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#047857" }}>{winRate}%</div>
-            <div style={{ fontSize: 11, color: "#065f46" }}>Win Rate</div>
-            <div style={{ fontSize: 10, color: "#6b7280" }}>Years with + premium</div>
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Top stats row - compact */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+          <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, padding: 10, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#047857" }}>{winRate}%</div>
+            <div style={{ fontSize: 10, color: "#065f46" }}>Win Rate</div>
           </div>
-          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#1d4ed8" }}>+{rdPremium.toFixed(1)}%</div>
-            <div style={{ fontSize: 11, color: "#1e40af" }}>Avg Premium</div>
-            <div style={{ fontSize: 10, color: "#6b7280" }}>Q5 minus Q1</div>
+          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: 10, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#1d4ed8" }}>+{rdPremium.toFixed(1)}%</div>
+            <div style={{ fontSize: 10, color: "#1e40af" }}>Avg Premium</div>
           </div>
-          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#7e22ce" }}>{etaSquared20yr.toFixed(2)}</div>
-            <div style={{ fontSize: 11, color: "#6b21a8" }}>Effect Size</div>
-            <div style={{ fontSize: 10, color: "#6b7280" }}>20-year η²</div>
+          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 8, padding: 10, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#7e22ce" }}>{etaSquared20yr.toFixed(2)}</div>
+            <div style={{ fontSize: 10, color: "#6b21a8" }}>Effect Size (η²)</div>
           </div>
-          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#b45309" }}>t={tStat.toFixed(1)}</div>
-            <div style={{ fontSize: 11, color: "#92400e" }}>t-statistic</div>
-            <div style={{ fontSize: 10, color: "#6b7280" }}>Newey-West</div>
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: 10, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>t={tStat.toFixed(1)}</div>
+            <div style={{ fontSize: 10, color: "#92400e" }}>t-statistic</div>
           </div>
         </div>
 
-        {/* Main charts area */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, flex: 1 }}>
-          {/* Quintile Returns Bar Chart */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>Quintile Returns (5-Year Rolling)</h3>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
+        {/* Full-width Annual R&D Premium Chart */}
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: 0 }}>Annual R&D Premium (Q5 − Q1)</h3>
+            <div style={{ display: "flex", gap: 16, fontSize: 11 }}>
+              <span style={{ color: "#16a34a" }}>● {premiumTimeSeriesData.filter(d => d.premium >= 0).length} Positive Years</span>
+              <span style={{ color: "#dc2626" }}>● {premiumTimeSeriesData.filter(d => d.premium < 0).length} Negative Years</span>
+            </div>
+          </div>
+          {/* Chart area */}
+          <div style={{ position: "relative", height: 140 }}>
+            {/* Zero line */}
+            <div style={{ position: "absolute", left: 32, right: 0, top: "50%", height: 1, background: "#94a3b8" }} />
+            {/* Y-axis labels */}
+            <div style={{ position: "absolute", left: 0, top: 0, fontSize: 10, color: "#94a3b8" }}>+25%</div>
+            <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#94a3b8" }}>0%</div>
+            <div style={{ position: "absolute", left: 0, bottom: 0, fontSize: 10, color: "#94a3b8" }}>−25%</div>
+            {/* Bars - show all years */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", height: "100%", marginLeft: 32 }}>
+              {premiumTimeSeriesData.map((item, i) => {
+                const maxVal = 25
+                const heightPct = Math.min(100, (Math.abs(item.premium) / maxVal) * 50)
+                const isPositive = item.premium >= 0
+                return (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", flex: 1, position: "relative" }}>
+                    <div style={{ 
+                      position: "absolute",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: Math.max(8, Math.min(20, 300 / premiumTimeSeriesData.length)),
+                      height: `${heightPct}%`,
+                      background: isPositive ? "#22c55e" : "#ef4444",
+                      borderRadius: isPositive ? "2px 2px 0 0" : "0 0 2px 2px",
+                      ...(isPositive ? { bottom: "50%" } : { top: "50%" })
+                    }} />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          {/* X-axis labels */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginLeft: 32, marginTop: 4, fontSize: 9, color: "#64748b" }}>
+            <span>{premiumTimeSeriesData[0]?.year}</span>
+            <span>{premiumTimeSeriesData[Math.floor(premiumTimeSeriesData.length / 2)]?.year}</span>
+            <span>{premiumTimeSeriesData[premiumTimeSeriesData.length - 1]?.year}</span>
+          </div>
+        </div>
+
+        {/* Bottom row: Quintile Returns + Win/Loss Summary */}
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, flex: 1 }}>
+          {/* Quintile Returns - Horizontal compact */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Quintile Returns (5-Year Rolling)</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
               {quintileChartData.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 40, fontSize: 14, fontWeight: 600, color: item.fill }}>{item.name}</div>
-                  <div style={{ flex: 1, height: 36, background: "#e2e8f0", borderRadius: 8, overflow: "hidden", position: "relative" }}>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 28, fontSize: 12, fontWeight: 600, color: item.fill }}>{item.name}</div>
+                  <div style={{ flex: 1, height: 24, background: "#e2e8f0", borderRadius: 6, overflow: "hidden", position: "relative" }}>
                     <div style={{ 
                       position: "absolute", 
                       left: 0, top: 0, height: "100%",
-                      width: `${Math.max(15, (item.return / 22) * 100)}%`,
+                      width: `${Math.max(20, (item.return / 22) * 100)}%`,
                       background: `linear-gradient(90deg, ${item.fill}, ${item.fill}dd)`,
-                      borderRadius: 8,
-                      display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12
+                      borderRadius: 6,
+                      display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8
                     }}>
-                      <span style={{ color: "white", fontSize: 16, fontWeight: 700 }}>{item.return.toFixed(1)}%</span>
+                      <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>{item.return.toFixed(1)}%</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 16, background: "#047857", borderRadius: 10, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "#a7f3d0" }}>Spread (Q5 - Q1)</span>
-              <span style={{ fontSize: 20, fontWeight: 700, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
+            <div style={{ marginTop: 10, background: "#047857", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#a7f3d0" }}>Spread (Q5 − Q1)</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
             </div>
           </div>
-          
-          {/* Win Rate Track Record */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 12 }}>Track Record: {winRate}% Win Rate</h3>
-            
-            {/* Win/Loss Summary */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
+
+          {/* Win/Loss Summary */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Track Record</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: 12, textAlign: "center", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#16a34a" }}>
                   {premiumTimeSeriesData.filter(d => d.premium >= 0).length}
-                    </div>
+                </div>
                 <div style={{ fontSize: 11, color: "#15803d" }}>Winning Years</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "#64748b" }}>
                   Avg: +{(premiumTimeSeriesData.filter(d => d.premium >= 0).reduce((a, b) => a + b.premium, 0) / Math.max(1, premiumTimeSeriesData.filter(d => d.premium >= 0).length)).toFixed(1)}%
+                </div>
               </div>
-              </div>
-              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#dc2626" }}>
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 12, textAlign: "center", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>
                   {premiumTimeSeriesData.filter(d => d.premium < 0).length}
-            </div>
+                </div>
                 <div style={{ fontSize: 11, color: "#b91c1c" }}>Losing Years</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "#64748b" }}>
                   Avg: {(premiumTimeSeriesData.filter(d => d.premium < 0).reduce((a, b) => a + b.premium, 0) / Math.max(1, premiumTimeSeriesData.filter(d => d.premium < 0).length)).toFixed(1)}%
                 </div>
-          </div>
-        </div>
-        
-            {/* Bar Chart - Annual Premium */}
-            <div style={{ background: "white", borderRadius: 8, padding: 12, border: "1px solid #e2e8f0", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>Annual R&D Premium (Q5-Q1)</div>
-              {/* Chart area */}
-              <div style={{ position: "relative", flex: 1, minHeight: 150, maxHeight: 180, overflow: "hidden" }}>
-                {/* Zero line */}
-                <div style={{ position: "absolute", left: 28, right: 0, top: "50%", height: 1, background: "#94a3b8" }} />
-                {/* Y-axis labels */}
-                <div style={{ position: "absolute", left: 0, top: 0, fontSize: 9, color: "#94a3b8" }}>+25%</div>
-                <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 9, color: "#94a3b8" }}>0%</div>
-                <div style={{ position: "absolute", left: 0, bottom: 0, fontSize: 9, color: "#94a3b8" }}>-25%</div>
-                {/* Bars */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", height: "100%", paddingLeft: 28 }}>
-                {premiumTimeSeriesData.slice(-15).map((item, i) => {
-                    const maxVal = 25
-                    const heightPct = Math.min(100, (Math.abs(item.premium) / maxVal) * 50)
-                  const isPositive = item.premium >= 0
-                  return (
-                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", flex: 1, position: "relative" }}>
-                        {/* Bar */}
-                        <div style={{ 
-                          position: "absolute",
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          width: 14,
-                          height: `${heightPct}%`,
-                          background: isPositive ? "#22c55e" : "#ef4444",
-                          borderRadius: isPositive ? "3px 3px 0 0" : "0 0 3px 3px",
-                          ...(isPositive 
-                            ? { bottom: "50%" } 
-                            : { top: "50%" }
-                          )
-                        }} />
-                    </div>
-                  )
-                })}
               </div>
-              </div>
-              {/* X-axis labels */}
-              <div style={{ display: "flex", justifyContent: "space-around", paddingLeft: 28, marginTop: 4 }}>
-                {premiumTimeSeriesData.slice(-15).map((item, i) => (
-                  <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 8, color: "#64748b" }}>
-                    {String(item.year).slice(-2)}
-                  </div>
-                ))}
-              </div>
-            </div>
-        
-            {/* Key insight */}
-            <div style={{ marginTop: 8, background: "#eff6ff", borderRadius: 6, padding: 8, textAlign: "center" }}>
-              <span style={{ fontSize: 10, color: "#1e40af" }}>
-                <strong>{winRate}% positive years</strong>: premium persists across market cycles
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Interpretation */}
-        <div style={{ marginTop: 16, background: "linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%)", border: "2px solid #3b82f6", borderRadius: 12, padding: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 6 }}>📊 Consistent Pattern</div>
-              <div style={{ fontSize: 12, color: "#1e3a8a" }}>Q5 outperforms Q1 in {winRate}% of years. Premium is not a single-year anomaly.</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 6 }}>📈 Monotonic Relationship</div>
-              <div style={{ fontSize: 12, color: "#1e3a8a" }}>Returns increase roughly linearly from Q1 to Q5, suggesting a true factor relationship.</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 6 }}>⏳ Time-Varying</div>
-              <div style={{ fontSize: 12, color: "#1e3a8a" }}>Premium varies year-to-year. Patience required; holding period should be 3-5+ years.</div>
             </div>
           </div>
         </div>
 
-        {/* Source */}
-        <div style={{ marginTop: 12, textAlign: "center", fontSize: 11, color: "#94a3b8" }}>
-          Source: /api/research/publication-snapshot (frozen) | Sample: {sampleStartYear}-{sampleEndYear} | {totalCompanies} S&P 500 firms
+        {/* Interpretation - compact */}
+        <div style={{ background: "linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%)", border: "1px solid #3b82f6", borderRadius: 10, padding: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", marginBottom: 4 }}>📊 Consistent Pattern</div>
+              <div style={{ fontSize: 11, color: "#1e3a8a" }}>Q5 outperforms Q1 in {winRate}% of years.</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", marginBottom: 4 }}>📈 Monotonic Relationship</div>
+              <div style={{ fontSize: 11, color: "#1e3a8a" }}>Returns increase from Q1→Q5 linearly.</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", marginBottom: 4 }}>⏳ Time-Varying</div>
+              <div style={{ fontSize: 11, color: "#1e3a8a" }}>3-5+ year holding period recommended.</div>
+            </div>
+          </div>
         </div>
       </div>
     </Slide>,
