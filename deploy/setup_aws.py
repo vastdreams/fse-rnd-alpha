@@ -201,7 +201,7 @@ apt-get install -y postgresql-client
 
 # Clone repository
 cd /home/ubuntu
-git clone https://github.com/user/fse-rnd-alpha.git || true
+git clone https://github.com/vastdreams/rd-alpha-research.git || true
 
 echo "✓ Setup complete" > /home/ubuntu/setup_done.txt
 """

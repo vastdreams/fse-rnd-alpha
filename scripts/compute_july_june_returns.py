@@ -53,7 +53,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def _run_tier1(start_formation_year: int, end_formation_year: int) -> int:
+async def _run_tier1(
+    start_formation_year: int,
+    end_formation_year: int,
+    *,
+    price_mode: str,
+) -> int:
     """
     Compute and store July–June returns using FMP daily prices (Tier-1).
     """
@@ -64,11 +69,33 @@ async def _run_tier1(start_formation_year: int, end_formation_year: int) -> int:
 
     try:
         async with async_session() as session:
-            calculator = JulyJuneReturnCalculator(session)
+            calculator = JulyJuneReturnCalculator(session, data_tier="tier1", price_mode=price_mode)
             results = await calculator.compute_all_july_june_returns(
                 start_formation_year=start_formation_year,
                 end_formation_year=end_formation_year,
                 symbols=None,
+            )
+            # Return-definition audit (publication readiness): how often do we fall back to close?
+            total_adj_days = 0
+            total_fallback_days = 0
+            total_records = 0
+            for _, by_year in results.items():
+                for _, r in by_year.items():
+                    total_records += 1
+                    total_adj_days += int(getattr(r, "adj_close_days", 0))
+                    total_fallback_days += int(getattr(r, "close_fallback_days", 0))
+
+            denom = total_adj_days + total_fallback_days
+            fallback_share = (total_fallback_days / denom) if denom > 0 else 0.0
+            logger.info(
+                "Tier-1 return definition audit",
+                extra={
+                    "price_mode": price_mode,
+                    "records": total_records,
+                    "adj_close_days": total_adj_days,
+                    "close_fallback_days": total_fallback_days,
+                    "close_fallback_share": round(fallback_share, 6),
+                },
             )
             saved = await calculator.save_july_june_returns(results)
             await session.commit()
@@ -119,6 +146,16 @@ def main() -> None:
         default="tier1",
         help="Data tier to use: tier1 (FMP daily) or tier2 (CRSP monthly). Default: tier1.",
     )
+    parser.add_argument(
+        "--price-mode",
+        choices=["adj_close_only", "adj_close_fallback_close"],
+        default="adj_close_only",
+        help=(
+            "Tier-1 price construction policy. "
+            "adj_close_only is publication-grade (no silent fallback); "
+            "adj_close_fallback_close is a coverage-oriented sensitivity mode."
+        ),
+    )
     args = parser.parse_args()
 
     if args.end_formation_year < args.start_formation_year:
@@ -128,7 +165,13 @@ def main() -> None:
     logger.info(f"Data tier: {args.data_tier}")
 
     if args.data_tier == "tier1":
-        saved = asyncio.run(_run_tier1(args.start_formation_year, args.end_formation_year))
+        saved = asyncio.run(
+            _run_tier1(
+                args.start_formation_year,
+                args.end_formation_year,
+                price_mode=args.price_mode,
+            )
+        )
         print(f"Saved {saved} Tier-1 (FMP) July–June return records to `july_june_returns`.")
     else:
         saved = asyncio.run(_run_tier2(args.start_formation_year, args.end_formation_year))

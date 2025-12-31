@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "change-me-in-production-use-secrets-token-hex-32"
     API_KEY_REQUIRED: bool = False
+    ADMIN_CLIENTS_CONFIG_PATH: str = ""  # Optional path to admin_clients.json (do not commit secrets)
     
     # Stripe
     STRIPE_SECRET_KEY: str = ""

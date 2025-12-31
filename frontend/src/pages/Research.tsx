@@ -177,7 +177,7 @@ export function Research() {
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="font-medium">Sample:</span> 1995-{new Date().getFullYear() - 1} •{" "}
-            <span className="font-medium">Methodology:</span> July-June returns (Fama-French convention) • Delisting-adjusted • HAC standard errors
+            <span className="font-medium">Methodology:</span> July-June returns (Fama-French convention) • cash-after-exit + delisting sensitivity • HAC standard errors
           </p>
         </div>
         <div className="flex gap-2">
@@ -202,8 +202,8 @@ export function Research() {
             <div className="space-y-1 text-sm">
               <p className="font-semibold text-amber-600 dark:text-amber-400">Research Caveats & Limitations</p>
               <p className="text-muted-foreground">
-                <strong>Data tier:</strong> Tier-1 (FMP). Survivorship bias is substantially mitigated via historical constituents
-                and delisting return adjustments, but Tier-2 CRSP/Compustat remains the gold standard. 
+                <strong>Data tier:</strong> Tier-1 (FMP). Survivorship bias is substantially mitigated via historical constituents (where spans are available),
+                cash-after-exit return construction, and delisting sensitivity scenarios; Tier-2 CRSP/Compustat remains the gold standard. 
                 <strong> Overlapping windows:</strong> Rolling observations are correlated; overlapping-window inference requires HAC adjustments. 
                 <strong> Sector concentration:</strong> Q5 is dominated by Tech/Healthcare. 
                 <Link to="/documentation" className="text-amber-600 dark:text-amber-400 hover:underline ml-1">

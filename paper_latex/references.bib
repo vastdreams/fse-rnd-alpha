@@ -1,0 +1,351 @@
+% PATH: research/paper_latex/references.bib
+% PURPOSE:
+%   BibTeX bibliography for the R&D Alpha LaTeX submission manuscript.
+%
+% WHY THIS FILE EXISTS:
+%   LaTeX submission requires stable, reviewer-friendly citation formatting. This file centralizes
+%   all source metadata (authors/title/venue/DOI) and prevents “AI hallucinated references”.
+%
+% FLOW (high-level):
+%   main.tex \citep{key} / \citet{key}
+%          │
+%          ▼
+%   references.bib (BibTeX entries)
+%          │
+%          ▼
+%   tectonic compile → numbered references [1], [2], …
+%
+% DEPENDENCIES:
+%   - research/paper_latex/main.tex: consumes these keys
+%
+% Notes:
+%   - Keys are intentionally stable and descriptive (author_year).
+%   - We only include sources we can fully access/verify or whose metadata is verified via Crossref.
+
+% === ACCOUNTING STANDARDS ===
+
+@misc{fasb_sfas2_1974,
+  author       = {{Financial Accounting Standards Board}},
+  title        = {Statement of Financial Accounting Standards No. 2: Accounting for Research and Development Costs},
+  year         = {1974},
+  howpublished = {FASB (codified as ASC Topic 730)},
+  url          = {https://fasb.org/page/PageContent?pageId=/standards/accounting-standards-codification/730.html},
+  note         = {Accessed 2025-12-30}
+}
+
+% === FOUNDATIONAL R&D AND INTANGIBLE ASSETS ===
+
+@article{lev_sougiannis_1996,
+  author  = {Lev, Baruch and Sougiannis, Theodore},
+  title   = {The Capitalization, Amortization, and Value-Relevance of {R\&D}},
+  journal = {Journal of Accounting and Economics},
+  year    = {1996},
+  volume  = {21},
+  number  = {1},
+  pages   = {107--138},
+  doi     = {10.1016/0165-4101(95)00410-6}
+}
+
+@article{chan_lakonishok_sougiannis_2001,
+  author  = {Chan, Louis K. C. and Lakonishok, Josef and Sougiannis, Theodore},
+  title   = {The Stock Market Valuation of Research and Development Expenditures},
+  journal = {The Journal of Finance},
+  year    = {2001},
+  volume  = {56},
+  number  = {6},
+  pages   = {2431--2456},
+  doi     = {10.1111/0022-1082.00411}
+}
+
+@article{eberhart_maxwell_siddique_2004,
+  author  = {Eberhart, Allan C. and Maxwell, William F. and Siddique, Akhtar R.},
+  title   = {An Examination of Long-Term Abnormal Stock Returns and Operating Performance Following {R\&D} Increases},
+  journal = {The Journal of Finance},
+  year    = {2004},
+  volume  = {59},
+  number  = {2},
+  pages   = {623--650},
+  doi     = {10.1111/j.1540-6261.2004.00644.x}
+}
+
+@article{hirshleifer_hsu_li_2013,
+  author  = {Hirshleifer, David and Hsu, Po-Hsuan and Li, Dongmei},
+  title   = {Innovative Efficiency and Stock Returns},
+  journal = {Journal of Financial Economics},
+  year    = {2013},
+  volume  = {107},
+  number  = {3},
+  pages   = {632--654},
+  doi     = {10.1016/j.jfineco.2012.09.011}
+}
+
+@article{cai_cooper_he_2023,
+  author  = {Cai, Tianjiao Tong and Cooper, Michael J. and He, Qing},
+  title   = {The {R\&D} Premium},
+  journal = {The Journal of Investing},
+  year    = {2023},
+  volume  = {32},
+  number  = {4},
+  pages   = {45--68},
+  doi     = {10.3905/joi.2023.1.264}
+}
+
+@article{kothari_laguerre_leone_2002,
+  author  = {Kothari, S. P. and Laguerre, Tara E. and Leone, Andrew J.},
+  title   = {Capitalization Versus Expensing: Evidence on the Uncertainty of Future Earnings},
+  journal = {Review of Accounting Studies},
+  year    = {2002},
+  volume  = {7},
+  number  = {4},
+  pages   = {355--382},
+  doi     = {10.1023/A:1020764227390}
+}
+
+@article{griliches_1981,
+  author  = {Griliches, Zvi},
+  title   = {Market Value, {R\&D}, and Patents},
+  journal = {Economics Letters},
+  year    = {1981},
+  volume  = {7},
+  number  = {2},
+  pages   = {183--187},
+  doi     = {10.1016/0165-1765(81)90122-7}
+}
+
+@article{hall_jaffe_trajtenberg_2005,
+  author  = {Hall, Bronwyn H. and Jaffe, Adam and Trajtenberg, Manuel},
+  title   = {Market Value and Patent Citations},
+  journal = {The RAND Journal of Economics},
+  year    = {2005},
+  volume  = {36},
+  number  = {1},
+  pages   = {16--38},
+  url     = {https://www.jstor.org/stable/1593752}
+}
+
+@article{deng_lev_narin_1999,
+  author  = {Deng, Zhen and Lev, Baruch and Narin, Francis},
+  title   = {Science and Technology as Predictors of Stock Performance},
+  journal = {Financial Analysts Journal},
+  year    = {1999},
+  volume  = {55},
+  number  = {3},
+  pages   = {20--32},
+  doi     = {10.2469/faj.v55.n3.2269}
+}
+
+@article{gu_2005,
+  author  = {Gu, Feng},
+  title   = {Innovation, Future Earnings, and Market Efficiency},
+  journal = {Journal of Accounting, Auditing \& Finance},
+  year    = {2005},
+  volume  = {20},
+  number  = {4},
+  pages   = {385--418},
+  doi     = {10.1177/0148558X0502000405}
+}
+
+@article{li_2011,
+  author  = {Li, Dongmei},
+  title   = {Financial Constraints, {R\&D} Investment, and Stock Returns},
+  journal = {The Review of Financial Studies},
+  year    = {2011},
+  volume  = {24},
+  number  = {9},
+  pages   = {2974--3007},
+  doi     = {10.1093/rfs/hhr043}
+}
+
+@article{barth_kasznik_mcnichols_2001,
+  author  = {Barth, Mary E. and Kasznik, Ron and McNichols, Maureen F.},
+  title   = {Analyst Coverage and Intangible Assets},
+  journal = {Journal of Accounting Research},
+  year    = {2001},
+  volume  = {39},
+  number  = {1},
+  pages   = {1--34},
+  doi     = {10.1111/1475-679X.00001}
+}
+
+% === ASSET PRICING AND FACTOR MODELS ===
+
+@article{fama_french_1993,
+  author  = {Fama, Eugene F. and French, Kenneth R.},
+  title   = {Common Risk Factors in the Returns on Stocks and Bonds},
+  journal = {Journal of Financial Economics},
+  year    = {1993},
+  volume  = {33},
+  number  = {1},
+  pages   = {3--56},
+  doi     = {10.1016/0304-405X(93)90023-5}
+}
+
+@article{fama_french_2015,
+  author  = {Fama, Eugene F. and French, Kenneth R.},
+  title   = {A Five-Factor Asset Pricing Model},
+  journal = {Journal of Financial Economics},
+  year    = {2015},
+  volume  = {116},
+  number  = {1},
+  pages   = {1--22},
+  doi     = {10.1016/j.jfineco.2014.10.010}
+}
+
+@article{carhart_1997,
+  author  = {Carhart, Mark M.},
+  title   = {On Persistence in Mutual Fund Performance},
+  journal = {The Journal of Finance},
+  year    = {1997},
+  volume  = {52},
+  number  = {1},
+  pages   = {57--82},
+  doi     = {10.1111/j.1540-6261.1997.tb03808.x}
+}
+
+@article{fama_macbeth_1973,
+  author  = {Fama, Eugene F. and MacBeth, James D.},
+  title   = {Risk, Return, and Equilibrium: Empirical Tests},
+  journal = {Journal of Political Economy},
+  year    = {1973},
+  volume  = {81},
+  number  = {3},
+  pages   = {607--636},
+  doi     = {10.1086/260061}
+}
+
+@article{hou_xue_zhang_2015,
+  author  = {Hou, Kewei and Xue, Chen and Zhang, Lu},
+  title   = {Digesting Anomalies: An Investment Approach},
+  journal = {The Review of Financial Studies},
+  year    = {2015},
+  volume  = {28},
+  number  = {3},
+  pages   = {650--705},
+  doi     = {10.1093/rfs/hhu068}
+}
+
+@article{hou_mo_xue_zhang_2022,
+  author  = {Hou, Kewei and Mo, Haitao and Xue, Chen and Zhang, Lu},
+  title   = {An Augmented q-Factor Model with Expected Growth},
+  journal = {Review of Finance},
+  year    = {2022},
+  volume  = {25},
+  number  = {1},
+  pages   = {1--41},
+  doi     = {10.1093/rof/rfaa004}
+}
+
+@article{asness_frazzini_2013,
+  author  = {Asness, Clifford S. and Frazzini, Andrea},
+  title   = {The Devil in {HML}'s Details},
+  journal = {Journal of Portfolio Management},
+  year    = {2013},
+  volume  = {39},
+  number  = {4},
+  pages   = {49--68},
+  doi     = {10.3905/jpm.2013.39.4.049}
+}
+
+% === TRANSACTION COSTS AND ANOMALIES ===
+
+@article{novy_marx_velikov_2016,
+  author  = {Novy-Marx, Robert and Velikov, Mihail},
+  title   = {A Taxonomy of Anomalies and Their Trading Costs},
+  journal = {The Review of Financial Studies},
+  year    = {2016},
+  volume  = {29},
+  number  = {1},
+  pages   = {104--147},
+  doi     = {10.1093/rfs/hhv063}
+}
+
+% === ECONOMETRIC METHODS ===
+
+@article{newey_west_1987,
+  author  = {Newey, Whitney K. and West, Kenneth D.},
+  title   = {A Simple, Positive Semi-Definite, Heteroskedasticity and Autocorrelation Consistent Covariance Matrix},
+  journal = {Econometrica},
+  year    = {1987},
+  volume  = {55},
+  number  = {3},
+  pages   = {703--708},
+  doi     = {10.2307/1913610}
+}
+
+% === STRATEGIC MANAGEMENT AND COMPETITIVE ADVANTAGE ===
+
+@article{barney_1991,
+  author  = {Barney, Jay},
+  title   = {Firm Resources and Sustained Competitive Advantage},
+  journal = {Journal of Management},
+  year    = {1991},
+  volume  = {17},
+  number  = {1},
+  pages   = {99--120},
+  doi     = {10.1177/014920639101700108}
+}
+
+@article{porter_1992,
+  author  = {Porter, Michael E.},
+  title   = {Capital Disadvantage: {America's} Failing Capital Investment System},
+  journal = {Harvard Business Review},
+  year    = {1992},
+  volume  = {70},
+  number  = {5},
+  pages   = {65--82},
+  url     = {https://hbr.org/1992/09/capital-disadvantage-americas-failing-capital-investment-system}
+}
+
+@article{cohen_klepper_1996,
+  author  = {Cohen, Wesley M. and Klepper, Steven},
+  title   = {A Reprise of Size and {R\&D}},
+  journal = {The Economic Journal},
+  year    = {1996},
+  volume  = {106},
+  number  = {437},
+  pages   = {925--951},
+  doi     = {10.2307/2235365}
+}
+
+% === MISPRICING, INVESTOR SENTIMENT, AND REAL EFFECTS (OPEN PDF) ===
+
+@article{polk_sapienza_2009,
+  author  = {Polk, Christopher and Sapienza, Paola},
+  title   = {The Stock Market and Corporate Investment: A Test of Catering Theory},
+  journal = {Review of Financial Studies},
+  year    = {2009},
+  volume  = {22},
+  number  = {1},
+  pages   = {187--217},
+  doi     = {10.1093/rfs/hhn030},
+  note    = {Author-hosted PDF read in full}
+}
+
+% === PATENTS, R\&D SPILLOVERS, AND INNOVATION MEASUREMENT (OPEN PDF) ===
+
+@techreport{jaffe_1986,
+  author      = {Jaffe, Adam B.},
+  title       = {Technological Opportunity and Spillovers of {R\&D}: Evidence from Firms' Patents, Profits and Market Value},
+  institution = {National Bureau of Economic Research},
+  type        = {NBER Working Paper},
+  number      = {1815},
+  year        = {1986},
+  month       = jan,
+  doi         = {10.3386/w1815},
+  url         = {https://www.nber.org/system/files/working_papers/w1815/w1815.pdf},
+  note        = {Open PDF read in full}
+}
+
+@techreport{griliches_1990,
+  author      = {Griliches, Zvi},
+  title       = {Patent Statistics as Economic Indicators: A Survey},
+  institution = {National Bureau of Economic Research},
+  type        = {NBER Working Paper},
+  number      = {3301},
+  year        = {1990},
+  month       = mar,
+  doi         = {10.3386/w3301},
+  url         = {https://www.nber.org/system/files/working_papers/w3301/w3301.pdf},
+  note        = {Open PDF read in full}
+}
+

@@ -218,7 +218,9 @@ export function Paper4() {
                 <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-1">
                   <li>• R&D creates intangible assets that manifest in improved operational performance</li>
                   <li>• Payoffs from R&D often arrive with multi-year lags (varying by industry and project type)</li>
-                  <li>• Effect size strengthens with investment horizon (η² = 0.23 at 5yr → 0.46 at 20yr)</li>
+                  <li>
+                    • Effect size strengthens with investment horizon (η² increases from shorter to longer horizons; see the Main Paper for snapshot-pinned values)
+                  </li>
                   <li>• R&D investments satisfy the VRIN framework for sustainable competitive advantage</li>
                 </ul>
               </div>
@@ -279,7 +281,7 @@ export function Paper4() {
               </p>
               <p className="text-muted-foreground">
                 This lag structure motivates long-horizon return tests. Consistent with that intuition, our return-sort
-                effect sizes strengthen over longer horizons (η² from 0.23 at 5-year to 0.46 at 20-year).
+                effect sizes strengthen over longer horizons (η² rises with horizon; see the Main Paper for snapshot-pinned values).
               </p>
 
               <h3 className="text-lg font-semibold text-foreground mt-6">2.2 The VRIN Framework for Sustainable Advantage</h3>
@@ -564,9 +566,9 @@ export function Paper4() {
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
                 <h4 className="text-amber-700 dark:text-amber-400 font-semibold mb-2">Time Lag Effect</h4>
                 <p className="text-sm text-slate-700 dark:text-slate-200">
-                  Long-horizon measurement matters. In our return-sort results, the effect size (η²) increases from
-                  0.23 at 5-year windows to 0.46 at 20-year windows. This pattern is consistent with the intuition
-                  that R&D payoffs can be multi-year, but we do not estimate causal lag lengths directly in this dataset.
+                  Long-horizon measurement matters. In our return-sort results, effect size (η²) increases with horizon.
+                  This pattern is consistent with the intuition that R&D payoffs can be multi-year, but we do not estimate
+                  causal lag lengths directly in this dataset.
                 </p>
               </div>
 
@@ -584,7 +586,10 @@ export function Paper4() {
 
               <h3 className="text-lg font-semibold text-foreground mt-6">6.3 Limitations and Caveats</h3>
               <ul className="text-muted-foreground space-y-2">
-                <li>• <strong>Survivorship Bias (Tier-1 mitigation):</strong> Historical S&P 500 constituents and delisting adjustments substantially reduce survivorship bias, but Tier-1 is not CRSP/Compustat-grade.</li>
+                <li>
+                  • <strong>Survivorship Bias (Tier-1 mitigation):</strong> Point-in-time S&amp;P 500 membership is enforced where constituent spans are available.
+                  Exits are handled via return construction (cash-after-exit) and robustness via delisting sensitivity. Tier-1 still has coverage limitations versus CRSP/Compustat-grade data.
+                </li>
                 <li>• <strong>Look-Ahead Bias (Mitigated):</strong> We utilize the Fama-French July-June return convention to align fiscal-year R&D data with subsequent returns.</li>
                 <li>• <strong>Overlapping windows:</strong> Dependency between rolling 5/10/20-year analysis periods requires caution when interpreting the strengthening of effect sizes over time.</li>
                 <li>• <strong>Causation vs. Correlation:</strong> While R&D correlates with long-term performance, successful firms may simply have more excess cash to invest in R&D (reverse causality).</li>
@@ -610,7 +615,9 @@ export function Paper4() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700">
                   <h4 className="text-emerald-700 dark:text-emerald-700 dark:text-emerald-400 font-semibold">Finding 1</h4>
-                  <p className="text-sm text-slate-700 dark:text-slate-700 dark:text-slate-200 mt-2">High-R&D companies outperform low-R&D by +7.1% (5yr) to +2.6% (20yr) annually</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-700 dark:text-slate-200 mt-2">
+                    Return-sort results show high-R&amp;D companies outperform low-R&amp;D on average across horizons (see the Main Paper for snapshot-pinned estimates)
+                  </p>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
                   <h4 className="text-blue-700 dark:text-blue-700 dark:text-blue-400 font-semibold">Finding 2</h4>

@@ -108,14 +108,14 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
       "Fama-French standard: fiscal-year accounting data is mapped to returns from July of the following year through June. This 6-month lag ensures all firms have filed their 10-Ks before portfolio formation, reducing look-ahead bias.",
   },
   delisting_adjustment: {
-    title: "Delisting Adjustment",
+    title: "Exit / Delisting Treatment",
     explanation:
-      "When a stock delists (bankruptcy, merger, etc.), we include delisting returns to avoid survivorship bias. Without this, we'd only see survivors, overstating average returns.",
+      "We do not inject a separate one-off “delisting return” into an annual return series. If a firm’s price history ends before a return window ends (e.g., merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the window. We also report delisting sensitivity as a robustness check.",
   },
   survivorship_bias: {
     title: "Survivorship Bias",
     explanation:
-      "The tendency to overstate performance by only studying firms that survived. Dead firms often had poor returns. We mitigate this using historical S&P 500 membership and delisting returns.",
+      "The tendency to overstate performance by only studying firms that survived. Dead firms often had poor returns. We mitigate this using point-in-time S&P 500 membership (when spans are available) and explicit exit handling plus sensitivity analysis. Tier-1 still has coverage limitations versus CRSP/Compustat-grade datasets.",
   },
   look_ahead_bias: {
     title: "Look-Ahead Bias",
@@ -200,7 +200,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   non_overlapping: {
     title: "Non-Overlapping Returns",
     explanation:
-      "Each observation is independent and doesn't share time periods with other observations. This is the gold standard for inference because overlapping windows create artificial correlation. Our primary inference uses annual non-overlapping returns.",
+      "Non-overlapping windows reduce mechanical overlap between observations (unlike rolling windows). This improves inference quality, but time-series dependence can still exist (regimes, volatility clustering), so we still use Newey–West standard errors on the annual series.",
   },
   overlapping_windows: {
     title: "Overlapping Windows (Descriptive Only)",

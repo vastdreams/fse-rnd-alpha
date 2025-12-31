@@ -169,7 +169,12 @@ export const Formulas = {
   ),
   
   TSR: () => (
-    <Formula block compact label="Total Shareholder Return" description="Complete return including price appreciation and dividends. Pₑₙₐ = ending price, Pₛₜₐᵣₜ = starting price, Div = dividends received. This is what an investor actually earns.">
+    <Formula
+      block
+      compact
+      label="Total Shareholder Return"
+      description="Conceptual definition: complete return including price appreciation and dividends. In our Tier-1 publication pipeline we approximate TSR using provider-adjusted close (split+dividend adjusted per vendor) and do not add dividends separately (to avoid double counting)."
+    >
       <Var>TSR</Var> = <Frac num={<><Var>P</Var><Sub>end</Sub> − <Var>P</Var><Sub>start</Sub> + Div</>} den={<><Var>P</Var><Sub>start</Sub></>} />
     </Formula>
   ),

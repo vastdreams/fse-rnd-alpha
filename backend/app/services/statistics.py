@@ -422,8 +422,9 @@ class StatisticalAnalyzer:
         Returns:
             Dict with annual premiums, mean, NW SE, t-stat, p-value
         """
-        from app.db.models import JulyJuneReturn, FMPAnnualReturn, FMPIncomeStatement, DelistingReturn
-        from sqlalchemy import select, func, and_, case
+        from app.db.models import JulyJuneReturn, FMPAnnualReturn, FMPIncomeStatement, SP500HistoricalConstituent
+        from sqlalchemy import select, func
+        from datetime import date
         
         # Determine which return table to use
         if use_july_june:
@@ -431,6 +432,7 @@ class StatisticalAnalyzer:
             result = await self.session.execute(
                 select(func.distinct(JulyJuneReturn.formation_year))
                 .where(JulyJuneReturn.formation_year >= 1994)  # Need FY 1994+ for July 1995+
+                .where(JulyJuneReturn.data_tier == self.data_tier)
                 .order_by(JulyJuneReturn.formation_year)
             )
             formation_years = [r[0] for r in result.fetchall()]
@@ -444,18 +446,17 @@ class StatisticalAnalyzer:
             formation_years = [r[0] - 1 for r in result.fetchall()]  # Adjust to formation year convention
         
         # Pre-fetch delisting returns for survivorship correction
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-        )
-        delisting_map = {}
-        for r in delist_result.fetchall():
-            if not r.delist_date:
-                continue
-            key_year = delisting_key_year(r.delist_date, use_july_june=use_july_june)
-            if key_year not in delisting_map:
-                delisting_map[key_year] = {}
-            delisting_map[key_year][r.symbol] = r.delist_return
+        # Publication note:
+        # We do NOT substitute delisting-return proxies into the return series here.
+        # Instead, July–June returns are computed upstream from daily prices; if a symbol’s price
+        # history ends early (e.g., M&A / delisting), the return is computed to the last observed
+        # price and cash is treated as earning 0% thereafter for the remainder of the window.
         
+        # Membership availability (point-in-time S&P 500 constituents)
+        # If the table is empty, we fall back to an “available data” universe and record that in diagnostics later.
+        membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+        membership_available = bool(isinstance(membership_total, int) and membership_total > 0)
+
         annual_premiums = []
         
         for formation_year in formation_years:
@@ -463,45 +464,92 @@ class StatisticalAnalyzer:
             # For July-June: Returns from July(formation_year+1) to June(formation_year+2)
             # For calendar: Returns for year (formation_year+1)
             return_year = formation_year + 1
+            formation_date = date(int(return_year), 7, 1) if use_july_june else date(int(return_year), 1, 1)
             
             # Get R&D intensity from formation year (FY T-1 for returns in year T)
             if use_july_june:
                 # Use FY(formation_year) data, get returns from July(formation_year+1)
-                q = text("""
-                    WITH rd_data AS (
+                if membership_available:
+                    q = text("""
+                        WITH members AS (
+                            SELECT DISTINCT symbol
+                            FROM sp500_historical_constituents
+                            WHERE added_date <= :formation_date
+                              AND (removed_date IS NULL OR removed_date >= :formation_date)
+                        ),
+                        rd_data AS (
+                            SELECT 
+                                inc.symbol,
+                                CASE 
+                                    WHEN inc.revenue > 100000000 THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                    ELSE NULL 
+                                END as rd_intensity
+                            FROM fmp_income_statements inc
+                            JOIN members m ON m.symbol = inc.symbol
+                            WHERE inc.fiscal_year = :formation_year
+                              AND inc.period = 'FY'
+                              AND inc.rd_expenses >= 0
+                              AND inc.revenue >= 100000000
+                        ),
+                        ranked AS (
+                            SELECT 
+                                rd.symbol,
+                                rd.rd_intensity,
+                                NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
+                            FROM rd_data rd
+                            WHERE rd.rd_intensity IS NOT NULL
+                        ),
+                        returns AS (
+                            SELECT symbol, annualized_return as annual_return
+                            FROM july_june_returns
+                            WHERE formation_year = :formation_year
+                              AND data_tier = :data_tier
+                        )
                         SELECT 
-                            inc.symbol,
-                            CASE 
-                                WHEN inc.revenue > 100000000 THEN (inc.rd_expenses::float / inc.revenue * 100)
-                                ELSE NULL 
-                            END as rd_intensity
-                        FROM fmp_income_statements inc
-                        WHERE inc.fiscal_year = :formation_year
-                          AND inc.period = 'FY'
-                          AND inc.rd_expenses >= 0
-                          AND inc.revenue >= 100000000
-                    ),
-                    ranked AS (
+                            r.quintile,
+                            r.symbol,
+                            ret.annual_return
+                        FROM ranked r
+                        LEFT JOIN returns ret ON r.symbol = ret.symbol
+                        WHERE r.quintile IN (1, 5)
+                    """)
+                else:
+                    q = text("""
+                        WITH rd_data AS (
+                            SELECT 
+                                inc.symbol,
+                                CASE 
+                                    WHEN inc.revenue > 100000000 THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                    ELSE NULL 
+                                END as rd_intensity
+                            FROM fmp_income_statements inc
+                            WHERE inc.fiscal_year = :formation_year
+                              AND inc.period = 'FY'
+                              AND inc.rd_expenses >= 0
+                              AND inc.revenue >= 100000000
+                        ),
+                        ranked AS (
+                            SELECT 
+                                rd.symbol,
+                                rd.rd_intensity,
+                                NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
+                            FROM rd_data rd
+                            WHERE rd.rd_intensity IS NOT NULL
+                        ),
+                        returns AS (
+                            SELECT symbol, annualized_return as annual_return
+                            FROM july_june_returns
+                            WHERE formation_year = :formation_year
+                              AND data_tier = :data_tier
+                        )
                         SELECT 
-                            rd.symbol,
-                            rd.rd_intensity,
-                            NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
-                        FROM rd_data rd
-                        WHERE rd.rd_intensity IS NOT NULL
-                    ),
-                    returns AS (
-                        SELECT symbol, annualized_return as annual_return
-                        FROM july_june_returns
-                        WHERE formation_year = :formation_year
-                    )
-                    SELECT 
-                        r.quintile,
-                        r.symbol,
-                        ret.annual_return
-                    FROM ranked r
-                    LEFT JOIN returns ret ON r.symbol = ret.symbol
-                    WHERE r.quintile IN (1, 5)
-                """)
+                            r.quintile,
+                            r.symbol,
+                            ret.annual_return
+                        FROM ranked r
+                        LEFT JOIN returns ret ON r.symbol = ret.symbol
+                        WHERE r.quintile IN (1, 5)
+                    """)
             else:
                 # Legacy calendar year
                 q = text("""
@@ -540,14 +588,15 @@ class StatisticalAnalyzer:
                     WHERE r.quintile IN (1, 5)
                 """)
             
-            result = await self.session.execute(
-                q, {"formation_year": formation_year, "return_year": return_year}
-            )
+            params = {"formation_year": formation_year, "return_year": return_year, "data_tier": self.data_tier}
+            if use_july_june and membership_available:
+                params["formation_date"] = formation_date
+
+            result = await self.session.execute(q, params)
             rows = result.fetchall()
             
-            # Group by quintile and incorporate delisting returns
+            # Group by quintile
             quintile_returns = {1: [], 5: []}
-            year_delistings = delisting_map.get(return_year, {})
             
             for row in rows:
                 quintile, symbol, annual_return = row[0], row[1], row[2]
@@ -555,11 +604,7 @@ class StatisticalAnalyzer:
                 if quintile not in [1, 5]:
                     continue
                 
-                # Check if company delisted during this period
-                if symbol in year_delistings:
-                    # Use delisting return instead
-                    quintile_returns[quintile].append(year_delistings[symbol])
-                elif annual_return is not None:
+                if annual_return is not None:
                     quintile_returns[quintile].append(annual_return)
             
             # Calculate average returns per quintile
@@ -611,7 +656,7 @@ class StatisticalAnalyzer:
             "methodology": {
                 "return_convention": "July-June (Fama-French)" if use_july_june else "Calendar Year",
                 "bias_correction": "Look-ahead bias eliminated" if use_july_june else "Potential look-ahead bias",
-                "survivorship_correction": "Delisting returns integrated",
+                "survivorship_correction": "Point-in-time membership (when available) + cash-after-exit in return construction",
                 "formation_rule": "FY(T-1) R&D data -> Returns July T to June T+1" if use_july_june else "FY(T-1) R&D data -> Calendar year T returns"
             },
             "note": f"Annual non-overlapping HML premium with Newey-West SE. {'July-June convention (preferred)' if use_july_june else 'Calendar year (legacy)'}."
@@ -631,7 +676,9 @@ class StatisticalAnalyzer:
           - Apply scenario transformations to the in-memory delisting map
           - Compute annual HML premium with each modified map
         """
-        from app.db.models import DelistingReturn
+        from app.db.models import DelistingReturn, SP500HistoricalConstituent
+        from datetime import date
+        from sqlalchemy import func
 
         scenarios: List[Dict[str, Any]] = [
             {
@@ -704,13 +751,25 @@ class StatisticalAnalyzer:
             return dmap
 
         async def compute_premium_with_map(dmap: Dict[int, Dict[str, float]]) -> Dict[str, Any]:
-            """Compute annual HML premium using a provided delisting map."""
+            """
+            Compute annual HML premium using the annual non-overlapping series definition.
+
+            NOTE: dmap is ignored in publication mode (we do not substitute delist proxies into a full-year return).
+            It is retained only to preserve API compatibility with older drafts.
+            """
             from app.db.models import JulyJuneReturn, FMPAnnualReturn
+            from app.db.models import SP500HistoricalConstituent
+            from sqlalchemy import func
+            from datetime import date
+
+            membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+            membership_available = bool(isinstance(membership_total, int) and membership_total > 0)
             
             if use_july_june:
                 result = await self.session.execute(
                     select(func.distinct(JulyJuneReturn.formation_year))
                     .where(JulyJuneReturn.formation_year >= 1994)
+                    .where(JulyJuneReturn.data_tier == self.data_tier)
                     .order_by(JulyJuneReturn.formation_year)
                 )
                 formation_years = [r[0] for r in result.fetchall()]
@@ -728,29 +787,66 @@ class StatisticalAnalyzer:
                 return_year = formation_year + 1
                 
                 if use_july_june:
-                    q = text("""
-                        WITH rd_data AS (
-                            SELECT inc.symbol,
-                                   CASE WHEN inc.revenue > 100000000 
-                                        THEN (inc.rd_expenses::float / inc.revenue * 100)
-                                        ELSE NULL END as rd_intensity
-                            FROM fmp_income_statements inc
-                            WHERE inc.fiscal_year = :formation_year
-                              AND inc.period = 'FY' AND inc.rd_expenses >= 0 AND inc.revenue >= 100000000
-                        ),
-                        ranked AS (
-                            SELECT rd.symbol, rd.rd_intensity,
-                                   NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
-                            FROM rd_data rd WHERE rd.rd_intensity IS NOT NULL
-                        ),
-                        returns AS (
-                            SELECT symbol, annualized_return as annual_return
-                            FROM july_june_returns WHERE formation_year = :formation_year
-                        )
-                        SELECT r.quintile, r.symbol, ret.annual_return
-                        FROM ranked r LEFT JOIN returns ret ON r.symbol = ret.symbol
-                        WHERE r.quintile IN (1, 5)
-                    """)
+                    formation_date = date(int(return_year), 7, 1)
+                    if membership_available:
+                        q = text("""
+                            WITH members AS (
+                                SELECT DISTINCT symbol
+                                FROM sp500_historical_constituents
+                                WHERE added_date <= :formation_date
+                                  AND (removed_date IS NULL OR removed_date >= :formation_date)
+                            ),
+                            rd_data AS (
+                                SELECT inc.symbol,
+                                       CASE WHEN inc.revenue > 100000000 
+                                            THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                            ELSE NULL END as rd_intensity
+                                FROM fmp_income_statements inc
+                                JOIN members m ON m.symbol = inc.symbol
+                                WHERE inc.fiscal_year = :formation_year
+                                  AND inc.period = 'FY' AND inc.rd_expenses >= 0 AND inc.revenue >= 100000000
+                            ),
+                            ranked AS (
+                                SELECT rd.symbol, rd.rd_intensity,
+                                       NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
+                                FROM rd_data rd WHERE rd.rd_intensity IS NOT NULL
+                            ),
+                            returns AS (
+                                SELECT symbol, annualized_return as annual_return
+                                FROM july_june_returns
+                                WHERE formation_year = :formation_year
+                                  AND data_tier = :data_tier
+                            )
+                            SELECT r.quintile, r.symbol, ret.annual_return
+                            FROM ranked r LEFT JOIN returns ret ON r.symbol = ret.symbol
+                            WHERE r.quintile IN (1, 5)
+                        """)
+                    else:
+                        q = text("""
+                            WITH rd_data AS (
+                                SELECT inc.symbol,
+                                       CASE WHEN inc.revenue > 100000000 
+                                            THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                            ELSE NULL END as rd_intensity
+                                FROM fmp_income_statements inc
+                                WHERE inc.fiscal_year = :formation_year
+                                  AND inc.period = 'FY' AND inc.rd_expenses >= 0 AND inc.revenue >= 100000000
+                            ),
+                            ranked AS (
+                                SELECT rd.symbol, rd.rd_intensity,
+                                       NTILE(5) OVER (ORDER BY rd.rd_intensity) as quintile
+                                FROM rd_data rd WHERE rd.rd_intensity IS NOT NULL
+                            ),
+                            returns AS (
+                                SELECT symbol, annualized_return as annual_return
+                                FROM july_june_returns
+                                WHERE formation_year = :formation_year
+                                  AND data_tier = :data_tier
+                            )
+                            SELECT r.quintile, r.symbol, ret.annual_return
+                            FROM ranked r LEFT JOIN returns ret ON r.symbol = ret.symbol
+                            WHERE r.quintile IN (1, 5)
+                        """)
                 else:
                     q = text("""
                         WITH rd_data AS (
@@ -775,19 +871,19 @@ class StatisticalAnalyzer:
                         WHERE r.quintile IN (1, 5)
                     """)
                 
-                result = await self.session.execute(q, {"formation_year": formation_year, "return_year": return_year})
+                params = {"formation_year": formation_year, "return_year": return_year, "data_tier": self.data_tier}
+                if use_july_june and membership_available:
+                    params["formation_date"] = date(int(return_year), 7, 1)
+                result = await self.session.execute(q, params)
                 rows = result.fetchall()
                 
                 quintile_returns = {1: [], 5: []}
-                year_delistings = dmap.get(return_year, {})
                 
                 for row in rows:
                     quintile, symbol, annual_return = row[0], row[1], row[2]
                     if quintile not in [1, 5]:
                         continue
-                    if symbol in year_delistings:
-                        quintile_returns[quintile].append(float(year_delistings[symbol]))
-                    elif annual_return is not None:
+                    if annual_return is not None:
                         quintile_returns[quintile].append(float(annual_return))
                 
                 if quintile_returns[1] and quintile_returns[5]:
@@ -818,7 +914,10 @@ class StatisticalAnalyzer:
         # If no delisting records exist, use simulated sensitivity based on academic literature
         # Large-cap (S&P 500) delisting effects are typically 0.1-0.8% annually
         # References: Shumway (1997), Beaver et al. (2007)
-        use_simulated = len(baseline_records) == 0
+        # Publication policy: we treat delisting sensitivity as a *simulation* (not CRSP dlret),
+        # since Tier-1 data does not provide authoritative delisting settlement returns.
+        # The simulated scenarios are explicitly literature-calibrated and documented in the note.
+        use_simulated = True
         
         if use_simulated:
             logger.info("No delisting records found - using literature-calibrated simulated sensitivity")
@@ -917,46 +1016,8 @@ class StatisticalAnalyzer:
                 "simulated": True,
             }
         
-        # Original logic when delisting records exist
-        for s in scenarios:
-            key = str(s["key"])
-            mode = str(s["mode"])
-            delta = float(s.get("delta", 0.0) or 0.0)
-
-            dmap = build_delisting_map(baseline_records, mode, delta)
-            annual = await compute_premium_with_map(dmap)
-            
-            if "error" in annual:
-                results[key] = {"name": s["name"], "description": s["description"], "error": annual}
-                continue
-
-            mean_premium = float(annual.get("mean_premium", 0.0))
-            if key == "baseline":
-                baseline_mean = mean_premium
-
-            entry: Dict[str, Any] = {
-                "name": s["name"],
-                "description": s["description"],
-                "annual_hml": {
-                    "n_years": int(annual.get("n_years", 0)),
-                    "mean_premium_pct": mean_premium,
-                    "t_statistic": float(annual.get("hac_adjusted", {}).get("t_statistic", 0.0)),
-                    "p_value": float(annual.get("hac_adjusted", {}).get("p_value", 1.0)),
-                    "significant_005": bool(annual.get("hac_adjusted", {}).get("significant", False)),
-                },
-            }
-
-            if baseline_mean is not None and key != "baseline":
-                entry["annual_hml"]["delta_vs_baseline_pct"] = round(mean_premium - baseline_mean, 4)
-
-            results[key] = entry
-
-        return {
-            "use_july_june": bool(use_july_june),
-            "note": "Sensitivity is computed on the annual non-overlapping HML premium series. Scenario modifications are applied in a savepoint and rolled back.",
-            "scenarios": scenarios,
-            "results": results,
-        }
+        # NOTE: We intentionally do not compute a “delisting-return substituted” baseline from Tier-1
+        # delisting-return proxies, because those proxies are not CRSP dlret and can be misinterpreted.
     
     def run_regression(
         self,
@@ -1482,21 +1543,6 @@ Factor & Mean Beta & t-stat (HAC) & p-value \\
         from sqlalchemy import select, text
         import pandas as pd
         import statsmodels.api as sm
-        from app.db.models import DelistingReturn
-        
-        # Pre-fetch delisting returns
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-        )
-        delisting_map = {}
-        for r in delist_result.fetchall():
-            if not r.delist_date:
-                continue
-            key_year = delisting_key_year(r.delist_date, use_july_june=use_july_june)
-            if key_year not in delisting_map:
-                delisting_map[key_year] = {}
-            # Convert to pct to match return_pct from SQL query
-            delisting_map[key_year][r.symbol] = r.delist_return * 100
         
         # Collect cross-sectional regression results for each year
         year_results = []
@@ -1535,6 +1581,7 @@ Factor & Mean Beta & t-stat (HAC) & p-value \\
                         SELECT symbol, annualized_return * 100 as return_pct
                         FROM july_june_returns
                         WHERE formation_year = :formation_year
+                          AND data_tier = :data_tier
                     )
                     SELECT 
                         cd.symbol,
@@ -1588,15 +1635,14 @@ Factor & Mean Beta & t-stat (HAC) & p-value \\
                 """)
             
             result = await self.session.execute(
-                q, {"formation_year": formation_year, "return_year": return_year}
+                q, {"formation_year": formation_year, "return_year": return_year, "data_tier": self.data_tier}
             )
             rows = result.fetchall()
             
             if len(rows) < 30:  # Need minimum sample for regression
                 continue
             
-            # Build regression dataframe with delisting return integration
-            year_delistings = delisting_map.get(return_year, {})
+            # Build regression dataframe (returns are sourced from the July–June return table)
             df_rows = []
             
             for r in rows:
@@ -1606,13 +1652,9 @@ Factor & Mean Beta & t-stat (HAC) & p-value \\
                 bm_proxy = float(r[3]) if r[3] else 0.5
                 return_pct = r[4]
                 
-                # Integrate delisting returns
-                if symbol in year_delistings:
-                    return_pct = year_delistings[symbol]
-                elif return_pct is None:
-                    continue  # Skip if no return and no delisting
-                else:
-                    return_pct = float(return_pct)
+                if return_pct is None:
+                    continue  # Skip if no return
+                return_pct = float(return_pct)
                 
                 # Filter extreme outliers
                 if abs(return_pct) > 500:
@@ -1806,68 +1848,104 @@ N (periods) & \\multicolumn{{4}}{{c}}{{{n}}} \\\\
         
         PUBLICATION FIX (Dec 2025):
         - Now uses July-June returns by default (Fama-French convention)
-        - Integrates delisting returns for survivorship bias correction
+        - Enforces point-in-time S&P 500 membership at formation date when membership spans are available
         
         Returns:
             9-cell matrix of returns with significance tests
         """
         from sqlalchemy import text
         import pandas as pd
-        from app.db.models import DelistingReturn
-        
-        # Pre-fetch delisting returns
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-        )
-        delisting_map = {}
-        for r in delist_result.fetchall():
-            if not r.delist_date:
-                continue
-            key_year = delisting_key_year(r.delist_date, use_july_june=use_july_june)
-            if key_year not in delisting_map:
-                delisting_map[key_year] = {}
-            delisting_map[key_year][r.symbol] = r.delist_return * 100
-        
+        from app.db.models import SP500HistoricalConstituent
+        from datetime import date
+
+        membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+        membership_available = bool(isinstance(membership_total, int) and membership_total > 0)
+
         all_year_data = []
         
         for year in range(start_year, end_year):
             formation_year = year
             return_year = year + 1
+            formation_date = date(int(return_year), 7, 1) if use_july_june else date(int(return_year), 1, 1)
             
             if use_july_june:
-                q = text("""
-                    WITH company_data AS (
+                if membership_available:
+                    q = text("""
+                        WITH members AS (
+                            SELECT DISTINCT symbol
+                            FROM sp500_historical_constituents
+                            WHERE added_date <= :formation_date
+                              AND (removed_date IS NULL OR removed_date >= :formation_date)
+                        ),
+                        company_data AS (
+                            SELECT 
+                                inc.symbol,
+                                inc.revenue,
+                                CASE 
+                                    WHEN inc.revenue > 100000000 
+                                    THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                    ELSE NULL 
+                                END as rd_intensity,
+                                LOG(NULLIF(inc.revenue, 0)) as log_size
+                            FROM fmp_income_statements inc
+                            JOIN members m ON m.symbol = inc.symbol
+                            WHERE inc.fiscal_year = :formation_year
+                              AND inc.period = 'FY'
+                              AND inc.revenue >= 100000000
+                              AND inc.rd_expenses >= 0
+                        ),
+                        returns AS (
+                            SELECT symbol, annualized_return * 100 as return_pct
+                            FROM july_june_returns
+                            WHERE formation_year = :formation_year
+                              AND data_tier = :data_tier
+                        )
                         SELECT 
-                            inc.symbol,
-                            inc.revenue,
-                            CASE 
-                                WHEN inc.revenue > 100000000 
-                                THEN (inc.rd_expenses::float / inc.revenue * 100)
-                                ELSE NULL 
-                            END as rd_intensity,
-                            LOG(NULLIF(inc.revenue, 0)) as log_size
-                        FROM fmp_income_statements inc
-                        WHERE inc.fiscal_year = :formation_year
-                          AND inc.period = 'FY'
-                          AND inc.revenue >= 100000000
-                          AND inc.rd_expenses >= 0
-                    ),
-                    returns AS (
-                        SELECT symbol, annualized_return * 100 as return_pct
-                        FROM july_june_returns
-                        WHERE formation_year = :formation_year
-                    )
-                    SELECT 
-                        cd.symbol,
-                        cd.rd_intensity,
-                        cd.log_size,
-                        cd.revenue,
-                        r.return_pct
-                    FROM company_data cd
-                    LEFT JOIN returns r ON cd.symbol = r.symbol
-                    WHERE cd.rd_intensity IS NOT NULL
-                      AND cd.log_size IS NOT NULL
-                """)
+                            cd.symbol,
+                            cd.rd_intensity,
+                            cd.log_size,
+                            cd.revenue,
+                            r.return_pct
+                        FROM company_data cd
+                        LEFT JOIN returns r ON cd.symbol = r.symbol
+                        WHERE cd.rd_intensity IS NOT NULL
+                          AND cd.log_size IS NOT NULL
+                    """)
+                else:
+                    q = text("""
+                        WITH company_data AS (
+                            SELECT 
+                                inc.symbol,
+                                inc.revenue,
+                                CASE 
+                                    WHEN inc.revenue > 100000000 
+                                    THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                    ELSE NULL 
+                                END as rd_intensity,
+                                LOG(NULLIF(inc.revenue, 0)) as log_size
+                            FROM fmp_income_statements inc
+                            WHERE inc.fiscal_year = :formation_year
+                              AND inc.period = 'FY'
+                              AND inc.revenue >= 100000000
+                              AND inc.rd_expenses >= 0
+                        ),
+                        returns AS (
+                            SELECT symbol, annualized_return * 100 as return_pct
+                            FROM july_june_returns
+                            WHERE formation_year = :formation_year
+                              AND data_tier = :data_tier
+                        )
+                        SELECT 
+                            cd.symbol,
+                            cd.rd_intensity,
+                            cd.log_size,
+                            cd.revenue,
+                            r.return_pct
+                        FROM company_data cd
+                        LEFT JOIN returns r ON cd.symbol = r.symbol
+                        WHERE cd.rd_intensity IS NOT NULL
+                          AND cd.log_size IS NOT NULL
+                    """)
             else:
                 q = text("""
                     WITH company_data AS (
@@ -1903,29 +1981,25 @@ N (periods) & \\multicolumn{{4}}{{c}}{{{n}}} \\\\
                       AND cd.log_size IS NOT NULL
                 """)
             
-            result = await self.session.execute(
-                q, {"formation_year": formation_year, "return_year": return_year}
-            )
+            params = {"formation_year": formation_year, "return_year": return_year, "data_tier": self.data_tier}
+            if use_july_june and membership_available:
+                params["formation_date"] = formation_date
+
+            result = await self.session.execute(q, params)
             rows = result.fetchall()
             
             if len(rows) < 50:
                 continue
             
-            # Integrate delisting returns
-            year_delistings = delisting_map.get(return_year, {})
             df_rows = []
             
             for r in rows:
                 symbol = r[0]
                 return_pct = r[4]
                 
-                # Use delisting return if company delisted
-                if symbol in year_delistings:
-                    return_pct = year_delistings[symbol]
-                elif return_pct is None:
-                    continue  # Skip if no return and no delisting
-                else:
-                    return_pct = float(return_pct)
+                if return_pct is None:
+                    continue  # Skip if no return
+                return_pct = float(return_pct)
                 
                 df_rows.append({
                     "year": year,

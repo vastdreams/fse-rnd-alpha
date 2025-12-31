@@ -236,7 +236,7 @@ body {
    WHITEPAPER SLIDE DECK PRINT STYLES
    ============================================ */
 
-/* Print container - always in DOM but hidden by default */
+/* Print container - always in DOM but hidden on screen */
 .whitepaper-print-container {
   display: none;
   position: absolute;
@@ -244,6 +244,7 @@ body {
   top: 0;
   width: 210mm;
   visibility: hidden;
+  pointer-events: none;
 }
 
 /* Screen: Ensure print container stays hidden */
@@ -253,19 +254,22 @@ body {
     visibility: hidden !important;
     position: absolute !important;
     left: -9999px !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 }
 
 /* ============================================
    WHITEPAPER @media print RULES
    ============================================ */
-@media print {
-  /* Page setup */
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
 
+/* Named page for whitepaper slides - zero margin for full-bleed slides */
+@page whitepaper-page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
   /* Force all colors to print */
   * {
     -webkit-print-color-adjust: exact !important;
@@ -273,66 +277,55 @@ body {
     color-adjust: exact !important;
   }
 
-  /* When printing whitepaper: hide EVERYTHING except print container */
-  body.printing-whitepaper,
-  body.printing-whitepaper #root {
-    visibility: hidden !important;
-  }
-  
-  body.printing-whitepaper .whitepaper-print-container {
-    display: block !important;
-    visibility: visible !important;
-    position: static !important;
-    left: 0 !important;
-    width: 100% !important;
+  /* Whitepaper: reset body */
+  body.printing-whitepaper {
+    margin: 0 !important;
+    padding: 0 !important;
     background: white !important;
   }
 
-  body.printing-whitepaper .whitepaper-print-container * {
-    visibility: visible !important;
-  }
-
-  /* Hide all other elements explicitly */
-  body.printing-whitepaper nav,
-  body.printing-whitepaper aside,
-  body.printing-whitepaper header,
-  body.printing-whitepaper footer,
-  body.printing-whitepaper .no-print,
-  body.printing-whitepaper button,
-  body.printing-whitepaper [class*="sidebar"],
-  body.printing-whitepaper [class*="Sidebar"] {
+  /* Whitepaper: hide #root entirely (print container is portaled to body) */
+  body.printing-whitepaper #root {
     display: none !important;
-    visibility: hidden !important;
   }
 
-  /* Whitepaper slide pages */
-  .whitepaper-print-slide {
+  /* Whitepaper: show print container (direct child of body via portal) */
+  body.printing-whitepaper > .whitepaper-print-container {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 210mm !important;
+    background: white !important;
+  }
+
+  /* Whitepaper slide pages - use named page for zero margins */
+  body.printing-whitepaper .whitepaper-print-slide {
+    page: whitepaper-page;
     page-break-after: always;
     page-break-inside: avoid;
     break-after: page;
     break-inside: avoid;
-    display: flex !important;
-    align-items: flex-start;
-    justify-content: center;
+    display: block !important;
     width: 210mm !important;
     height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
-    padding: 0;
-    margin: 0;
+    padding: 0 !important;
+    margin: 0 !important;
     overflow: hidden;
     background: white !important;
+    box-sizing: border-box;
   }
 
-  .whitepaper-print-slide:last-child {
+  body.printing-whitepaper .whitepaper-print-slide:last-child {
     page-break-after: auto;
     break-after: auto;
   }
 
-  /* Ensure slide pages render with correct dimensions */
-  .whitepaper-print-slide .slide-page {
+  /* Scale slide content to fill the A4 page exactly */
+  body.printing-whitepaper .whitepaper-print-slide .slide-page {
     box-shadow: none !important;
     border-radius: 0 !important;
+    border: none !important;
+    /* Override inline pixel styles with mm dimensions */
     width: 210mm !important;
     height: 297mm !important;
     min-width: 210mm !important;
@@ -341,6 +334,15 @@ body {
     max-height: 297mm !important;
     display: flex !important;
     flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Ensure content scales to fill page */
+    transform: none !important;
+  }
+
+  /* Ensure slide content doesn't get clipped */
+  body.printing-whitepaper .whitepaper-print-slide .slide-page > * {
+    max-width: 100% !important;
   }
 }
 

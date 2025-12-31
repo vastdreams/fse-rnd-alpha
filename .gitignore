@@ -55,6 +55,13 @@ Thumbs.db
 *.temp
 screenshots/
 
+# Generated publication validation outputs (local-only)
+publication_tables/
+
+# Admin-only client portal configuration (do not commit)
+backend/admin_clients.json
+admin_clients.json
+
 # Audit files (keep out of repo)
 CHATGPT_*.md
 CHATGPT_*.txt

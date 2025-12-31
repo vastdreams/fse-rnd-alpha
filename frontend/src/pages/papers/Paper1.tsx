@@ -148,9 +148,12 @@ export function Paper1() {
   }, [factorPremiumSeries])
 
   // Key metrics for the right sidebar - dynamically computed from API data
-  const rdPremium20yr = aggregateAnova?.["20yr"]?.ttest_high_vs_low?.mean_difference;
-  const etaSquared20yr = aggregateAnova?.["20yr"]?.anova?.eta_squared;
-  const pValue20yr = aggregateAnova?.["20yr"]?.anova?.p_value;
+  const rdPremium5yr = aggregateAnova?.["5yr"]?.ttest_high_vs_low?.mean_difference
+  const rdPremium10yr = aggregateAnova?.["10yr"]?.ttest_high_vs_low?.mean_difference
+  const rdPremium20yr = aggregateAnova?.["20yr"]?.ttest_high_vs_low?.mean_difference
+  const etaSquared5yr = aggregateAnova?.["5yr"]?.anova?.eta_squared
+  const etaSquared20yr = aggregateAnova?.["20yr"]?.anova?.eta_squared
+  const pValue20yr = aggregateAnova?.["20yr"]?.anova?.p_value
   
   const keyMetrics = [
     { 
@@ -181,6 +184,11 @@ export function Paper1() {
     queryKey: ["annualHmlPremium"],
     queryFn: () => api.getAnnualHmlPremium(),
   })
+
+  const annualMeanPremium = annualHmlData?.mean_premium
+  const annualTStat = annualHmlData?.hac_adjusted?.t_statistic
+  const annualPValue = annualHmlData?.hac_adjusted?.p_value
+  const annualNYears = annualHmlData?.n_years
 
   // Format data for charts
   const formatQuintileData = (data: typeof quintilePerf5yr) => {
@@ -333,7 +341,7 @@ export function Paper1() {
             <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">Data Tier Disclosure</p>
             <p className="text-sm text-amber-600 dark:text-amber-300">
               This analysis uses <strong>Tier-1 data</strong> from Financial Modeling Prep (FMP) API. 
-              Survivorship bias is substantially mitigated via historical constituent tracking and heuristic delisting returns.
+              Survivorship bias is mitigated via point-in-time constituent spans (where available) and explicit exit handling (cash-after-exit), with delisting uncertainty addressed via sensitivity analysis (we do not inject a single CRSP-style delisting-return field).
               For top-tier academic journals, Tier-2 data (CRSP/Compustat) would be required. 
               See{" "}
               <Link to="/documentation" className="underline hover:no-underline">
@@ -403,10 +411,9 @@ export function Paper1() {
 
               <h3 className="text-lg font-semibold text-foreground mt-6">2.2 Recent Quantitative Evidence</h3>
               <p className="text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Leung, Mazouz, and Evans (2020)</strong> sorted stocks into 
-                portfolios based on R&D intensity and report economically meaningful return differences between high
-                and low R&D groups in their sample. Their analysis discusses the relationship between R&D-related
-                portfolios and standard factor models.
+                <strong className="text-foreground">Cai, Cooper, and He (2023)</strong> provide a practitioner-facing synthesis
+                of the ``R\&D premium'' and discuss portfolio construction considerations (horizon choice, sector structure,
+                and implementability) alongside empirical evidence.
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Hou et al. (2022)</strong> demonstrated that this R&D phenomenon 
@@ -489,7 +496,10 @@ export function Paper1() {
                 <ul className="text-muted-foreground space-y-2">
                   <li><strong>Financial Modeling Prep (FMP):</strong> Income statements (R&D expense, revenue) and daily adjusted prices</li>
                   <li><strong>Ken French Data Library:</strong> Risk-free rate and factor series used in factor tests</li>
-                  <li><strong>S&amp;P 500 membership (Tier-1):</strong> Historical constituent changes (FMP) with delisting adjustments</li>
+                  <li>
+                    <strong>S&amp;P 500 membership (Tier-1):</strong> Historical constituent spans (added/removed dates) used for point-in-time membership
+                    at formation dates (where available). Exits are handled via return construction + sensitivity analysis rather than injecting proxy “delisting returns.”
+                  </li>
                 </ul>
               </div>
 
@@ -577,13 +587,13 @@ export function Paper1() {
 
               <h3 className="text-lg font-semibold text-foreground">4.3 Quintile Portfolio Construction</h3>
               <p className="text-muted-foreground leading-relaxed">
-                At the beginning of each calendar year t, we:
+                At portfolio formation (July 1 each year, per the July–June convention), we:
               </p>
               <ol className="text-muted-foreground list-decimal list-inside space-y-2">
                 <li>Collect R&D intensity for all S&P 500 companies using fiscal year t-1 data (most recent available)</li>
                 <li>Rank companies from lowest to highest R&D intensity</li>
                 <li>Sort into 5 equal-sized quintiles (each containing ~100 companies)</li>
-                <li>Calculate equal-weighted portfolio returns for year t for each quintile</li>
+                <li>Calculate equal-weighted portfolio returns for the subsequent July–June window for each quintile</li>
               </ol>
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <table className="w-full text-sm">
@@ -634,7 +644,7 @@ export function Paper1() {
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">2.</span>
-                  <span className="text-muted-foreground"><strong className="text-foreground">Delisting Returns:</strong> For companies removed from the index, we estimate delisting returns based on available price data or apply conservative heuristics (e.g., -30% for bankruptcy).</span>
+                  <span className="text-muted-foreground"><strong className="text-foreground">Exit Handling:</strong> When a firm exits mid-period (merger/delisting), we compute return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the July–June window (cash-after-exit). Delisting uncertainty is quantified via sensitivity analysis.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">3.</span>
@@ -696,12 +706,10 @@ export function Paper1() {
                 We conduct additional analyses to ensure the R&D premium is robust:
               </p>
               <ul className="text-muted-foreground space-y-2">
-                <li>• <strong className="text-foreground">Survivorship-Bias-Free Sample:</strong> We incorporate historical S&P 500 constituents 
-                and include delisting returns (-30% for distress events) to avoid inflating premium estimates.</li>
+                <li>• <strong className="text-foreground">Survivorship mitigation:</strong> We use point-in-time membership where spans are available and handle exits via cash-after-exit, reporting delisting sensitivity rather than injecting a single proxy delisting return.</li>
                 <li>• <strong className="text-foreground">Look-Ahead Bias Mitigation:</strong> We follow the Fama-French July-June convention, 
                 forming portfolios at June-end to ensure financial data from the prior year is fully disseminated.</li>
-                <li>• <strong className="text-foreground">Sector Neutrality:</strong> We compute within-sector quintiles to neutralize 
-                the effects of industry-wide R&D intensity variations.</li>
+                <li>• <strong className="text-foreground">Sector diagnostics:</strong> We report sector concentration explicitly and treat sector-neutral testing as a robustness extension (not the primary claim).</li>
               </ul>
               
               <h3 className="text-lg font-semibold text-foreground">4.8 Known Limitations & Caveats</h3>
@@ -709,15 +717,14 @@ export function Paper1() {
                 <p className="text-sm font-semibold text-red-600 dark:text-red-400">Important: Interpret Results with Caution</p>
                 
                 <div className="text-sm text-muted-foreground space-y-2">
-                  <p><strong className="text-foreground">1. Survivorship Bias (Addressed):</strong> Our analysis now incorporates historical S&P 500 constituents. 
-                  Companies that were delisted or dropped from the index are tracked through their exit date, with a proxy -30% delisting return applied for distress events.</p>
+                  <p><strong className="text-foreground">1. Survivorship Bias (Partially mitigated):</strong> We enforce point-in-time S&amp;P 500 membership where historical constituent spans are available. Exits are handled via cash-after-exit return construction, and delisting uncertainty is reported via sensitivity scenarios. Tier-1 still has coverage limitations versus CRSP/Compustat-grade data.</p>
                   
                   <p><strong className="text-foreground">2. Look-Ahead Bias (Addressed):</strong> We employ the Fama-French July-June return convention. 
                   Portfolios are formed on June 30th using financial data from the prior fiscal year, ensuring all 10-K filings are public 
                   before the first return is measured.</p>
                   
                   <p><strong className="text-foreground">3. Sector Concentration:</strong> High R&D quintiles are dominated by Technology and Healthcare. 
-                  The "R&D premium" may partially reflect sector performance, not R&D specifically. Within-sector analysis is essential.</p>
+                  The "R&amp;D premium" may partially reflect sector performance, not R&amp;D specifically. We report sector composition and treat sector-neutral testing as an extension.</p>
                   
                   <p><strong className="text-foreground">4. Zero-R&D Companies:</strong> Companies with zero reported R&D are included in Q1. 
                   This may include companies that expense R&D differently or have missing data.</p>
@@ -725,8 +732,7 @@ export function Paper1() {
                   <p><strong className="text-foreground">5. Overlapping Windows:</strong> Rolling window observations are highly correlated. 
                   Standard p-values are too optimistic. We apply HAC (Newey-West) corrections but results should still be interpreted conservatively.</p>
                   
-                  <p><strong className="text-foreground">6. Transaction Costs:</strong> Equal-weighted portfolios with annual rebalancing have 
-                  high turnover. Transaction costs are not modeled and would reduce realized returns.</p>
+                  <p><strong className="text-foreground">6. Transaction Costs:</strong> Trading frictions reduce implementable returns. The Main Paper reports a snapshot-pinned transaction-cost calibration and net-of-cost results for a rules-based implementation.</p>
                 </div>
               </div>
             </CardContent>
@@ -907,24 +913,36 @@ export function Paper1() {
 
               <h3 className="text-lg font-semibold text-foreground">6.1 Economic Interpretation</h3>
               <p className="text-muted-foreground leading-relaxed">
-                The ~5% (5yr) to ~2% (20yr) annual premium for high-R&D companies is economically meaningful. 
-                Over a 20-year period, even the smaller ~2% annual premium translates to significant cumulative 
+                The horizon-dependent annualized premium for high-R&amp;D companies is economically meaningful. In our snapshot, the rolling-window
+                Q5--Q1 premium is approximately{" "}
+                <strong className="text-foreground">
+                  {typeof rdPremium5yr === "number" ? `${rdPremium5yr >= 0 ? "+" : ""}${rdPremium5yr.toFixed(1)}%` : "..."}
+                </strong>{" "}
+                (5yr) versus{" "}
+                <strong className="text-foreground">
+                  {typeof rdPremium20yr === "number" ? `${rdPremium20yr >= 0 ? "+" : ""}${rdPremium20yr.toFixed(1)}%` : "..."}
+                </strong>{" "}
+                (20yr). Over long horizons, even a smaller annual premium can translate to significant cumulative 
                 outperformance. The magnitude suggests that R&D investment contributes to competitive advantages.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">6.2 Time Horizon Effects</h3>
               <p className="text-muted-foreground leading-relaxed">
-                The strengthening of effect sizes over longer horizons (η² from 0.225 to 0.458) suggests that 
+                The strengthening of effect sizes over longer horizons (η² rises from{" "}
+                <strong className="text-foreground">{typeof etaSquared5yr === "number" ? etaSquared5yr.toFixed(3) : "..."}</strong>{" "}
+                to{" "}
+                <strong className="text-foreground">{typeof etaSquared20yr === "number" ? etaSquared20yr.toFixed(3) : "..."}</strong>
+                ) suggests that 
                 R&D benefits compound over time. This is consistent with the innovation literature suggesting 
                 that R&D investments have long gestation periods before yielding commercial returns.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">6.3 Limitations and Biases</h3>
               <ul className="text-muted-foreground space-y-2">
-                <li>• <strong>Survivorship bias:</strong> Uses current S&P 500 constituents; historical members who were delisted or dropped are excluded. This may inflate premium estimates by 0.5-1% annually.</li>
+                <li>• <strong>Survivorship bias:</strong> Point-in-time membership is enforced where constituent spans are available, but Tier-1 coverage is not CRSP/Compustat-grade. Delisting uncertainty is addressed via sensitivity analysis.</li>
                 <li>• <strong>Look-ahead bias:</strong> While we use July-June returns (Fama-French convention) to mitigate timing issues, fiscal year-end variations create imperfect alignment.</li>
                 <li>• <strong>Overlapping windows:</strong> Rolling 5/10/20-year windows are not independent observations. We apply Newey-West HAC standard errors, but overlapping-window p-values should be interpreted with caution. Annual non-overlapping HML premium is the preferred inference approach.</li>
-                <li>• <strong>Sector concentration:</strong> Q5 (high R&D) is dominated by Tech/Healthcare (~70%). Premium may partially reflect sector performance. Sector-neutral results show smaller but still positive premium.</li>
+                <li>• <strong>Sector concentration:</strong> High-R&amp;D portfolios are concentrated in R&amp;D-intensive sectors (notably Tech/Healthcare), so sector exposures can influence results. We report sector composition; sector-neutral testing is treated as a robustness extension.</li>
                 <li>• <strong>Factor spanning:</strong> Formal tests against FF3/FF5/Momentum factors are required before claiming R&D as a distinct "pricing factor."</li>
               </ul>
             </CardContent>
@@ -942,8 +960,18 @@ export function Paper1() {
               <p className="text-muted-foreground leading-relaxed">
                 This study demonstrates a robust and economically significant positive relationship between 
                 R&D investment intensity and long-term shareholder returns among S&P 500 companies. Our 
-                quintile-based analysis reveals that high-R&D companies outperform low-R&D companies by 
-                +7.1% (5yr), +4.8% (10yr), and +2.6% (20yr) annually. Results are statistically significant (p &lt; 0.002).
+                quintile-based analysis shows a positive Q5--Q1 premium across horizons (rolling-window annualized premiums:{" "}
+                {typeof rdPremium5yr === "number" ? `${rdPremium5yr >= 0 ? "+" : ""}${rdPremium5yr.toFixed(1)}%` : "..."}{" "}
+                for 5yr,{" "}
+                {typeof rdPremium10yr === "number" ? `${rdPremium10yr >= 0 ? "+" : ""}${rdPremium10yr.toFixed(1)}%` : "..."}{" "}
+                for 10yr, and{" "}
+                {typeof rdPremium20yr === "number" ? `${rdPremium20yr >= 0 ? "+" : ""}${rdPremium20yr.toFixed(1)}%` : "..."}{" "}
+                for 20yr; descriptive due to overlap). Primary inference uses the non-overlapping annual July--June premium series (mean{" "}
+                {typeof annualMeanPremium === "number" ? `${annualMeanPremium.toFixed(2)}%` : "..."}
+                {typeof annualTStat === "number" && typeof annualPValue === "number"
+                  ? `, Newey–West t=${annualTStat.toFixed(2)}, p=${annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}`
+                  : ""}
+                {typeof annualNYears === "number" ? `; N=${annualNYears}` : ""}).
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 These findings have important implications for investors, corporate managers, and policymakers. 
@@ -980,7 +1008,7 @@ export function Paper1() {
                   <p className="text-sm font-semibold text-foreground">1. Financial Modeling Prep (Tier-1)</p>
                   <ul className="text-sm text-muted-foreground mt-1 space-y-1 list-disc list-inside">
                     <li>Income statements: R&amp;D expense and revenue</li>
-                    <li>Daily prices: adjusted close when available (splits/dividends)</li>
+                    <li>Daily prices: provider adjusted close for publication returns (split+dividend adjusted; no separate dividend cashflows added)</li>
                     <li>Historical constituents: point-in-time S&amp;P 500 membership (Tier-1 proxy)</li>
                     <li>
                       Replication requires an <code>FMP_API_KEY</code> (data cannot be redistributed)
@@ -1024,12 +1052,12 @@ export function Paper1() {
               </h4>
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Full analysis code available on GitHub: <a href="https://github.com/vastdreams/fse-rnd-alpha" className="text-primary hover:underline">github.com/vastdreams/fse-rnd-alpha</a>
+                  Full analysis code available on GitHub: <a href="https://github.com/vastdreams/rd-alpha-research" className="text-primary hover:underline">github.com/vastdreams/rd-alpha-research</a>
                 </p>
                 <div className="space-y-2 text-sm font-mono">
                   <p className="text-slate-600 dark:text-slate-400"># Clone and setup</p>
-                  <p className="text-foreground">git clone https://github.com/vastdreams/fse-rnd-alpha.git</p>
-                  <p className="text-foreground">cd fse-rnd-alpha && pip install -r requirements.txt</p>
+                  <p className="text-foreground">git clone https://github.com/vastdreams/rd-alpha-research.git</p>
+                  <p className="text-foreground">cd rd-alpha-research && pip install -r requirements.txt</p>
                   <p className="text-slate-600 dark:text-slate-400 mt-3"># Run data pipeline</p>
                   <p className="text-foreground">./scripts/reproduce_publication.sh</p>
                   <p className="text-slate-600 dark:text-slate-400 mt-3"># Key scripts:</p>
@@ -1074,7 +1102,7 @@ export function Paper1() {
           <Card>
             <CardContent className="pt-6">
               <ReferencesList ids={[
-                "cai_2023",
+                "cai_cooper_he_2023",
                 "chan_lakonishok_sougiannis_2001",
                 "eberhart_maxwell_siddique_2004",
                 "fama_french_1993",
@@ -1082,7 +1110,6 @@ export function Paper1() {
                 "gu_2005",
                 "hirshleifer_hsu_li_2013",
                 "hou_mo_xue_zhang_2022",
-                "leung_mazouz_chen_2019",
                 "lev_sougiannis_1996",
                 "li_2011"
               ]} />

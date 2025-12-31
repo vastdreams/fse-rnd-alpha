@@ -43,8 +43,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 from app.core.config import settings
 from app.db.models import (
     RollingWindowResult, FactorPremium, AnovaResult,
-    JulyJuneReturn, FMPIncomeStatement, FMPDailyPrice
+    JulyJuneReturn, FMPIncomeStatement, FMPDailyPrice,
+    SP500HistoricalConstituent, FamaFrenchFactor
 )
+from app.services.publication_snapshot import build_snapshot_payload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -137,6 +139,292 @@ async def check_quintile_coverage(session: AsyncSession, data_tier: str) -> Vali
             f"Missing quintiles in {data_tier}: expected [1,2,3,4,5], got {quintiles}",
             {"quintiles": quintiles}
         )
+
+
+async def check_factor_premium_convention_consistency(session: AsyncSession, data_tier: str) -> ValidationResult:
+    """Verify factor premium rows are not mixed across return conventions for a given tier."""
+    result = await session.execute(
+        select(
+            FactorPremium.return_convention,
+            func.count(FactorPremium.id).label("count"),
+        )
+        .where(FactorPremium.data_tier == data_tier)
+        .group_by(FactorPremium.return_convention)
+        .order_by(FactorPremium.return_convention)
+    )
+    conventions = {r.return_convention: int(r.count or 0) for r in result.fetchall()}
+
+    if not conventions:
+        return ValidationResult(
+            "factor_premium_convention_consistency",
+            True,
+            f"No FactorPremium rows found for {data_tier} (may be fine if not precomputed)",
+            {"conventions": conventions},
+        )
+
+    if len(conventions) == 1:
+        convention = list(conventions.keys())[0]
+        return ValidationResult(
+            "factor_premium_convention_consistency",
+            True,
+            f"All FactorPremium rows for {data_tier} use '{convention}' return convention",
+            {"conventions": conventions},
+        )
+
+    return ValidationResult(
+        "factor_premium_convention_consistency",
+        False,
+        f"MIXED return conventions in FactorPremium for {data_tier}!",
+        {"conventions": conventions},
+    )
+
+
+async def check_sp500_membership_spans_present(session: AsyncSession) -> ValidationResult:
+    """Require historical membership spans for point-in-time universe (publication-grade)."""
+    total = await session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+    total = int(total or 0)
+
+    if total <= 0:
+        return ValidationResult(
+            "sp500_membership_spans_present",
+            False,
+            "SP500HistoricalConstituent is empty. Point-in-time membership cannot be enforced.",
+            {"count": total},
+        )
+
+    min_added = await session.scalar(select(func.min(SP500HistoricalConstituent.added_date)))
+    max_added = await session.scalar(select(func.max(SP500HistoricalConstituent.added_date)))
+
+    return ValidationResult(
+        "sp500_membership_spans_present",
+        True,
+        f"Historical membership spans present: {total} rows",
+        {
+            "count": total,
+            "min_added_date": str(min_added) if min_added else None,
+            "max_added_date": str(max_added) if max_added else None,
+        },
+    )
+
+
+async def check_ff_factors_populated(session: AsyncSession) -> ValidationResult:
+    """Require Fama-French factors (monthly) for spanning tests (publication-grade)."""
+    result = await session.execute(
+        select(FamaFrenchFactor.frequency, func.count(FamaFrenchFactor.id))
+        .group_by(FamaFrenchFactor.frequency)
+        .order_by(FamaFrenchFactor.frequency)
+    )
+    counts = {str(freq): int(n) for freq, n in result.fetchall()}
+    monthly = int(counts.get("monthly", 0))
+
+    if monthly <= 0:
+        return ValidationResult(
+            "ff_factors_populated",
+            False,
+            "ff_factors monthly series is empty. Spanning tests cannot be run without factors.",
+            {"counts": counts},
+        )
+
+    return ValidationResult(
+        "ff_factors_populated",
+        True,
+        "ff_factors populated (monthly series present).",
+        {"counts": counts},
+    )
+
+
+async def check_publication_snapshot_payload(session: AsyncSession, data_tier: str) -> ValidationResult:
+    """
+    Build the publication snapshot payload and assert key publication-facing sections are complete.
+
+    WHY:
+      This validates the exact objects used by the website manuscript + LaTeX asset generator:
+      - membership diagnostics
+      - annual inference object
+      - mispricing/coverage blocks (no missing cells)
+      - transaction-cost definitions (gross vs net premium consistency)
+    """
+    try:
+        payload = await build_snapshot_payload(session, return_convention="july_june", data_tier=data_tier)
+    except Exception as e:
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            f"Snapshot payload build failed: {e}",
+        )
+
+    # Helper to check error blocks
+    def _is_error(node: Any) -> bool:
+        return isinstance(node, dict) and isinstance(node.get("error"), str)
+
+    # 1) Annual HML (primary inference)
+    annual = payload.get("annual_hml_premium")
+    if not isinstance(annual, dict) or _is_error(annual):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "annual_hml_premium missing or error",
+            {"annual_hml_premium": annual},
+        )
+    n_years = annual.get("n_years")
+    hac = annual.get("hac_adjusted") if isinstance(annual.get("hac_adjusted"), dict) else {}
+    if not isinstance(n_years, int) or n_years < 20:
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            f"annual_hml_premium has insufficient observations (n_years={n_years})",
+            {"n_years": n_years},
+        )
+    if not isinstance(hac.get("t_statistic"), (int, float)) or not isinstance(hac.get("p_value"), (int, float)):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "annual_hml_premium missing HAC t-stat / p-value",
+            {"hac_adjusted": hac},
+        )
+    methodology = annual.get("methodology") if isinstance(annual.get("methodology"), dict) else {}
+    survivorship_text = str(methodology.get("survivorship_correction") or "")
+    if "cash" not in survivorship_text.lower():
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "annual_hml_premium methodology does not mention cash-after-exit survivorship handling (expected).",
+            {"methodology": methodology},
+        )
+
+    # 2) Membership diagnostics
+    md = payload.get("membership_diagnostics")
+    if not isinstance(md, dict) or _is_error(md):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "membership_diagnostics missing or error",
+            {"membership_diagnostics": md},
+        )
+    summary = md.get("summary") if isinstance(md.get("summary"), dict) else {}
+    avg_n = summary.get("avg_constituents_per_year")
+    years_with = summary.get("n_years_with_membership")
+    union = summary.get("unique_tickers_union")
+    if not isinstance(years_with, int) or years_with < 10:
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            f"membership_diagnostics has too few years with membership (n_years_with_membership={years_with})",
+            {"summary": summary},
+        )
+    if not isinstance(avg_n, (int, float)) or not (450 <= float(avg_n) <= 550):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            f"membership_diagnostics avg constituents per year out of expected range (avg={avg_n})",
+            {"summary": summary},
+        )
+    if not isinstance(union, int) or union < 500:
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            f"membership_diagnostics union size too small (unique_tickers_union={union})",
+            {"summary": summary},
+        )
+
+    # 3) Mispricing tests (no missing cells)
+    mis = payload.get("mispricing_tests")
+    if not isinstance(mis, dict) or _is_error(mis):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "mispricing_tests missing or error",
+            {"mispricing_tests": mis},
+        )
+    tests = mis.get("tests") if isinstance(mis.get("tests"), dict) else {}
+    required_groups = {
+        "by_size": ["Small", "Medium", "Large"],
+        "by_volatility": ["Low", "Medium", "High"],
+        "by_coverage": ["Low", "Medium", "High"],
+    }
+    for group_key, buckets in required_groups.items():
+        group = tests.get(group_key)
+        if not isinstance(group, dict):
+            return ValidationResult(
+                "publication_snapshot_payload",
+                False,
+                f"mispricing_tests missing group '{group_key}'",
+                {"tests": tests},
+            )
+        for bucket in buckets:
+            node = group.get(bucket)
+            prem = node.get("premium") if isinstance(node, dict) else None
+            if not isinstance(prem, (int, float)):
+                return ValidationResult(
+                    "publication_snapshot_payload",
+                    False,
+                    f"mispricing_tests missing premium for {group_key}:{bucket}",
+                    {"bucket": bucket, "node": node},
+                )
+
+    # 4) Transaction costs (definition-consistent, realized-turnover preferred)
+    tx = payload.get("transaction_costs")
+    if not isinstance(tx, dict) or _is_error(tx):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs missing or error",
+            {"transaction_costs": tx},
+        )
+    if not isinstance(tx.get("annual_trading_cost_pct"), (int, float)):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs missing annual_trading_cost_pct",
+            {"transaction_costs": tx},
+        )
+    if not isinstance(tx.get("gross_rd_premium_pct"), (int, float)) or not isinstance(tx.get("net_rd_premium_pct"), (int, float)):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs missing gross/net premium fields",
+            {"transaction_costs": tx},
+        )
+    if not isinstance(tx.get("definition"), dict):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs missing definition block (expected for publication clarity).",
+            {"transaction_costs": tx},
+        )
+    turnover = tx.get("turnover") if isinstance(tx.get("turnover"), dict) else {}
+    if not isinstance(turnover.get("avg_turnover_pct"), (int, float)):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs missing realized turnover (avg_turnover_pct).",
+            {"turnover": turnover},
+        )
+    note = str(tx.get("note") or "")
+    if "fallback" in note.lower():
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "transaction_costs is using a fallback estimate (investable_backtest unavailable).",
+            {"note": note},
+        )
+
+    # 5) Spanning tests must exist (for the paper tables)
+    spanning = payload.get("spanning_tests_full")
+    if not isinstance(spanning, dict) or _is_error(spanning) or not isinstance(spanning.get("latex_table"), str):
+        return ValidationResult(
+            "publication_snapshot_payload",
+            False,
+            "spanning_tests_full missing/invalid (latex_table required).",
+            {"spanning_tests_full": spanning},
+        )
+
+    return ValidationResult(
+        "publication_snapshot_payload",
+        True,
+        "Snapshot payload built and all publication-facing sections passed completeness checks.",
+        {"tier": data_tier, "annual_n_years": n_years},
+    )
 
 
 async def check_tier1_data_availability(session: AsyncSession) -> ValidationResult:
@@ -283,10 +571,19 @@ async def run_all_checks(session: AsyncSession, tier: str) -> List[ValidationRes
     # Core checks
     checks.append(await check_return_convention_consistency(session, tier))
     checks.append(await check_quintile_coverage(session, tier))
+    checks.append(await check_factor_premium_convention_consistency(session, tier))
     checks.append(await check_factor_premium_monotonicity(session, tier))
     
     # Data availability
     checks.append(await check_tier1_data_availability(session))
+
+    # Publication-grade prerequisites
+    checks.append(await check_sp500_membership_spans_present(session))
+    checks.append(await check_ff_factors_populated(session))
+
+    # Snapshot payload completeness (only meaningful if prerequisites exist)
+    # If factors/membership are missing, this check will typically fail (as intended for publication readiness).
+    checks.append(await check_publication_snapshot_payload(session, tier))
     
     # Tier-2 specific
     try:
@@ -298,7 +595,7 @@ async def run_all_checks(session: AsyncSession, tier: str) -> List[ValidationRes
     return checks
 
 
-async def main(tier: str, output_dir: Path):
+async def main(tier: str, output_dir: Path, database_url: str | None):
     """Main validation function."""
     logger.info("=" * 60)
     logger.info("PUBLICATION VALIDATION")
@@ -308,7 +605,8 @@ async def main(tier: str, output_dir: Path):
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    engine = create_async_engine(settings.async_database_url)
+    url = database_url or settings.async_database_url
+    engine = create_async_engine(url)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     
     try:
@@ -375,7 +673,13 @@ if __name__ == "__main__":
         default=Path("publication_tables"),
         help="Directory for output files (default: publication_tables)"
     )
+    parser.add_argument(
+        "--database-url",
+        type=str,
+        default=None,
+        help="Override DATABASE_URL for validation (e.g., to point at a remote or non-default local DB).",
+    )
     
     args = parser.parse_args()
-    asyncio.run(main(args.tier, args.output_dir))
+    asyncio.run(main(args.tier, args.output_dir, args.database_url))
 

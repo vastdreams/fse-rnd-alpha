@@ -252,7 +252,10 @@ class ETFBacktester:
         self.session = session
         self._rf_cache: Dict[int, float] = {}
         self._price_cache: Dict[Tuple[str, int, int], Optional[float]] = {}
-        self._delisting_cache: Dict[str, Tuple[date, float]] = {}
+        # Delisting handling for survivorship bias:
+        # We cache delist dates (not “delist returns”), and compute the month’s return from prices
+        # up to the delist date (cash earns 0% thereafter in that month).
+        self._delisting_cache: Dict[str, date] = {}
     
     async def run_backtest(
         self,
@@ -465,14 +468,13 @@ class ETFBacktester:
             select(
                 DelistingReturn.symbol,
                 DelistingReturn.delist_date,
-                DelistingReturn.delist_return,
             )
             .where(DelistingReturn.symbol.in_(all_symbols))
         )
         
-        for symbol, delist_date, delist_return in result.fetchall():
-            if symbol and delist_date and delist_return is not None:
-                self._delisting_cache[symbol] = (delist_date, float(delist_return))
+        for symbol, delist_date in result.fetchall():
+            if symbol and delist_date:
+                self._delisting_cache[str(symbol)] = delist_date
     
     async def _calculate_monthly_return(
         self,
@@ -503,12 +505,16 @@ class ETFBacktester:
             
             # Check for delisting
             if symbol in self._delisting_cache:
-                delist_date, delist_return = self._delisting_cache[symbol]
+                delist_date = self._delisting_cache[symbol]
                 if prev_month_end < delist_date <= month_end:
-                    # Delisting happened this month
-                    portfolio_return += weight * delist_return
-                    total_weight += weight
-                    n_delistings += 1
+                    # Delisting happened this month: compute return to the delist date (cash thereafter).
+                    start_price = await self._get_price_near_date(symbol, prev_month_end)
+                    end_price = await self._get_price_near_date(symbol, delist_date)
+                    if start_price is not None and end_price is not None and start_price > 0:
+                        ret = (end_price - start_price) / start_price
+                        portfolio_return += weight * float(ret)
+                        total_weight += weight
+                        n_delistings += 1
                     continue
                 elif delist_date <= prev_month_end:
                     # Already delisted

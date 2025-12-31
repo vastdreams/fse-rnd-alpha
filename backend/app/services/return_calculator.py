@@ -26,7 +26,7 @@ NOTES FOR FUTURE AI:
 """
 
 import logging
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from datetime import date, datetime
 from dataclasses import dataclass
 import numpy as np
@@ -34,7 +34,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 
-from app.db.models import FMPDailyPrice, JulyJuneReturn, FMPAnnualReturn
+from app.db.models import FMPDailyPrice, JulyJuneReturn, FMPAnnualReturn, SP500HistoricalConstituent
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,16 @@ SQRT_252 = np.sqrt(TRADING_DAYS_PER_YEAR)
 
 # Minimum trading days required for valid return calculation
 MIN_TRADING_DAYS = 200  # ~80% of a year
+# Minimum observed trading days allowed when the symbol exits the index mid-window.
+# Rationale: if a company is removed (M&A, bankruptcy, etc.), the price series may end early.
+# We still want to include it to reduce survivorship bias, treating cash as earning 0% thereafter.
+MIN_TRADING_DAYS_REMOVED_IN_WINDOW = 20
+
+# How we construct prices for return computation.
+# - adj_close_only: only use provider-adjusted close (split+dividend adjusted per vendor); never fall back
+# - adj_close_fallback_close: use adj_close when available, otherwise fall back to close (less defensible for TSR claims)
+PRICE_MODE_ADJ_CLOSE_ONLY = "adj_close_only"
+PRICE_MODE_ADJ_CLOSE_FALLBACK_CLOSE = "adj_close_fallback_close"
 
 
 # ==============================================================================
@@ -65,6 +75,9 @@ class JulyJuneReturnResult:
     annualized_return: float
     volatility: float
     trading_days: int
+    price_mode: str
+    adj_close_days: int
+    close_fallback_days: int
 
 
 # ==============================================================================
@@ -85,8 +98,41 @@ class JulyJuneReturnCalculator:
     we only use FY 2019 data which was publicly available by March 2020.
     """
     
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        data_tier: str = "tier1",
+        price_mode: str = PRICE_MODE_ADJ_CLOSE_ONLY,
+    ):
         self.session = session
+        self.data_tier = data_tier
+        self.price_mode = price_mode
+        self._removed_dates_by_symbol: Optional[Dict[str, List[date]]] = None
+
+    async def _ensure_removed_dates_cache(self) -> None:
+        """
+        Cache index-removal dates so we can allow shorter price histories when a symbol exits mid-window.
+
+        WHY:
+          - A delisted / acquired stock can have <200 trading days in a July–June window.
+          - Dropping it mechanically induces survivorship bias.
+          - We treat cash after the last observed price as 0% return for the remainder of the window.
+        """
+        if self._removed_dates_by_symbol is not None:
+            return
+
+        result = await self.session.execute(
+            select(SP500HistoricalConstituent.symbol, SP500HistoricalConstituent.removed_date)
+            .where(SP500HistoricalConstituent.removed_date.isnot(None))
+        )
+
+        mapping: Dict[str, List[date]] = {}
+        for symbol, removed_date in result.fetchall():
+            if symbol and removed_date:
+                mapping.setdefault(str(symbol), []).append(removed_date)
+
+        self._removed_dates_by_symbol = mapping
     
     async def compute_july_june_return(
         self,
@@ -111,14 +157,37 @@ class JulyJuneReturnCalculator:
         
         start_date = date(return_start_year, 7, 1)
         end_date = date(return_end_year, 6, 30)
+
+        # Determine whether this symbol exits the index during the return window.
+        # This is a practical proxy for “return window may end early”.
+        await self._ensure_removed_dates_cache()
+        removed_dates = (self._removed_dates_by_symbol or {}).get(symbol, [])
+        is_removed_in_window = any(
+            (start_date <= d <= end_date) for d in removed_dates
+        )
+        min_days_required = (
+            MIN_TRADING_DAYS_REMOVED_IN_WINDOW if is_removed_in_window else MIN_TRADING_DAYS
+        )
         
         # Get all daily prices in the period
         # CRITICAL FIX: Use adj_close for TOTAL RETURNS (includes dividends and splits)
         # Falls back to close if adj_close not available
+        #
+        # Publication policy (Tier-1):
+        # - Default: adj_close_only (most defensible). This treats vendor adj_close as a TSR proxy,
+        #   and we do NOT add dividends separately (avoids double counting).
+        # - Sensitivity: adj_close_fallback_close if needed for broader coverage.
+        if self.data_tier != "tier1":
+            raise ValueError(
+                f"JulyJuneReturnCalculator supports Tier-1 (FMPDailyPrice) only. Got data_tier={self.data_tier!r}."
+            )
+        use_adj_only = self.price_mode == PRICE_MODE_ADJ_CLOSE_ONLY
+
         result = await self.session.execute(
             select(
                 FMPDailyPrice.date,
-                func.coalesce(FMPDailyPrice.adj_close, FMPDailyPrice.close).label("price")
+                FMPDailyPrice.adj_close,
+                FMPDailyPrice.close,
             )
             .where(
                 FMPDailyPrice.symbol == symbol,
@@ -126,30 +195,60 @@ class JulyJuneReturnCalculator:
                 FMPDailyPrice.date <= end_date,
                 # At least one price must exist
                 (FMPDailyPrice.adj_close.isnot(None)) | (FMPDailyPrice.close.isnot(None)),
-                (FMPDailyPrice.adj_close > 0) | (FMPDailyPrice.close > 0)
+                (FMPDailyPrice.adj_close > 0) | (FMPDailyPrice.close > 0),
+                # For publication-grade TSR claims, require adjusted close to be available.
+                # This avoids silently mixing price-only series in a “total return” pipeline.
+                (FMPDailyPrice.adj_close.isnot(None) if use_adj_only else True),
             )
             .order_by(FMPDailyPrice.date)
         )
         
-        prices = result.fetchall()
+        rows = result.fetchall()
+
+        # Construct the price series deterministically in Python (so we can audit fallback usage).
+        price_list: List[float] = []
+        adj_close_days = 0
+        close_fallback_days = 0
+
+        for r in rows:
+            adj = float(r.adj_close) if r.adj_close is not None else None
+            close = float(r.close) if r.close is not None else None
+
+            if adj is not None and adj > 0:
+                price_list.append(adj)
+                adj_close_days += 1
+                continue
+
+            if use_adj_only:
+                # No fallback allowed in publication mode.
+                continue
+
+            if close is not None and close > 0:
+                price_list.append(close)
+                close_fallback_days += 1
+
+        trading_days = len(price_list)
         
-        if len(prices) < MIN_TRADING_DAYS:
-            logger.debug(f"Insufficient data for {symbol} formation year {formation_year}: {len(prices)} days")
+        if trading_days < min_days_required:
+            logger.debug(
+                f"Insufficient data for {symbol} formation year {formation_year}: {trading_days} days "
+                f"(price_mode={self.price_mode}, removed_in_window={is_removed_in_window})"
+            )
             return None
         
         # Extract prices (using adjusted close for total return calculation)
-        price_list = [float(p.price) for p in prices]
-        
         july_start_price = price_list[0]
         june_end_price = price_list[-1]
         
         # Calculate total return
         total_return = (june_end_price / july_start_price) - 1
-        
-        # Annualize (assuming ~252 trading days)
-        days = len(prices)
-        years = days / TRADING_DAYS_PER_YEAR
-        annualized_return = ((1 + total_return) ** (1 / years)) - 1 if years > 0 else 0
+
+        # Publication semantics:
+        # - This series is defined over the fixed July–June window.
+        # - If the price series ends early (e.g., acquisition/delisting), we treat cash as earning 0%
+        #   for the remainder of the window. Therefore the correct “annual” return for the window is
+        #   simply the observed holding-period return to the last price (not re-annualized).
+        annualized_return = float(total_return)
         
         # Calculate volatility from daily returns
         daily_returns = np.diff(price_list) / price_list[:-1]
@@ -164,7 +263,10 @@ class JulyJuneReturnCalculator:
             total_return=total_return,
             annualized_return=annualized_return,
             volatility=annualized_volatility,
-            trading_days=days
+            trading_days=trading_days,
+            price_mode=self.price_mode,
+            adj_close_days=adj_close_days,
+            close_fallback_days=close_fallback_days,
         )
     
     async def compute_all_july_june_returns(
@@ -227,6 +329,7 @@ class JulyJuneReturnCalculator:
                 stmt = insert(JulyJuneReturn).values(
                     symbol=ret.symbol,
                     formation_year=ret.formation_year,
+                    data_tier=self.data_tier,
                     july_start_price=ret.july_start_price,
                     june_end_price=ret.june_end_price,
                     total_return=ret.total_return,
@@ -235,7 +338,7 @@ class JulyJuneReturnCalculator:
                     trading_days=ret.trading_days,
                     created_at=datetime.utcnow()
                 ).on_conflict_do_update(
-                    index_elements=["symbol", "formation_year"],
+                    index_elements=["symbol", "formation_year", "data_tier"],
                     set_={
                         "july_start_price": ret.july_start_price,
                         "june_end_price": ret.june_end_price,
@@ -257,13 +360,17 @@ class JulyJuneReturnCalculator:
     async def get_july_june_return(
         self,
         symbol: str,
-        formation_year: int
+        formation_year: int,
+        *,
+        data_tier: Optional[str] = None,
     ) -> Optional[JulyJuneReturn]:
         """Get cached July-June return from database."""
+        effective_tier = data_tier or self.data_tier
         result = await self.session.execute(
             select(JulyJuneReturn).where(
                 JulyJuneReturn.symbol == symbol,
-                JulyJuneReturn.formation_year == formation_year
+                JulyJuneReturn.formation_year == formation_year,
+                JulyJuneReturn.data_tier == effective_tier,
             )
         )
         return result.scalar_one_or_none()

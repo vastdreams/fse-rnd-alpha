@@ -301,7 +301,7 @@ export function Donate() {
         <p className="text-muted-foreground">Other ways to support our research</p>
         <div className="flex justify-center gap-4">
           <a
-            href="https://github.com/finsoeasy/fse-rnd-alpha"
+            href="https://github.com/vastdreams/rd-alpha-research"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-muted transition-colors"

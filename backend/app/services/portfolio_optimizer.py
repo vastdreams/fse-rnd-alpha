@@ -551,39 +551,21 @@ class PortfolioOptimizer:
         
         PUBLICATION FIX (Dec 2025):
         - Now supports July-June returns (Fama-French convention) via self.use_july_june
-        - Integrates delisting returns for survivorship bias correction
+        - Delistings are handled upstream in the July–June return series (return ends at last observed price;
+          cash is treated as earning 0% thereafter for the remainder of the window).
         """
-        from app.db.models import JulyJuneReturn, DelistingReturn
-        from app.services.delisting_utils import delisting_key_year
-        
-        # Pre-fetch delisting returns
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-            .where(DelistingReturn.symbol.in_(symbols))
-        )
-        delisting_map = {}
-        for r in delist_result.fetchall():
-            if not r.delist_date:
-                continue
-            key_year = delisting_key_year(r.delist_date, use_july_june=self.use_july_june)
-            if key_year not in delisting_map:
-                delisting_map[key_year] = {}
-            delisting_map[key_year][r.symbol] = r.delist_return
+        from app.db.models import JulyJuneReturn
         
         annual_returns = []
         
         for year in range(start_year, end_year + 1):
             year_return = 0.0
             valid_weights = 0.0
-            year_delistings = delisting_map.get(year, {})
             
             for symbol, weight in zip(symbols, weights):
                 ret = None
                 
-                # Check for delisting
-                if symbol in year_delistings:
-                    ret = year_delistings[symbol]
-                elif self.use_july_june:
+                if self.use_july_june:
                     # July-June returns: formation_year is year-1
                     formation_year = year - 1
                     result = await self.session.execute(
@@ -741,25 +723,10 @@ class PortfolioOptimizer:
         if not benchmark_symbols:
             benchmark_symbols = list({*universe_portfolio_symbols})
 
-        # Prefetch returns + delistings for performance-consistent yearly series
-        from app.db.models import DelistingReturn, JulyJuneReturn
-        from app.services.delisting_utils import delisting_key_year
+        # Prefetch returns for performance-consistent yearly series
+        from app.db.models import JulyJuneReturn
 
         universe_symbols = sorted({*universe_portfolio_symbols, *benchmark_symbols})
-
-        # Delisting returns (override return-series where applicable)
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-            .where(DelistingReturn.symbol.in_(universe_symbols))
-        )
-        delist_by_year: Dict[int, Dict[str, float]] = {}
-        for sym, delist_date, delist_ret in delist_result.fetchall():
-            if not delist_date or delist_ret is None:
-                continue
-            key_year = delisting_key_year(delist_date, use_july_june=self.use_july_june)
-            if key_year not in delist_by_year:
-                delist_by_year[key_year] = {}
-            delist_by_year[key_year][sym] = float(delist_ret)
 
         # Return series (one query for the whole universe + period)
         returns_map: Dict[Tuple[str, int], float] = {}
@@ -836,8 +803,6 @@ class PortfolioOptimizer:
         prev_weights: Dict[str, float] = {}
 
         for year in years:
-            year_delistings = delist_by_year.get(year, {})
-
             # Holdings + weights for this year
             year_holdings = holdings_by_year.get(int(year), [])
             symbols = [h.symbol for h in year_holdings]
@@ -869,9 +834,7 @@ class PortfolioOptimizer:
             port_return = 0.0
             valid_w = 0.0
             for sym, w in zip(symbols, weights):
-                ret = year_delistings.get(sym)
-                if ret is None:
-                    ret = returns_map.get((sym, year))
+                ret = returns_map.get((sym, year))
                 if ret is None:
                     continue
                 port_return += float(ret) * float(w)
@@ -887,9 +850,7 @@ class PortfolioOptimizer:
             # Benchmark return (equal-weight mean across benchmark universe)
             bench_vals: List[float] = []
             for sym in benchmark_symbols:
-                ret = year_delistings.get(sym)
-                if ret is None:
-                    ret = returns_map.get((sym, year))
+                ret = returns_map.get((sym, year))
                 if ret is None:
                     continue
                 bench_vals.append(float(ret))

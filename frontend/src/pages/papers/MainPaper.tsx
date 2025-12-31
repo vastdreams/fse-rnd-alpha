@@ -595,6 +595,46 @@ export function MainPaper() {
       })
   }, [investableBacktest])
 
+  const investableExcessNetPp = useMemo(() => {
+    const bt = investableBacktest as any
+    const v = bt?.excess_return_net
+    return typeof v === "number" ? v : undefined
+  }, [investableBacktest])
+
+  const investableTurnoverAvgPct = useMemo(() => {
+    const bt = investableBacktest as any
+    const v = bt?.turnover?.avg_turnover_pct
+    return typeof v === "number" ? v : undefined
+  }, [investableBacktest])
+
+  const investableUnderperformPct = useMemo(() => {
+    const bt = investableBacktest as any
+    const rows = Array.isArray(bt?.yearly_data) ? (bt.yearly_data as any[]) : []
+    const usable = rows
+      .map((r) => {
+        const portfolioReturn =
+          typeof r?.portfolio_return_net === "number"
+            ? r.portfolio_return_net
+            : typeof r?.portfolio_return === "number"
+              ? r.portfolio_return
+              : undefined
+        const benchmarkReturn =
+          typeof r?.benchmark_return_net === "number"
+            ? r.benchmark_return_net
+            : typeof r?.benchmark_return === "number"
+              ? r.benchmark_return
+              : undefined
+        return { portfolioReturn, benchmarkReturn }
+      })
+      .filter(
+        (x): x is { portfolioReturn: number; benchmarkReturn: number } =>
+          typeof x.portfolioReturn === "number" && typeof x.benchmarkReturn === "number"
+      )
+    if (usable.length === 0) return undefined
+    const under = usable.filter((x) => x.portfolioReturn < x.benchmarkReturn).length
+    return (under / usable.length) * 100
+  }, [investableBacktest])
+
   return (
     <div className="flex justify-center min-h-0">
       <div className="flex w-full max-w-screen-2xl gap-8">
@@ -771,8 +811,9 @@ export function MainPaper() {
                 <strong className="text-foreground">Method:</strong> Each year we sort S&amp;P 500 firms (N ≈ {cohortSummary?.total_companies || 500} with
                 R&amp;D data) into quintiles by R&amp;D intensity (R&amp;D expense / revenue) and measure subsequent July-June returns
                 over {sampleYearRange || "the sample period"}.
-                This timing convention aligns with Fama-French methodology to avoid look-ahead bias. We incorporate historical index membership
-                and delisting adjustments to mitigate survivorship bias.
+                This timing convention aligns with Fama-French methodology to avoid look-ahead bias. Where historical constituent spans are available,
+                we enforce point-in-time S&amp;P 500 membership at formation dates. For exits (mergers/delistings), returns are computed to the last observed
+                trading day within the July-June window (cash thereafter), and delisting uncertainty is reported via sensitivity analysis rather than a single hard-coded assumption.
               </p>
 
               <p className="text-muted-foreground leading-relaxed">
@@ -799,18 +840,17 @@ export function MainPaper() {
                 <strong className="text-foreground">Implementation:</strong>{" "}
                 {typeof transactionCosts?.annual_trading_cost_pct === "number" && typeof transactionCosts?.net_rd_premium_pct === "number" ? (
                   <>
-                    We translate this finding into an investable strategy: buy the top quintile (highest R&amp;D intensity), 
-                    rebalance annually in July, and hold equal-weighted positions. Under a literature-calibrated transaction-cost model 
-                    (Novy-Marx &amp; Velikov, 2016), estimated trading costs are only{" "}
+                    We translate this finding into an investable strategy: hold the top <strong className="text-foreground">20</strong> stocks by R&amp;D intensity
+                    (equal-weighted) and reconstitute annually in July. Using realized turnover from the backtest and a literature-calibrated transaction-cost model
+                    (Novy-Marx &amp; Velikov, 2016), estimated trading costs are{" "}
                     <strong className="text-foreground">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</strong> annually
-                    (due to low turnover and S&amp;P 500 liquidity), yielding a net premium of{" "}
+                    (large-cap liquidity), yielding a net premium of{" "}
                     <strong className="text-foreground">{transactionCosts.net_rd_premium_pct.toFixed(2)}%</strong> per year after costs.
                     This means the strategy retains nearly all of its gross return advantage when implemented in practice.
                   </>
                 ) : (
-                  <>We translate the signal into an implementable strategy with explicit portfolio rules: buy the top quintile 
-                    by R&amp;D intensity, rebalance annually in July, and hold equal-weighted positions. Trading costs are minimal 
-                    due to low turnover and large-cap liquidity, preserving most of the gross premium.</>
+                  <>We translate the signal into an implementable strategy with explicit portfolio rules: hold the top 20 by R&amp;D intensity,
+                    reconstitute annually in July, and equal-weight positions. Trading costs are modeled separately using a literature-calibrated framework.</>
                 )}
               </p>
 
@@ -1071,7 +1111,7 @@ export function MainPaper() {
               <p className="text-muted-foreground">
                 We present (i) annual non-overlapping HML premiums for primary inference and (ii) rolling-window
                 summaries for descriptive context. <strong className="text-foreground">Why two approaches?</strong> Annual non-overlapping
-                observations are independent and support valid statistical tests. Rolling windows are autocorrelated (overlapping periods share data)
+                observations are non-overlapping (reduces mechanical overlap) and support cleaner inference. Rolling windows are autocorrelated (overlapping periods share data)
                 but useful for visualizing trends and regime dependence. We are explicit about which is which.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
@@ -1108,8 +1148,10 @@ export function MainPaper() {
                 <li>
                   <strong className="text-foreground">Universe:</strong> S&amp;P 500 point-in-time constituents{" "}
                   <InfoTooltip term="point_in_time" size={12} />.{" "}
-                  <span className="text-sm">We use historical membership data to include only stocks that were actually in the index at each formation date,
-                  preventing survivorship bias from excluding failed companies.</span>
+                  <span className="text-sm">
+                    Where historical membership spans are available, we include only stocks that were actually in the index at each formation date,
+                    reducing survivorship bias (coverage limitations are disclosed via snapshot diagnostics).
+                  </span>
                 </li>
                 <li>
                   <strong className="text-foreground">Signal:</strong> prior fiscal-year R&amp;D intensity (R&amp;D expense / revenue).{" "}
@@ -1241,13 +1283,12 @@ export function MainPaper() {
                           <span className="inline-flex items-center gap-1">
                             Return definition
                             <InfoTooltip title="Return Definition" size={12}>
-                              Returns are computed from a daily price series using adjusted close when available (split/dividend-adjusted per the provider),
-                              and falling back to close when adjusted close is unavailable. This is a practical approximation of total shareholder return,
-                              subject to vendor definitions and data coverage. Adjusted close accounts for stock splits and dividends.
+                              Publication returns are computed from provider <strong>adjusted close</strong> (split+dividend adjusted per vendor) to approximate total shareholder return.
+                              We do not add dividends separately (to avoid double counting). In publication mode, we do not silently fall back to unadjusted close; fallback modes exist only for sensitivity/coverage checks.
                             </InfoTooltip>
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-mono">Adj close (fallback: close)</TableCell>
+                        <TableCell className="text-right font-mono">Adj close (publication)</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">
@@ -1267,13 +1308,13 @@ export function MainPaper() {
                           <span className="inline-flex items-center gap-1">
                             Delisting returns
                             <InfoTooltip title="Delisting Return Treatment" size={12}>
-                              When a stock delists (leaves the index due to merger, bankruptcy, going private, etc.), we assign a delisting return
-                              for that period. We prefer price-based estimates from the final trading days. If unavailable, we use literature-calibrated
-                              heuristics (e.g., -30% for distress delistings per Shumway 1997). This prevents bias from ignoring failed companies.
+                              We do not inject a separate “delisting return” into the annual return series. If a firm’s price history ends before the July–June window ends
+                              (e.g., merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the window.
+                              We also report a literature-calibrated sensitivity analysis for delisting uncertainty.
                             </InfoTooltip>
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-mono">Integrated by period</TableCell>
+                        <TableCell className="text-right font-mono">Cash-after-exit + sensitivity</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">
@@ -1328,7 +1369,7 @@ export function MainPaper() {
                     <InfoTooltip term="non_overlapping" size={12} />
                   :</strong> each year, we form R&amp;D quintiles using the prior fiscal
                   year and measure the next July-June return. This produces one observation per year, which is the cleanest basis for inference because
-                  <em> each observation is independent</em>. We use Newey-West standard errors{" "}
+                  <em> the series is non-overlapping (reduces mechanical overlap)</em>. We still use Newey-West standard errors{" "}
                   <InfoTooltip term="newey_west" size={12} />{" "}
                   to account for any residual autocorrelation.
                 </li>
@@ -1366,7 +1407,7 @@ export function MainPaper() {
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>Look-ahead mitigation via July-June timing (default).</li>
                   <li>Point-in-time index membership used where historical constituent spans are available.</li>
-                  <li>Delisting returns are applied in the delisting period and firms are removed thereafter.</li>
+                  <li>Exits are handled via cash-after-exit return construction; delisting sensitivity is reported separately.</li>
                   <li>Outlier controls: minimum revenue threshold and sector-aware R&amp;D-intensity caps.</li>
                 </ul>
               </div>
@@ -1637,11 +1678,20 @@ export function MainPaper() {
                 </p>
                 <div className="grid md:grid-cols-2 gap-3 mb-3">
                   <div className="p-3 rounded bg-green-500/10 border border-green-500/20">
-                    <p className="font-semibold text-green-700 dark:text-green-400 text-xs uppercase tracking-wide mb-1">Annual Premium (~5%)</p>
+                    <p className="font-semibold text-green-700 dark:text-green-400 text-xs uppercase tracking-wide mb-1">
+                      Annual (re-sorted):{" "}
+                      {typeof annualHmlData?.mean_premium === "number" ? `${annualHmlData.mean_premium.toFixed(1)}%` : "…"}
+                    </p>
                     <p className="text-xs text-muted-foreground">Re-sorts every year using current R&D intensity. This is the <strong>investable</strong> premium with annual rebalancing.</p>
                   </div>
                   <div className="p-3 rounded bg-slate-500/10 border border-slate-500/20">
-                    <p className="font-semibold text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wide mb-1">20-Year Rolling (1.7%)</p>
+                    <p className="font-semibold text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wide mb-1">
+                      20-year rolling (fixed-sort):{" "}
+                      {(() => {
+                        const p20 = headlinePremiums.find((h) => h.horizon === "20yr")?.premiumPct
+                        return typeof p20 === "number" ? `${p20.toFixed(1)}%` : "…"
+                      })()}
+                    </p>
                     <p className="text-xs text-muted-foreground">Sorts once in year 1, holds for 20 years. Shows what happens if you <strong>never update</strong> the signal.</p>
                   </div>
                 </div>
@@ -1682,9 +1732,14 @@ export function MainPaper() {
                 </li>
                 <li>
                   <strong className="text-foreground">Horizon decay reflects signal staleness, not strategy failure:</strong>{" "}
-                  {headlinePremiums.some((h) => typeof h.premiumPct === "number")
-                    ? `the 20-year rolling premium (~1.7%) is lower because quintile assignments are fixed at window start and never updated. An investable strategy with annual rebalancing captures the full annual premium (~5%).`
-                    : "long-horizon rolling windows show lower premiums because the sort is never updated; investable strategies with annual rebalancing capture the full annual premium."}
+                  {(() => {
+                    const p20 = headlinePremiums.find((h) => h.horizon === "20yr")?.premiumPct
+                    const pAnnual = typeof annualHmlData?.mean_premium === "number" ? annualHmlData.mean_premium : undefined
+                    if (typeof p20 === "number" && typeof pAnnual === "number") {
+                      return `the 20-year rolling premium (${p20.toFixed(1)}%) is lower because quintile assignments are fixed at window start and never updated. An investable strategy with annual rebalancing captures the full annual premium (${pAnnual.toFixed(1)}%).`
+                    }
+                    return "long-horizon rolling windows show lower premiums because the sort is never updated; investable strategies with annual rebalancing capture the full annual premium."
+                  })()}
                 </li>
               </ul>
               <p className="text-xs text-muted-foreground">
@@ -2763,7 +2818,7 @@ export function MainPaper() {
                           {isSimulated ? (
                             <ul className="list-disc list-inside space-y-1">
                               <li>
-                                These scenarios apply literature-calibrated delisting adjustments (Shumway 1997, Beaver et al. 2007) to test premium robustness.
+                                These scenarios apply literature-calibrated delisting sensitivity adjustments (Shumway 1997, Beaver et al. 2007) to test premium robustness.
                               </li>
                               <li>
                                 For S&amp;P 500 (large-cap), delisting effects are typically 0.3-1.0% annually, smaller than small-cap universes.
@@ -2830,7 +2885,7 @@ export function MainPaper() {
                   <li>
                     <strong className="text-foreground">Net of modeled costs:</strong>{" "}
                     {typeof transactionCosts?.net_rd_premium_pct === "number"
-                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% per year`
+                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% per year (benchmark-relative; see Section 9)`
                       : "reported in the implementation section (Section 9)."}
                   </li>
                 </ul>
@@ -2840,23 +2895,41 @@ export function MainPaper() {
                 <h3 className="text-lg font-semibold text-foreground">8.2 Horizon dependence and event/regime context</h3>
                 
                 <div className="not-prose mb-4 p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5">
-                  <p className="font-semibold text-foreground mb-2">Key insight: Rolling windows do NOT rebalance</p>
+                  <p className="font-semibold text-foreground mb-2">Key insight: Rolling windows do NOT re-sort</p>
                   <p className="text-sm text-muted-foreground mb-3">
                     The declining premium at longer horizons is a <strong>methodological artifact</strong>, not evidence that R&D stops working. 
-                    Rolling window analysis sorts stocks into quintiles <em>once at the window start</em> and holds those assignments for the entire period 
-                    without updating. A company classified as "high R&D" in 2000 stays in Q5 even if its R&D intensity drops by 2010.
+                    Rolling window analysis sorts stocks into quintiles <em>once at the window start</em> and holds those assignments for the entire period
+                    (no annual re-sorting). A company classified as "high R&D" in 2000 stays in Q5 even if its R&D intensity drops by 2010.
                   </p>
                   <div className="grid md:grid-cols-3 gap-2 text-xs">
                     <div className="p-2 rounded bg-green-500/10 border border-green-500/20 text-center">
-                      <p className="font-bold text-green-700 dark:text-green-400">Annual (~5%)</p>
+                      <p className="font-bold text-green-700 dark:text-green-400">
+                        Annual (
+                        {typeof annualHmlData?.mean_premium === "number" ? `${annualHmlData.mean_premium.toFixed(1)}%` : "~"}
+                        )
+                      </p>
                       <p className="text-muted-foreground">Re-sort every year</p>
                     </div>
                     <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-center">
-                      <p className="font-bold text-amber-700 dark:text-amber-400">5-Year (~4%)</p>
+                      <p className="font-bold text-amber-700 dark:text-amber-400">
+                        5-Year (
+                        {(() => {
+                          const row = headlinePremiums.find((h) => h.horizon === "5yr")
+                          return typeof row?.premiumPct === "number" ? `${row.premiumPct.toFixed(1)}%` : "~"
+                        })()}
+                        )
+                      </p>
                       <p className="text-muted-foreground">Sort once, hold 5 years</p>
                     </div>
                     <div className="p-2 rounded bg-slate-500/10 border border-slate-500/20 text-center">
-                      <p className="font-bold text-slate-700 dark:text-slate-400">20-Year (1.66%)</p>
+                      <p className="font-bold text-slate-700 dark:text-slate-400">
+                        20-Year (
+                        {(() => {
+                          const row = headlinePremiums.find((h) => h.horizon === "20yr")
+                          return typeof row?.premiumPct === "number" ? `${row.premiumPct.toFixed(2)}%` : "~"
+                        })()}
+                        )
+                      </p>
                       <p className="text-muted-foreground">Sort once, hold 20 years</p>
                     </div>
                   </div>
@@ -3131,7 +3204,7 @@ export function MainPaper() {
             <CardHeader>
               <CardTitle>9.1 Portfolio construction</CardTitle>
               <CardDescription>
-                Long-only implementation using the high-R&D quintile with annual rebalancing and explicit trading-friction assumptions.
+                Long-only implementation using a top-20 R&D-intensity portfolio with annual reconstitution and explicit trading-friction assumptions.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -3166,6 +3239,9 @@ export function MainPaper() {
                       <strong className="text-foreground">Signal:</strong> prior fiscal-year R&amp;D intensity (R&amp;D / revenue)
                     </li>
                     <li>
+                      <strong className="text-foreground">Holdings:</strong> top-20 stocks by R&amp;D intensity (equal-weight)
+                    </li>
+                    <li>
                       <strong className="text-foreground">Formation:</strong> end of June; hold July through June{" "}
                       <InfoTooltip term="july_june_convention" size={12} />
                     </li>
@@ -3193,20 +3269,24 @@ export function MainPaper() {
                   </div>
                   {transactionCosts ? (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             Annual trading cost
                             <InfoTooltip term="annual_trading_cost" size={12} />
                           </div>
-                          <div className="font-semibold">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</div>
+                          <div className="font-semibold">
+                            {typeof transactionCosts.annual_trading_cost_pct === "number" ? `${transactionCosts.annual_trading_cost_pct.toFixed(3)}%` : "..."}
+                          </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             Net premium after costs (pp)
                             <InfoTooltip term="net_premium_after_costs" size={12} />
                           </div>
-                          <div className="font-semibold">{transactionCosts.net_rd_premium_pct.toFixed(2)}%</div>
+                          <div className="font-semibold">
+                            {typeof transactionCosts.net_rd_premium_pct === "number" ? `${transactionCosts.net_rd_premium_pct.toFixed(2)}%` : "..."}
+                          </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -3221,16 +3301,31 @@ export function MainPaper() {
                             })()}
                           </div>
                         </div>
+                        <div className="p-3 rounded border bg-muted/30">
+                          <div className="text-xs text-muted-foreground">Realized turnover (avg)</div>
+                          <div className="font-semibold">
+                            {typeof (transactionCosts as any)?.turnover?.avg_turnover_pct === "number"
+                              ? `${(transactionCosts as any).turnover.avg_turnover_pct.toFixed(1)}%`
+                              : "..."}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-3 rounded border bg-muted/30 text-sm">
-                        <p className="font-semibold text-foreground mb-1">Cost breakdown</p>
+                        <p className="font-semibold text-foreground mb-1">Definitions / assumptions (snapshot)</p>
                         <pre className="text-xs overflow-auto">
-                          {JSON.stringify(transactionCosts.cost_breakdown, null, 2)}
+                          {JSON.stringify(
+                            {
+                              definition: (transactionCosts as any).definition,
+                              cost_assumptions: (transactionCosts as any).cost_assumptions,
+                            },
+                            null,
+                            2
+                          )}
                         </pre>
                       </div>
 
-                      <p className="text-xs text-muted-foreground">{transactionCosts.methodology_note}</p>
+                      <p className="text-xs text-muted-foreground">{(transactionCosts as any)?.note || ""}</p>
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">Loading transaction cost model...</p>
@@ -3714,7 +3809,9 @@ export function MainPaper() {
                           <span>
                             <strong className="text-foreground">Get current S&P 500 list</strong>
                             <br />
-                            <span className="text-xs">~503 tickers (some share classes)</span>
+                            <span className="text-xs">
+                              ~{typeof cohortSummary?.total_companies === "number" ? cohortSummary.total_companies : "..."} tickers (incl. share classes)
+                            </span>
                           </span>
                         </li>
                         <li className="flex items-start gap-2">
@@ -3791,13 +3888,19 @@ export function MainPaper() {
                         <li className="flex items-start gap-2">
                           <TrendingUp className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                           <span>
-                            <strong className="text-foreground">Long-term edge:</strong> ~5-7% excess /yr (historical)
+                            <strong className="text-foreground">Long-term edge:</strong>{" "}
+                            {typeof investableExcessNetPp === "number"
+                              ? `+${investableExcessNetPp.toFixed(1)} pp/yr net excess (historical backtest)`
+                              : "Net excess is reported in the investable backtest results."}
                           </span>
                         </li>
                         <li className="flex items-start gap-2">
                           <TrendingDown className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                           <span>
-                            <strong className="text-foreground">Painful years:</strong> ~30% of years underperform{" "}
+                            <strong className="text-foreground">Painful years:</strong>{" "}
+                            {typeof investableUnderperformPct === "number"
+                              ? `${investableUnderperformPct.toFixed(0)}% of years underperform`
+                              : "Some years underperform"}{" "}
                             <InfoTooltip term="tracking_error" size={12} />
                           </span>
                         </li>
@@ -3867,7 +3970,7 @@ export function MainPaper() {
                       },
                       {
                         q: "Should I use sector caps?",
-                        a: "Optional. Without caps, you'll be ~40-50% tech/healthcare. With sector caps (e.g., max 25% per sector), you get more diversification but may reduce the R&D signal strength. We show uncapped results in the backtest.",
+                        a: "Optional. Without caps, the portfolio can become concentrated in Technology and Healthcare. With sector caps (e.g., max 25% per sector), you get more diversification but may reduce the R&D signal strength. We show uncapped results in the backtest.",
                       },
                       {
                         q: "How much money do I need to start?",
@@ -3879,7 +3982,10 @@ export function MainPaper() {
                       },
                       {
                         q: "What about taxes?",
-                        a: "Low turnover (~15%) means most gains are long-term. Annual rebalancing qualifies all held positions for long-term capital gains rates. Consider holding in a tax-advantaged account (IRA, 401k) if concerned about taxes.",
+                        a:
+                          typeof investableTurnoverAvgPct === "number"
+                            ? `Low turnover (~${investableTurnoverAvgPct.toFixed(1)}%) means most gains are long-term. Annual rebalancing qualifies all held positions for long-term capital gains rates. Consider holding in a tax-advantaged account (IRA, 401k) if concerned about taxes.`
+                            : "Low turnover means most gains are long-term. Annual rebalancing qualifies all held positions for long-term capital gains rates. Consider holding in a tax-advantaged account (IRA, 401k) if concerned about taxes.",
                       },
                       {
                         q: "Why not use an ETF instead?",
@@ -3932,7 +4038,7 @@ export function MainPaper() {
                 </span>{" "}
                 is substantially mitigated using historical S&amp;P 500 membership and{" "}
                 <span className="inline-flex items-center gap-1">
-                  delisting return adjustments
+                  cash-after-exit return construction + delisting sensitivity
                   <InfoTooltip term="delisting_adjustment" size={12} />
                 </span>
                 , but Tier-2 CRSP/Compustat replication remains the gold standard for academic publication.
@@ -4045,7 +4151,7 @@ export function MainPaper() {
             <CardContent className="pt-6 prose dark:prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground">
                 This paper examines whether R&amp;D intensity predicts subsequent stock returns in a U.S. large-cap universe. Using a July-June return
-                convention to reduce look-ahead bias and incorporating delisting adjustments to mitigate survivorship bias, we document a positive return
+                convention to reduce look-ahead bias and explicit exit handling plus point-in-time membership (when available) to mitigate survivorship bias, we document a positive return
                 spread between high-R&amp;D and low-R&amp;D portfolios.
               </p>
 

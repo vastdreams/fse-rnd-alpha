@@ -88,55 +88,34 @@ interface ClientPortal {
   name: string
   slug: string
   description: string
-  icon: React.ReactNode
-  password: string
   portalUrl: string
   status: "active" | "pending" | "inactive"
   sector: string
   location: string
   afsl?: string
   documents: string[]
+  accessPassword?: string
 }
 
-const CLIENT_PORTALS: ClientPortal[] = [
-  {
-    id: "ozpremium",
-    name: "Oz Premium Finance",
-    slug: "ozpremium",
-    description: "Warehouse Credit Package - Premium funding trust for insurance premium financing",
-    icon: <CreditCard className="w-5 h-5 text-blue-400" />,
-    password: "Oz123",
-    portalUrl: "https://finsoeasy.com/ozpremium",
-    status: "active",
-    sector: "Financial Services",
-    location: "Sydney, Australia",
-    afsl: "556051",
-    documents: [
-      "Information Memorandum V7a",
-      "Warehouse Model (Draft)",
-      "Credit Underwriting Policy",
-      "AML-CTF Policy",
-      "Compliance Plan & Framework"
-    ]
-  },
-  {
-    id: "ecojv",
-    name: "EcoJV Project",
-    slug: "ecojvproject", 
-    description: "Indonesia/Brunei renewable energy joint venture - Solar and sustainability infrastructure",
-    icon: <Leaf className="w-5 h-5 text-green-400" />,
-    password: "eco",
-    portalUrl: "https://finsoeasy.com/ecojvproject",
-    status: "active",
-    sector: "Renewable Energy",
-    location: "Indonesia / Brunei",
-    documents: [
-      "Investor Deck",
-      "Project Overview",
-      "JV Structure"
-    ]
-  }
-]
+interface ClientPortalApiResponse {
+  id: string
+  name: string
+  slug: string
+  description: string
+  portal_url: string
+  status: "active" | "pending" | "inactive"
+  sector: string
+  location: string
+  afsl?: string | null
+  documents: string[]
+  access_password?: string | null
+}
+
+function getClientPortalIcon(clientPortalId: string): React.ReactNode {
+  if (clientPortalId === "ozpremium") return <CreditCard className="w-5 h-5 text-blue-400" />
+  if (clientPortalId === "ecojv") return <Leaf className="w-5 h-5 text-green-400" />
+  return <Briefcase className="w-5 h-5 text-slate-300" />
+}
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
 
@@ -245,6 +224,9 @@ export function Admin() {
   const [donationsData, setDonationsData] = useState<DonationsData | null>(null)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsSummary | null>(null)
   const [visitorsData, setVisitorsData] = useState<VisitorsData | null>(null)
+  const [clientPortals, setClientPortals] = useState<ClientPortal[]>([])
+  const [clientsLoading, setClientsLoading] = useState(false)
+  const [clientsError, setClientsError] = useState("")
   const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "subscribers" | "donations">("overview")
   
   // Site selector state - allows switching between Finsoeasy properties
@@ -323,6 +305,9 @@ export function Admin() {
     setIsAuthenticated(false)
     setAdminUser(null)
     setDashboardData(null)
+    setClientPortals([])
+    setClientsError("")
+    setClientsLoading(false)
     setUsername("")
     setPassword("")
   }
@@ -397,6 +382,49 @@ export function Admin() {
     }
   }
 
+  const fetchClientPortals = async (authToken: string) => {
+    setClientsLoading(true)
+    setClientsError("")
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/clients`, {
+        headers: { "Authorization": `Bearer ${authToken}` },
+      })
+      if (!response.ok) {
+        setClientsError("Failed to fetch client portals")
+        setClientPortals([])
+        return
+      }
+
+      const data: ClientPortalApiResponse[] = await response.json()
+      const rows = Array.isArray(data) ? data : []
+      const mapped: ClientPortal[] = rows.map((row) => {
+        const status: ClientPortal["status"] =
+          row.status === "active" || row.status === "pending" || row.status === "inactive" ? row.status : "pending"
+
+        return {
+          id: String(row.id),
+          name: String(row.name),
+          slug: String(row.slug),
+          description: String(row.description),
+          portalUrl: String(row.portal_url),
+          status,
+          sector: String(row.sector),
+          location: String(row.location),
+          afsl: row.afsl ? String(row.afsl) : undefined,
+          documents: Array.isArray(row.documents) ? row.documents.filter((d) => typeof d === "string") : [],
+          accessPassword: typeof row.access_password === "string" ? row.access_password : undefined,
+        }
+      })
+
+      setClientPortals(mapped)
+    } catch {
+      setClientsError("Failed to fetch client portals")
+      setClientPortals([])
+    } finally {
+      setClientsLoading(false)
+    }
+  }
+
   const blockVisitor = async (visitorId: string, notes?: string) => {
     if (!token) return
     try {
@@ -431,6 +459,7 @@ export function Admin() {
       fetchDonations(token)
       fetchAnalytics(token)
       fetchVisitors(token)
+      fetchClientPortals(token)
     }
   }, [token])
 
@@ -697,14 +726,14 @@ export function Admin() {
         <div className="space-y-6">
           {/* GA4 Integration Status */}
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-amber-500/30 bg-amber-500/5">
+            <Card className="border-green-500/30 bg-green-500/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">GA4 Status</CardTitle>
-                <Activity className="h-4 w-4 text-amber-500" />
+                <CheckCircle className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold text-amber-500">Pending Setup</div>
-                <p className="text-xs text-muted-foreground">Add tracking code to site</p>
+                <div className="text-lg font-semibold text-green-500">Active</div>
+                <p className="text-xs text-muted-foreground">Tracking live on site</p>
               </CardContent>
             </Card>
 
@@ -731,31 +760,28 @@ export function Admin() {
             </Card>
           </div>
 
-          {/* GA4 Setup Instructions */}
+          {/* GA4 Configuration */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-500" />
-                GA4 Tracking Setup for finsoeasy.com
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                GA4 Tracking Active on finsoeasy.com
+                <Badge variant="outline" className="ml-2 border-green-500/50 text-green-500">Live</Badge>
               </CardTitle>
               <CardDescription>
-                Add unified analytics tracking to the main site
+                Unified analytics tracking is installed and collecting data
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                <p className="text-xs text-muted-foreground mb-2">Add this to the &lt;head&gt; section:</p>
+              <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+                <p className="text-xs text-green-400 mb-2 flex items-center gap-2">
+                  <CheckCircle className="w-3 h-3" /> Currently installed in layout.tsx:
+                </p>
                 <pre className="text-xs font-mono text-green-400 overflow-x-auto whitespace-pre-wrap">
-{`<!-- Google Analytics - Unified Finsoeasy Property -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${UNIFIED_GA4_PROPERTY}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '${UNIFIED_GA4_PROPERTY}', {
-    'cookie_domain': '.finsoeasy.com'
-  });
-</script>`}
+{`gtag('config', '${UNIFIED_GA4_PROPERTY}', {
+  cookie_domain: '.finsoeasy.com',
+  cookie_flags: 'SameSite=None;Secure'
+});`}
                 </pre>
               </div>
 
@@ -846,7 +872,7 @@ export function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-emerald-500">
-                  {CLIENT_PORTALS.filter(c => c.status === "active").length}
+                  {clientPortals.filter((c) => c.status === "active").length}
                 </div>
                 <p className="text-xs text-muted-foreground">With live investor portals</p>
               </CardContent>
@@ -859,7 +885,7 @@ export function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-500">
-                  {CLIENT_PORTALS.reduce((acc, c) => acc + c.documents.length, 0)}
+                  {clientPortals.reduce((acc, c) => acc + c.documents.length, 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">Across all client portals</p>
               </CardContent>
@@ -872,7 +898,7 @@ export function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-purple-500">
-                  {new Set(CLIENT_PORTALS.map(c => c.sector)).size}
+                  {new Set(clientPortals.map((c) => c.sector)).size}
                 </div>
                 <p className="text-xs text-muted-foreground">Financial Services, Renewables</p>
               </CardContent>
@@ -886,11 +912,24 @@ export function Admin() {
                 <Briefcase className="w-5 h-5 text-blue-500" />
                 Client Portals
               </CardTitle>
-              <CardDescription>Manage investor portals and access credentials</CardDescription>
+              <CardDescription>
+                Manage investor portals. Passwords are loaded from the backend admin config (not committed to git).
+              </CardDescription>
             </CardHeader>
             <CardContent>
+              {clientsLoading && (
+                <div className="text-sm text-muted-foreground">Loading client portals…</div>
+              )}
+              {clientsError && (
+                <div className="text-sm text-red-400">{clientsError}</div>
+              )}
               <div className="space-y-4">
-                {CLIENT_PORTALS.map((client) => (
+                {!clientsLoading && clientPortals.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    No client portals configured. Create `backend/admin_clients.json` from `backend/admin_clients.example.json` on the server.
+                  </div>
+                ) : null}
+                {clientPortals.map((client) => (
                   <div 
                     key={client.id}
                     className="p-4 rounded-lg border border-slate-700 bg-slate-900/50 hover:border-slate-600 transition-colors"
@@ -898,7 +937,7 @@ export function Admin() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center">
-                          {client.icon}
+                          {getClientPortalIcon(client.id)}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -966,13 +1005,20 @@ export function Admin() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Access Password</p>
-                              <code className="text-sm font-mono text-amber-400">{client.password}</code>
+                              <code className="text-sm font-mono text-amber-400">
+                                {client.accessPassword || "—"}
+                              </code>
                             </div>
                             <Button 
                               size="sm" 
                               variant="ghost"
                               onClick={() => {
-                                navigator.clipboard.writeText(client.password)
+                                if (!client.accessPassword) {
+                                  setCacheMessage(`No password configured for ${client.name}`)
+                                  setTimeout(() => setCacheMessage(""), 2000)
+                                  return
+                                }
+                                navigator.clipboard.writeText(client.accessPassword)
                                 setCacheMessage(`Copied ${client.name} password!`)
                                 setTimeout(() => setCacheMessage(""), 2000)
                               }}
@@ -1011,16 +1057,15 @@ export function Admin() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Client passwords are stored in the main finsoeasy.com codebase:
+                  Client portal passwords are intentionally <strong>not</strong> stored in this repository.
                 </p>
                 <div className="p-3 bg-slate-800/50 rounded-lg">
                   <code className="text-xs text-muted-foreground">
-                    /src/app/ozpremium/page.tsx<br/>
-                    /src/app/ecojvproject/page.tsx
+                    backend/admin_clients.json (server-only; ignored by git)
                   </code>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  To change passwords, update the CORRECT_PASSWORD constant in each file and redeploy.
+                  To change passwords: update `backend/admin_clients.json` on the research server and redeploy/restart backend if needed.
                 </p>
               </CardContent>
             </Card>
@@ -1036,7 +1081,7 @@ export function Admin() {
                   <li>Add route in <code className="text-xs">/src/app/[client]/page.tsx</code></li>
                   <li>Set password protection</li>
                   <li>Deploy and test portal access</li>
-                  <li>Update this admin (CLIENT_PORTALS array)</li>
+                  <li>Update `backend/admin_clients.json` (server-only config; not committed)</li>
                 </ol>
               </CardContent>
             </Card>

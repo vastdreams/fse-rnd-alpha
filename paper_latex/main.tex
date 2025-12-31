@@ -1,0 +1,1127 @@
+% PATH: research/paper_latex/main.tex
+% PURPOSE:
+%   Submission-ready LaTeX manuscript for the R&D Alpha study.
+%   Comprehensive version with full literature review, methodology, and interpretation.
+%
+% WHY THIS FILE EXISTS:
+%   Browser printing is not reliable for academic submission. This LaTeX source produces a stable,
+%   print-quality PDF while keeping all numeric claims pinned to a frozen snapshot.
+%
+% FLOW (high-level):
+%   ┌───────────────────────────┐
+%   │ data/publication_snapshot │  (frozen dataset used by the live site)
+%   └──────────────┬────────────┘
+%                  ▼
+%   ┌───────────────────────────┐
+%   │ scripts/build_assets.py    │  → generates `data/*.csv`, `tables/*.tex`, `data/metrics.tex`
+%   └──────────────┬────────────┘
+%                  ▼
+%   ┌───────────────────────────┐
+%   │ main.tex                   │  → compiles to submission PDF (Tectonic / Overleaf / local TeX)
+%   └───────────────────────────┘
+%
+% DEPENDENCIES:
+%   - data/metrics.tex (auto-generated macros)
+%   - data/*.csv (pgfplots figure inputs)
+%   - tables/*.tex (auto-generated tables)
+%   - references.bib (curated BibTeX references; only cite what you mean)
+
+\documentclass[11pt,a4paper]{article}
+
+% Typography and layout
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\setstretch{1.15}
+
+% Paragraph indentation (consistent throughout)
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.3em}
+
+% Math
+\usepackage{amsmath,amssymb}
+
+% Tables and figures
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% Plots (vector)
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Framed boxes
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+
+% Links and URLs (allow breaks in long URLs / paths)
+\usepackage{xurl}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
+
+% Citations: NUMERIC [1], [2] style
+\usepackage[square,numbers,sort&compress]{natbib}
+\bibliographystyle{unsrtnat}
+
+% ORCID icon
+\usepackage{orcidlink}
+
+% --- Snapshot-pinned numeric macros (auto-generated; do not edit) ---
+\input{data/metrics.tex}
+
+\title{\textbf{R\&D Alpha: Investment Intensity and Long-Term Stock Returns}}
+\author{%
+    Abhishek Sehgal\,\orcidlink{0009-0000-9424-4695}\\
+    \small FSE Research \& Investments Pty Ltd%
+    \thanks{ABN: 35 688 556 747. Address: 50 Murray St, Pyrmont, Sydney, NSW 2009, Australia. Email: \href{mailto:abhishek@finsoeasy.com}{abhishek@finsoeasy.com}.}%
+}
+\date{December 30, 2025}
+
+\begin{document}
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ABSTRACT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+\noindent\textbf{Objective.} We test whether high research and development (R\&D) intensity predicts higher subsequent equity returns in a large-cap U.S.\ universe using methodology designed for portfolio implementability.
+
+\noindent\textbf{Method.} Each year, we sort point-in-time S\&P 500 constituents into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series (Q5--Q1) spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. Where historical constituent spans are available, we enforce point-in-time membership at formation dates; exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
+
+\noindent\textbf{Results.} The high-minus-low premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. In plain terms: stocks in the top 20\% by R\&D intensity outperformed the bottom 20\% by approximately \AnnualMeanPremium\% annually over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
+
+\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. Under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover from the investable backtest and S\&P 500 liquidity characteristics, estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net premium of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
+
+\noindent\textbf{Interpretation.} Results are consistent with either mispricing of intangible assets or risk compensation for innovation exposure. We document sector tilts, factor exposures, and regime dependence without claiming to isolate a single mechanism. The analysis is associational rather than causal.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Reproducibility note.} All numbers, tables, and figures in this PDF are generated from a frozen publication snapshot used by the live platform.\\
+{\small \textbf{Snapshot ID:} \texttt{\SnapshotId}\quad(\textbf{built:} \SnapshotBuiltAt;\ \textbf{tier:} \DataTier;\ \textbf{return convention:} \ReturnConvention).}
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} R\&D investment; intangible assets; factor investing; portfolio sorts; equity returns.\\
+\textbf{JEL:} G11; G12; M41.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1. INTRODUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+R\&D spending is an investment in intangible capital with uncertain payoffs and multi-year horizons. Unlike physical assets such as machinery or buildings, the outputs of R\&D---patents, trade secrets, human capital, and organizational knowledge---are difficult to observe, value, and collateralize. Under U.S.\ GAAP, R\&D expenditures are expensed as incurred (SFAS~2 / ASC~730) \citep{fasb_sfas2_1974}. As a result, innovation-intensive firms can appear less profitable in contemporaneous financial statements even when R\&D creates economically valuable assets.
+
+This accounting treatment is important because it creates a potential disconnect between reported earnings and true economic value. When R\&D is expensed immediately (rather than capitalized like physical assets), a firm investing heavily in innovation reports lower earnings today even if that investment will generate substantial future cash flows. This asymmetry between accounting treatment and economic reality forms the foundation for the R\&D premium hypothesis.
+
+This accounting convention motivates two broad interpretations for any return premium associated with R\&D intensity:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Mispricing interpretation:} Investors may underweight intangible investment and anchor on near-term earnings, producing gradual price adjustment as innovation outcomes arrive \citep{lev_sougiannis_1996,chan_lakonishok_sougiannis_2001}. If investors anchor on near-term earnings, the market can underreact to productive R\&D and price high-R\&D firms too pessimistically. The mispricing view implies that prices gradually correct as R\&D outcomes become observable, generating abnormal returns for patient investors.
+    
+    \item \textbf{Risk-based interpretation:} High-R\&D firms may load on innovation-related risks (uncertain payoffs, funding sensitivity, technological disruption), requiring compensation in equilibrium. Under this view, a premium reflects compensation for bearing innovation risk rather than market inefficiency. R\&D outcomes are inherently uncertain: most R\&D projects fail, and even successful projects may take years to generate returns. Investors who bear this uncertainty may demand higher expected returns.
+\end{enumerate}
+
+\subsection{Terminology and Scope}
+
+Throughout this paper, the \emph{premium} refers to the within-universe return spread between the high-R\&D and low-R\&D portfolios formed for the same period, typically the high-minus-low (HML) spread Q5 minus Q1. This is \textbf{not} automatically a benchmark excess return relative to the S\&P 500; benchmark comparisons are shown separately in the strategy section.
+
+\begin{tcolorbox}[title=Key Terminology, colback=gray!5, colframe=gray!50, breakable]
+\begin{itemize}[leftmargin=*]
+    \item \textbf{R\&D Intensity:} R\&D expense divided by revenue, expressed as a percentage. This measures how much a firm invests in research relative to its operating scale.
+    \item \textbf{Premium (HML):} The return spread between high-R\&D and low-R\&D portfolios formed in the same universe for the same period. In most exhibits this is Q5 $-$ Q1 (highest R\&D quintile minus lowest R\&D quintile).
+    \item \textbf{Quintile:} One of five equal-count groups formed by sorting stocks on R\&D intensity. Q1 contains the lowest 20\%; Q5 contains the highest 20\%.
+    \item \textbf{Not a benchmark excess return:} This premium is not automatically ``above the S\&P 500.'' Benchmark comparisons are shown separately in the investable strategy section (Section~\ref{sec:strategy}).
+    \item \textbf{Absolute return:} The average return of a single portfolio (for example, Q5 alone). Absolute returns can be high even when the premium is small if both Q5 and Q1 perform similarly.
+    \item \textbf{Non-overlapping:} Annual observations with no shared return months between adjacent years (reduces mechanical overlap). We still use Newey--West inference to allow for mild time-series dependence.
+    \item \textbf{Rolling window:} Multi-year periods that overlap with adjacent windows. Useful for visualization but autocorrelated, so not suitable for primary inference.
+\end{itemize}
+\end{tcolorbox}
+
+\subsection{Design Principles and Contributions}
+
+The central portfolio question is straightforward: \emph{does an R\&D-intensity sort create a repeatable return premium in a large-cap U.S.\ universe once we align accounting data to returns using a bias-aware timing convention and acknowledge real implementation frictions?}
+
+We follow three design principles that distinguish this analysis from prior work:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Bias-aware timing:} The default return convention is July--June to mitigate look-ahead from filing lags \citep{fama_french_1993}. Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60--90 days. By waiting until July to form portfolios, we ensure all accounting data is publicly available. This is not a trivial choice: studies using calendar-year returns may inadvertently trade on private information.
+    
+    \item \textbf{Clear separation of inference vs.\ description:} Statistical inference is anchored on a non-overlapping annual premium series; overlapping rolling windows are used only for descriptive context. Annual non-overlapping observations reduce mechanical overlap and support cleaner inference. Rolling windows are autocorrelated (overlapping periods share data) but useful for visualizing trends and regime dependence. We are explicit about which is which to avoid the common pitfall of treating autocorrelated rolling-window statistics as independent evidence.
+    
+    \item \textbf{Reproducibility:} All tables and figures are snapshot-pinned; the PDF is deterministically generated from the frozen snapshot. This ensures every numeric claim can be verified against the source data. The codebase is publicly available for replication.
+\end{enumerate}
+
+\begin{tcolorbox}[title=What We Do vs.\ What We Do Not Claim, colback=blue!3, colframe=blue!40, breakable]
+\textbf{What we do:}
+\begin{itemize}[leftmargin=*]
+    \item Form annual R\&D-intensity quintiles and evaluate subsequent returns under a July--June convention.
+    \item Report primary inference on the annual non-overlapping premium series; use rolling windows for descriptive stability and regimes.
+    \item Show sector composition and robustness diagnostics (factor spanning, stratifications) when available in the snapshot.
+    \item Translate results into a rules-based, long-only implementation with explicit trading-friction assumptions.
+    \item Document all methodology choices transparently, including data sources, filtering criteria, and statistical tests.
+\end{itemize}
+
+\textbf{What we do not claim:}
+\begin{itemize}[leftmargin=*]
+    \item No causal identification: results are an association (a characteristic premium), not a structural estimate of why R\&D intensity predicts returns.
+    \item No universal coverage: this analysis is scoped to a large-cap U.S.\ universe with disclosed data limitations.
+    \item No reliance on overlapping-window $p$-values as primary inference; those windows are autocorrelated and do not support valid hypothesis testing.
+    \item No claim that future premiums will match historical estimates; markets evolve and past performance does not guarantee future results.
+\end{itemize}
+\end{tcolorbox}
+
+The paper proceeds as follows. Section~\ref{sec:literature} frames related evidence and hypotheses. Section~\ref{sec:data} describes data and sample construction. Section~\ref{sec:methodology} specifies portfolio formation, return definitions, and inference. Section~\ref{sec:results} presents the primary annual premium evidence and descriptive time-variation, Section~\ref{sec:sector} documents sector structure, and Section~\ref{sec:robustness} reports robustness and factor diagnostics. Sections~\ref{sec:discussion}--\ref{sec:conclusion} discuss interpretation, implementation, limitations, replicability, and conclusion.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2. LITERATURE REVIEW AND HYPOTHESES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Literature Review and Hypotheses}
+\label{sec:literature}
+
+The relationship between R\&D investment and stock returns has been studied across multiple literatures: accounting (intangible asset valuation), finance (factor models and anomalies), and strategy (competitive advantage). We synthesize relevant findings and frame testable hypotheses.
+
+\subsection{Intangible Investment, Accounting, and Mispricing}
+
+A recurring theme in the intangible-capital literature is that standard accounting can understate the economic value of R\&D by expensing it. \textbf{Why does this matter?} Because when R\&D is expensed immediately (rather than capitalized like physical assets), a firm investing heavily in innovation reports lower earnings today even if that investment will generate substantial future cash flows.
+
+The foundational work on R\&D capitalization and stock returns comes from \citet{lev_sougiannis_1996}, who construct estimates of R\&D capital and show that it is associated with subsequent returns and earnings. They argue that expensing R\&D leads to systematic undervaluation of intangible-intensive firms. \citet{kothari_laguerre_leone_2002} provide evidence on the uncertainty of future earnings from R\&D, showing that R\&D-intensive firms have more volatile future earnings, which may justify some market discount.
+
+\citet{griliches_1981} provides early evidence linking market value to R\&D and patents, establishing that intangible investment is value-relevant even when not reflected in book values. Using patent-based measures, \citet{jaffe_1986} documents evidence consistent with technological opportunity and spillovers of R\&D being reflected in firms' market values. \citet{griliches_1990} surveys the use of patent statistics as economic indicators, clarifying both the strengths and limitations of patent-based measurement. \citet{hall_jaffe_trajtenberg_2005} further show that patent citations predict market value, suggesting markets eventually incorporate innovation information. The resource-based view of the firm \citep{barney_1991} provides theoretical grounding for why intangible assets can generate sustained competitive advantage.
+
+Under the mispricing view, a premium reflects gradual learning as innovation outcomes arrive and the market corrects its initial undervaluation. \citet{chan_lakonishok_sougiannis_2001} document that the stock market appears to undervalue R\&D, with high-R\&D firms subsequently outperforming. \citet{eberhart_maxwell_siddique_2004} examine long-term abnormal returns following R\&D increases and find positive drift, consistent with underreaction.
+
+\citet{barth_kasznik_mcnichols_2001} document that analyst coverage is lower for intangible-intensive firms, which may contribute to mispricing by reducing information flow. \citet{deng_lev_narin_1999} show that science and technology indicators (including R\&D and patents) predict stock performance, further supporting the value-relevance of intangible investment.
+
+\subsection{Risk-Based Interpretation}
+
+A competing interpretation is that high-R\&D firms load on innovation-related risks: uncertain payoffs, higher operating leverage, and sensitivity to funding conditions. \textbf{Why would investors demand a premium for these risks?} Because R\&D outcomes are inherently uncertain (most projects fail), high-R\&D firms tend to have more volatile cash flows, and innovation-heavy companies are more sensitive to economic downturns when funding dries up.
+
+\citet{li_2011} shows that financial constraints interact with R\&D investment in predicting returns, suggesting that the premium may partly reflect funding risk. Firms that are financially constrained and R\&D-intensive face higher hurdles to completing projects, which may justify a risk premium. \citet{porter_1992} discusses how the U.S.\ capital investment system may undervalue long-term R\&D investments, providing macroeconomic context for the premium.
+
+\citet{gu_2005} examines innovation, future earnings, and market efficiency, providing evidence that markets are not fully efficient in pricing innovation. However, the inefficiency could reflect either mispricing or compensation for hard-to-measure innovation risk. \citet{deng_lev_narin_1999} show that science and technology indicators predict stock performance, reinforcing the link between innovation metrics and returns.
+
+Under the risk-based view, a premium can exist without superior risk-adjusted performance; Sharpe ratios may not dominate even when mean returns do, because investors are being compensated for bearing innovation risk. \citet{hirshleifer_hsu_li_2013} provide evidence on innovative efficiency (the ability to translate R\&D into patents and citations) and stock returns, showing that innovation quality matters beyond mere R\&D spending.
+
+\subsection{Factor Models and Asset Pricing}
+
+The asset pricing literature provides context for interpreting characteristic premiums. The foundational three-factor model of \citet{fama_french_1993} identifies market, size, and value factors. The five-factor extension \citep{fama_french_2015} adds profitability and investment factors. \citet{carhart_1997} incorporates momentum.
+
+\citet{hou_xue_zhang_2015} propose an investment-based (q-factor) model that explains many anomalies, including some related to intangibles. \citet{hou_mo_xue_zhang_2022} extend this to an augmented q-factor model with expected growth. These models provide benchmarks for assessing whether an R\&D premium is ``explained'' by known factors. Classic cross-sectional asset pricing methodology is established in \citet{fama_macbeth_1973}.
+
+\citet{asness_frazzini_2013} discuss implementation details of HML (high-minus-low) factor construction, noting that seemingly minor choices can affect results. We follow their emphasis on transparency in reporting methodology. \citet{barth_kasznik_mcnichols_2001} document that analyst coverage is lower for intangible-intensive firms, which may contribute to information asymmetry and mispricing. Evidence consistent with mispricing being stronger among R\&D-intensive (more opaque) firms is provided by \citet{polk_sapienza_2009}, who show that investment is more sensitive to mispricing proxies among high-R\&D-intensity firms and that abnormal investment predicts low subsequent stock returns.
+ 
+
+Recent synthesis and focused tests of the ``R\&D premium'' are provided by \citet{cai_cooper_he_2023}, who examine the premium across time, countries, and methodological specifications. They document a robust R\&D premium in U.S.\ equities that is not fully explained by standard factors.
+
+\subsection{Practitioner Relevance and Implementation}
+
+For a portfolio audience, the core questions are implementability and robustness. Specifically:
+\begin{itemize}[leftmargin=*]
+    \item Is the premium stable across market regimes, or does it only work in specific conditions?
+    \item How concentrated is it by sector? Is this really an R\&D effect or just a tech bet?
+    \item How sensitive are results to survivorship and delisting assumptions?
+    \item What fraction of the gross premium survives after trading costs?
+\end{itemize}
+
+\citet{novy_marx_velikov_2016} provide a taxonomy of anomalies and their trading costs, offering calibrated estimates that we use for implementation analysis. \citet{porter_1992} discusses capital allocation inefficiencies in the U.S.\ system, providing strategic context for why markets may undervalue long-term investment. \citet{barney_1991} develops the resource-based view of competitive advantage, explaining why intangible assets can generate sustained economic rents.
+
+\citet{cohen_klepper_1996} examine the relationship between firm size and R\&D, documenting that larger firms tend to spend more on R\&D in absolute terms but may have lower R\&D intensity. This size-R\&D relationship motivates our double-sort robustness checks.
+
+We address these practitioner concerns by (i) prioritizing a clean annual return series for inference, (ii) reporting sector structure transparently, and (iii) mapping the signal into an explicit strategy section with realistic cost assumptions.
+
+\subsection{Hypotheses}
+
+We structure the analysis around four testable hypotheses aligned with practitioner concerns. Each addresses a specific concern that practitioners and academics would raise:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{H1 (Characteristic premium):} Firms with higher R\&D intensity earn higher subsequent returns than low-R\&D firms in a large-cap U.S.\ universe.
+    
+    \emph{Why test this?} This is the fundamental question: does R\&D intensity predict returns? If there is no premium, the remaining hypotheses are moot.
+    
+    \item \textbf{H2 (Stability and regimes):} The premium is observable in the annual series and exhibits time variation (regime dependence) that can be summarized with rolling windows and event/regime splits.
+    
+    \emph{Why test this?} A premium that only worked in one decade (say, the tech bubble) would be less useful for forward-looking portfolios. We need to understand how the premium behaves across different market environments.
+    
+    \item \textbf{H3 (Not just sector / standard factors):} The premium is not fully explained by sector composition, size, or standard factor exposures \citep{fama_french_1993,fama_french_2015}.
+    
+    \emph{Why test this?} If the premium disappears after controlling for sectors (e.g., just a tech bet) or standard factors (e.g., just a size effect), it would not represent a distinct signal. Factor spanning tests and double-sorts help isolate the R\&D-specific component.
+    
+    \item \textbf{H4 (Implementability):} A rules-based portfolio derived from the signal retains a positive net premium under explicit trading-friction assumptions \citep{novy_marx_velikov_2016}.
+    
+    \emph{Why test this?} Academic premiums often disappear after trading costs. A premium that cannot be captured in practice is theoretically interesting but not actionable for investors. We need to show the premium is capturable after realistic implementation costs.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3. DATA AND SAMPLE CONSTRUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data and Sample Construction}
+\label{sec:data}
+
+\subsection{R\&D Intensity Definition}
+
+We define R\&D intensity as R\&D expense divided by revenue, expressed as a percentage:
+\begin{equation}
+\text{R\&D intensity}_{i,t} = 100 \times \frac{\text{R\&D expense}_{i,t}}{\text{Revenue}_{i,t}}.
+\label{eq:rd_intensity}
+\end{equation}
+
+This ratio captures how much a firm invests in research and development relative to its scale. \textbf{Why use revenue as the denominator?} Revenue is a stable, comparable measure of firm size that is less affected by capital structure or accounting choices than alternatives such as total assets or market capitalization. Assets can be inflated by acquisitions; market cap fluctuates with sentiment; revenue reflects operating scale.
+
+\textbf{Typical values:} Technology and Healthcare firms often have R\&D intensity of 10--30\%, while Financials and Utilities are typically below 1\%. Biotechnology firms can exceed 100\% (spending more on R\&D than they generate in revenue, funded by capital raises). This wide dispersion is what creates meaningful quintile separation.
+
+\textbf{Zero-R\&D firms:} Firms that report zero R\&D expense are retained in the sample and typically fall into Q1 (lowest quintile). These are legitimate low-R\&D firms, not missing data.
+
+\begin{tcolorbox}[title=Accounting Standard: SFAS 2 (1974), colback=blue!3, colframe=blue!40]
+Consistent R\&D reporting in the U.S.\ began with \textbf{FASB Statement No.\ 2} (SFAS~2), issued in October 1974. This standard requires that R\&D expenditures be expensed as incurred due to the uncertainty of future economic benefits. SFAS~2 is now codified as \textbf{ASC Topic 730} \citep{fasb_sfas2_1974}. Our sample period falls entirely within this standardized reporting era, ensuring consistent R\&D disclosure across firms and years.
+
+\emph{Note:} The ``expense as incurred'' rule is central to the R\&D premium hypothesis. Because R\&D is not capitalized, firms with high R\&D can appear less profitable on traditional metrics (P/E, ROE) even when building valuable intangible assets. This creates potential for undervaluation if investors anchor on reported earnings.
+\end{tcolorbox}
+
+\subsection{Return Timing (Look-Ahead Mitigation)}
+
+To mitigate look-ahead bias due to filing lags, we use July--June returns following the Fama--French convention \citep{fama_french_1993}. Fiscal-year accounting information for year $T$ is mapped to returns from July $T\!+\!1$ through June $T\!+\!2$, ensuring that the accounting information is public before portfolio formation.
+
+\textbf{Why this timing matters:} Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60--90 days (by late February/March). By waiting until July to form portfolios, we ensure all accounting data is publicly available. Using calendar-year returns (January--December) would mean trading on data that wasn't yet public, inflating apparent performance. This is not a minor technical detail: look-ahead bias can create spurious premiums that disappear in real-time implementation.
+
+The total shareholder return for each security includes dividends:
+\begin{equation}
+\text{TSR}_{i,t} = \frac{P_{i,t+1} + D_{i,t+1} - P_{i,t}}{P_{i,t}} \times 100\%
+\end{equation}
+where $P$ is price and $D$ is dividends paid during the period. In the Tier-1 pipeline we approximate TSR using provider-adjusted close (split+dividend adjusted per vendor) and do not add dividends separately (to avoid double counting).
+
+\begin{tcolorbox}[title=Example Timeline, colback=gray!5, colframe=gray!50]
+\textbf{Timeline for FY2022 R\&D data:}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Dec 2022:} Fiscal year ends for most firms
+    \item \textbf{Feb--Mar 2023:} 10-K filings with FY2022 R\&D data become public
+    \item \textbf{July 2023:} We form portfolios using FY2022 R\&D intensity
+    \item \textbf{July 2023 -- June 2024:} We measure subsequent 12-month returns
+\end{enumerate}
+The 6+ month lag between fiscal year end and portfolio formation ensures no information leakage. This conservative timing is standard in academic finance but often overlooked in practitioner backtests.
+\end{tcolorbox}
+
+\subsection{Statistical Inference: Non-Overlapping vs.\ Rolling}
+
+We present (i) annual non-overlapping HML premiums for primary inference and (ii) rolling-window summaries for descriptive context.
+
+\textbf{Why two approaches?}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Annual non-overlapping:} Each annual observation is non-overlapping (reduces mechanical overlap)---the return from July 2010 to June 2011 shares no data with the return from July 2011 to June 2012. This supports cleaner inference than overlapping windows, but time-series dependence can still exist (regimes, volatility clustering), so we use Newey--West standard errors \citep{newey_west_1987} as a further robustness check.
+    
+    \item \textbf{Rolling windows:} A 5-year window starting in 2010 (2010--2014) shares 4 years of data with a window starting in 2011 (2011--2015). This overlap creates autocorrelation that inflates apparent significance. Rolling windows are useful for visualizing trends and regime dependence but should \textbf{not} be used for primary statistical inference.
+\end{itemize}
+
+We are explicit about which approach applies to each exhibit to avoid the common pitfall of treating autocorrelated statistics as independent evidence.
+
+\subsection{Snapshot and Tier Disclosure}
+
+This manuscript uses Tier-1 fundamentals and prices, together with standard factor series for spanning tests. Tier-1 data comes from Financial Modeling Prep (FMP), which provides accessible coverage but may have gaps relative to academic-grade sources like CRSP/Compustat.
+
+Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot.
+
+\input{tables/table_sample.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4. METHODOLOGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Portfolio Formation}
+
+We construct portfolios using a standard academic approach that prioritizes transparency and replicability. Each step is designed to minimize biases while remaining implementable by practitioners.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Universe:} S\&P 500 point-in-time constituents. Where historical membership spans are available, we include only stocks that were actually in the index at each formation date, reducing survivorship bias from excluding removed/failed companies. This is critical: a backtest using today's S\&P 500 membership would exclude companies that were members in the past but have since delisted, merged, or failed.
+    
+    \item \textbf{Signal:} Prior fiscal-year R\&D intensity (R\&D expense / revenue). Using the prior year ensures data was publicly available before portfolio formation.
+    
+    \item \textbf{Sorting:} Equal-count quintiles (Q1 = lowest R\&D intensity, Q5 = highest). Equal-count sorting ensures each quintile has roughly the same number of stocks ($\sim$100 per quintile in S\&P 500), making return comparisons fair.
+    
+    \item \textbf{Weights:} Equal-weight within each portfolio. Equal-weighted returns are computed each year and compounded. This gives smaller firms equal influence with larger firms, which can increase the premium (if the signal is stronger in smaller firms) but also increases volatility relative to value-weighting.
+    
+    \item \textbf{Inclusion:} Firms with R\&D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators. Zero-R\&D firms are legitimate members of Q1---they simply don't invest in R\&D.
+    
+    \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. We report delisting sensitivity as a separate robustness check.
+\end{itemize}
+
+\begin{tcolorbox}[title=Understanding Quintiles, colback=gray!5, colframe=gray!50]
+Each year, stocks are sorted by R\&D intensity and divided into 5 equal-count groups (quintiles):
+\begin{center}
+\begin{tabular}{ccccc}
+\textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} \\
+Lowest 20\% & 20--40\% & 40--60\% & 60--80\% & Highest 20\% \\
+\end{tabular}
+\end{center}
+The \textbf{HML premium} (High-Minus-Low) is Q5 return minus Q1 return:
+\begin{equation}
+\text{HML}_{t} = R_{Q5,t} - R_{Q1,t}
+\end{equation}
+A positive premium means high-R\&D stocks outperformed low-R\&D stocks in that period. A negative premium means low-R\&D stocks outperformed.
+
+\textbf{Note:} The quintile cutoffs change each year based on the distribution of R\&D intensity. A firm that was in Q5 last year might fall to Q4 this year if its R\&D intensity declined or if other firms increased their intensity.
+\end{tcolorbox}
+
+Table~\ref{tab:methodology_params} records the exact snapshot-pinned formation and filtering parameters used to generate this manuscript.
+
+\input{tables/table_methodology_params.tex}
+
+\subsection{Statistical Methods}
+
+\subsubsection{Newey--West Standard Errors}
+
+For inference on time-series regressions and mean estimates, we use Newey--West HAC standard errors \citep{newey_west_1987}:
+
+\begin{equation}
+\hat{\sigma}^2_{NW} = \hat{\sigma}^2_0 + 2\sum_{j=1}^{L} \left(1 - \frac{j}{L+1}\right) \hat{\sigma}^2_j
+\end{equation}
+
+where $\hat{\sigma}^2_j$ is the $j$-th order autocovariance and $L$ is the lag truncation parameter. This adjustment accounts for potential serial correlation in the premium series, providing conservative (larger) standard errors than naive OLS.
+
+\subsubsection{t-Statistics and p-Values}
+
+The t-statistic tests whether the mean premium differs significantly from zero:
+\begin{equation}
+t = \frac{\bar{r} - 0}{SE(\bar{r})}
+\end{equation}
+where $\bar{r}$ is the sample mean premium and $SE(\bar{r})$ is the (Newey--West adjusted) standard error. The p-value indicates the probability of observing such a result if the true premium were zero. A p-value below 0.05 is conventionally considered ``statistically significant.''
+
+\subsubsection{Cohen's d (Effect Size)}
+
+Beyond statistical significance, we report effect sizes using Cohen's d:
+\begin{equation}
+d = \frac{\mu_{Q5} - \mu_{Q1}}{\sigma_{pooled}}
+\end{equation}
+This measures the premium in standard deviation units, providing a scale-invariant measure of practical significance. Cohen's conventions: $d = 0.2$ is ``small,'' $d = 0.5$ is ``medium,'' $d = 0.8$ is ``large.''
+
+\subsection{Inference vs.\ Rolling Windows}
+
+Primary inference uses the non-overlapping annual premium series, which yields one observation per year and supports standard statistical testing. Rolling 5/10/20-year windows are autocorrelated by construction and are used only as descriptive summaries of horizon dependence and regime mixing.
+
+\textbf{Critical distinction:} We never use rolling-window $p$-values as primary evidence. The overlapping structure violates independence assumptions required for valid hypothesis testing. A rolling-window t-statistic that appears ``significant'' may simply reflect the mechanical autocorrelation from shared data, not a genuine signal.
+
+\begin{tcolorbox}[title=Why Rolling Windows Show Lower Premiums at Longer Horizons, colback=yellow!5, colframe=yellow!40, breakable]
+A common question: ``If the annual premium is X\%, why isn't the 20-year premium 20$\times$X\%?''
+
+\textbf{Rolling windows do not rebalance.} A 20-year rolling window sorts stocks into quintiles \textbf{once} at the window start and holds those assignments for 20 years without updating. But firms change over 20 years:
+\begin{itemize}[leftmargin=*]
+    \item A ``high R\&D'' firm in 2000 may reduce R\&D by 2010
+    \item A ``low R\&D'' firm may become innovative through acquisitions
+    \item Competitive advantages erode through imitation and patent expiration
+\end{itemize}
+
+\textbf{Implication for investors:} The investable analogue of the R\&D signal is an \textbf{annually rebalanced strategy}, not a 20-year buy-and-hold based on a single sort. The annual premium evidence (Table~\ref{tab:annual_hml_summary}) directly supports this implementation approach.
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 5. RESULTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\label{sec:results}
+
+\subsection{Primary Result: Annual Non-Overlapping Premium}
+
+Table~\ref{tab:annual_hml_summary} reports the primary inference object: the annual non-overlapping HML premium for the period \AnnualSeriesStart{} to \AnnualSeriesEnd{}.
+
+\input{tables/table_annual_hml_summary.tex}
+
+\begin{tcolorbox}[title=How to Read This Table, colback=gray!5, colframe=gray!50]
+\textbf{Key metrics explained:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mean premium (\AnnualMeanPremium\%):} On average, Q5 (high R\&D) stocks returned \AnnualMeanPremium\% more per year than Q1 (low R\&D) stocks.
+    \item \textbf{Newey--West t-stat (\AnnualTStat):} The premium is $\AnnualTStat$ standard errors away from zero, using conservative standard errors that account for potential autocorrelation.
+    \item \textbf{p-value (\AnnualPValue):} Under the null of zero mean premium, the probability of observing a premium at least as extreme is \AnnualPValue{}.
+    \item \textbf{Win rate (\AnnualWinRatePct\%):} The premium was positive in \AnnualPositiveYears{} of \AnnualNYears{} years, indicating consistency rather than being driven by a few extreme years.
+\end{itemize}
+\textbf{Bottom line:} The evidence supports H1 (existence of a positive characteristic premium).
+\end{tcolorbox}
+
+Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-year variation around a positive average.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.97\textwidth,
+    height=7cm,
+    xlabel={Start year},
+    ylabel={HML premium (\%)},
+    grid=both,
+    major grid style={line width=.2pt,draw=gray!30},
+    minor grid style={line width=.1pt,draw=gray!15},
+    minor tick num=1,
+    ymin=-30, ymax=45,
+]
+\addplot+[mark=*,mark size=1.2pt,thick] table [x=year_start,y=hml_premium,col sep=comma] {data/annual_hml_premium.csv};
+\addplot[black!60,dashed] coordinates {(2001,0) (2024,0)};
+\end{axis}
+\end{tikzpicture}
+\caption{Annual HML premium (Q5--Q1) by July--June return period (dashed line at zero).}
+\label{fig:annual_hml}
+\end{figure}
+
+\subsection{Year-by-Year Annual Premium Detail}
+
+Table~\ref{tab:annual_hml_detail} provides the complete year-by-year breakdown of the annual premium series, including Q5 and Q1 returns for each period. This transparency allows readers to identify specific years that contributed to (or detracted from) the overall premium.
+
+\input{tables/table_annual_hml_detail.tex}
+
+\begin{tcolorbox}[title=Interpreting Year-by-Year Results, colback=gray!5, colframe=gray!50]
+\textbf{Key observations from the year-by-year table:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Variability is normal:} Even a ``real'' premium will have negative years. The question is whether the long-run average is positive and statistically significant.
+    \item \textbf{Extreme years:} Look for years with very large positive or negative premiums. Are they clustered around specific events (e.g., tech bubble, financial crisis)?
+    \item \textbf{Both quintiles can be negative:} In bear markets, both Q5 and Q1 may have negative absolute returns. The premium measures relative performance, not absolute performance.
+\end{itemize}
+\end{tcolorbox}
+
+\subsection{Quintile Return Patterns}
+
+Figure~\ref{fig:quintile_means_5yr} shows the relationship between R\&D intensity quintiles and average returns, demonstrating whether the premium is monotonic (increasing from Q1 to Q5) or concentrated at the extremes.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.82\textwidth,
+    height=6.2cm,
+    ybar,
+    bar width=14pt,
+    ymin=0,
+    xlabel={R\&D intensity quintile},
+    ylabel={Average annual return (\%)},
+    symbolic x coords={Q1,Q2,Q3,Q4,Q5},
+    xtick=data,
+    grid=both,
+    major grid style={line width=.2pt,draw=gray!30},
+]
+\addplot table [x=quintile,y=avg_return,col sep=comma] {data/quintile_means_5yr.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Average annual returns by R\&D quintile (5-year rolling-window aggregates; descriptive). Q1 contains the lowest R\&D intensity firms; Q5 contains the highest. A monotonic increase from Q1 to Q5 would strongly support H1; if only Q5 differs, the signal is concentrated at the extreme.}
+\label{fig:quintile_means_5yr}
+\end{figure}
+
+\subsection{Rolling-Window Summaries (Descriptive)}
+
+Table~\ref{tab:rolling_windows} reports descriptive 5/10/20-year rolling-window summaries and the Q5--Q1 spread for context.
+
+\input{tables/table_rolling_windows.tex}
+
+\noindent\textbf{Interpretation note:} Rolling windows sort once at window start and do not rebalance within the window. Declining premiums at longer horizons therefore reflect signal staleness and regime mixing rather than a contradiction of the annual, rebalanced premium evidence.
+
+\subsection{Regime Analysis}
+
+Table~\ref{tab:regime_breakdown} breaks down the premium by historical market regimes, providing context for how the R\&D premium performed during different economic environments.
+
+\input{tables/table_regime_breakdown.tex}
+
+\begin{tcolorbox}[title=Understanding Regime Variation, colback=gray!5, colframe=gray!50]
+\textbf{Key questions for each regime:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Dot-com bust (2000--2002):} Did the premium hold when tech stocks crashed?
+    \item \textbf{Financial crisis (2008--2009):} How did high-R\&D firms perform during the credit crunch?
+    \item \textbf{Post-2016 tech rally:} Is the recent premium inflated by a sector bubble?
+\end{itemize}
+Stable premiums across regimes support H2 (stability). Regime-specific premiums suggest the signal may be time-varying or sector-driven.
+\end{tcolorbox}
+
+\subsection{Key Takeaways from Results}
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Primary evidence is annual:} The mean annual premium is \AnnualMeanPremium\% with Newey--West inference ($t = \AnnualTStat$, $p = \AnnualPValue$).
+    \item \textbf{Consistency matters:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate), indicating the result is not driven by a few extreme years.
+    \item \textbf{Time variation exists:} Rolling windows and regime analysis show the premium varies across periods but remains positive on average.
+    \item \textbf{Horizon decay reflects methodology, not strategy failure:} Lower premiums in 20-year rolling windows reflect signal staleness from not rebalancing, not a failure of the underlying relationship.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 6. SECTOR ANALYSIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Sector Analysis}
+\label{sec:sector}
+
+Sector concentration is a key concern for interpreting R\&D intensity sorts. High-R\&D portfolios mechanically tilt toward R\&D-intensive sectors, so any R\&D premium could potentially reflect sector performance rather than a true R\&D effect.
+
+\textbf{Why sector analysis matters:} If the R\&D premium is entirely driven by sector exposure (e.g., ``it's just a tech bet''), an investor could replicate it with a simpler sector allocation. The key question is: \emph{does the R\&D premium exist within sectors, or is it just a sector effect?}
+
+Table~\ref{tab:rd_by_sector} shows that R\&D intensity is concentrated in a subset of sectors, with Healthcare and Technology exhibiting the highest average intensity. We therefore treat sector patterns as part of the signal's economic interpretation rather than as a nuisance to be hidden.
+
+\input{tables/table_rd_by_sector.tex}
+
+\begin{tcolorbox}[title=Interpreting Sector Concentration, colback=gray!5, colframe=gray!50]
+\textbf{Key observations:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Technology and Healthcare dominate:} These sectors have the highest R\&D intensity, so Q5 (high R\&D) portfolios will be heavily weighted toward them.
+    \item \textbf{Not a pure size/factor artifact:} Section~\ref{sec:robustness} reports factor spanning tests and size $\times$ R\&D double-sorts; we do not present a sector-neutralized premium in this snapshot.
+    \item \textbf{Sector risk:} Even if the premium is ``real,'' sector concentration exposes the strategy to sector-specific drawdowns (e.g., tech crashes).
+\end{itemize}
+\end{tcolorbox}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\textwidth,
+    height=6.5cm,
+    xlabel={Year},
+    ylabel={Average R\&D intensity (\%)},
+    grid=both,
+    major grid style={line width=.2pt,draw=gray!30},
+]
+\addplot+[mark=none,thick] table [x=year,y=avg_rd_intensity,col sep=comma] {data/rd_trends.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Average R\&D intensity over time in the snapshot dataset (descriptive). The trend reflects both increased R\&D spending and compositional shifts in the S\&P 500 toward technology-intensive firms over recent decades.}
+\label{fig:rd_trends}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 7. ROBUSTNESS AND FACTOR TESTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Robustness and Factor Tests}
+\label{sec:robustness}
+
+This section reports robustness and interpretation diagnostics that complement the primary annual premium evidence in Section~\ref{sec:results}. We present cumulative performance visualization, factor spanning tests, stratification diagnostics, double-sort analysis, and delisting sensitivity.
+
+\subsection{Cumulative Performance Context (Annual Series)}
+
+Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 and Q1 computed from the same annual non-overlapping series used for primary inference. The widening gap visualizes the compounding effect of a persistent premium and helps frame path dependence of implementation.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.97\textwidth,
+    height=7cm,
+    xlabel={Start year},
+    ylabel={Cumulative index (start = 1)},
+    grid=both,
+    major grid style={line width=.2pt,draw=gray!30},
+    legend style={at={(0.02,0.98)},anchor=north west},
+]
+\addplot+[mark=none,thick,color=teal!70!black] table [x=year_start,y=q5_index,col sep=comma] {data/annual_quintile_growth.csv};
+\addlegendentry{Q5}
+\addplot+[mark=none,thick,color=red!70!black] table [x=year_start,y=q1_index,col sep=comma] {data/annual_quintile_growth.csv};
+\addlegendentry{Q1}
+\end{axis}
+\end{tikzpicture}
+\caption{Cumulative growth of \$1 invested in Q5 vs.\ Q1 (annual July--June series).}
+\label{fig:annual_quintile_growth}
+\end{figure}
+
+\begin{tcolorbox}[title=Interpreting Cumulative Performance, colback=gray!5, colframe=gray!50]
+\textbf{Key points:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Compounding matters:} Small annual differences compound dramatically over time.
+    \item \textbf{Path dependence:} The final value depends on the sequence of returns. A large drawdown early has more impact than one late because there's more time to recover.
+    \item \textbf{Not risk-adjusted:} This chart shows raw wealth growth, not risk-adjusted performance. Q5 may have higher volatility.
+    \item \textbf{Hindsight bias:} This is a backtest. Actual implementation faces trading costs, timing differences, and behavioral challenges not shown here.
+\end{itemize}
+\end{tcolorbox}
+
+\subsection{Factor Spanning Tests}
+
+To assess whether the premium is explained by standard factor exposures, we report spanning tests against common models \citep{fama_french_1993,fama_french_2015,carhart_1997}. The key object is the regression intercept (alpha) of the R\&D premium after controlling for benchmark factors.
+
+A positive and statistically significant alpha indicates that the R\&D premium is not fully explained by exposure to the benchmark factors---it represents a distinct return source. The spanning test regression is:
+\begin{equation}
+R^{HML-RD}_t = \alpha + \beta_1 MKT_t + \beta_2 SMB_t + \beta_3 HML_t + \cdots + \epsilon_t
+\end{equation}
+where $R^{HML-RD}_t$ is the R\&D high-minus-low premium and the right-hand-side variables are standard factors.
+
+\input{tables/table_spanning_tests_full.tex}
+
+\textbf{Interpretation:} Positive alphas across factor models (FF3, FF5, and momentum variants) suggest that the R\&D premium is not simply a relabeling of standard factors---it contains distinct information. However, factor spanning tests cannot rule out omitted risk factors that we haven't measured.
+
+\subsection{Double-Sort: Size $\times$ R\&D}
+
+To ensure the R\&D premium is not simply a size proxy, we report size-by-R\&D double sorts. This test examines whether the R\&D premium exists within size categories or is driven by small-cap effects \citep{cohen_klepper_1996}.
+
+\input{tables/table_double_sort.tex}
+
+\begin{tcolorbox}[title=Interpreting Double-Sort Results, colback=gray!5, colframe=gray!50]
+\textbf{Key questions:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Is the spread significant within Large?} If yes, the premium is not just a small-cap effect.
+    \item \textbf{Is the spread larger in Small?} This would be consistent with the signal being stronger where information asymmetry is higher.
+    \item \textbf{Why does Medium sometimes differ?} Mid-cap stocks often behave idiosyncratically; the key comparison is Large vs.\ Small.
+\end{itemize}
+If the R\&D premium exists within size categories, it represents an R\&D-specific effect rather than a size disguise.
+\end{tcolorbox}
+
+\subsection{Delisting Sensitivity}
+
+Because vendor datasets can differ in delisting return coverage, we include a simulated sensitivity analysis. Delisting returns matter because firms that delist (often due to bankruptcy or acquisition) can have extreme terminal returns that affect portfolio performance.
+
+\input{tables/table_delisting_sensitivity.tex}
+
+\textbf{Interpretation:} The premium remains positive and significant across all delisting sensitivity scenarios, suggesting the core finding is not an artifact of delisting-data uncertainty. The sensitivity analysis shows the premium is robust to conservative assumptions about terminal/exit returns.
+
+\subsection{Arbitrage-Cost Proxies (Descriptive)}
+
+We report descriptive premiums across proxies for arbitrage costs (size, volatility, and coverage). These patterns can be suggestive for distinguishing mispricing from risk-based explanations, but they are not definitive.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mispricing interpretation:} Premiums should be larger where arbitrage is more difficult (small size, high volatility, low analyst coverage). If sophisticated arbitrageurs cannot trade away the mispricing, it persists.
+    \item \textbf{Risk interpretation:} Premiums should be similar across groups or larger where risk is lower (if it's pure risk compensation).
+\end{itemize}
+
+\input{tables/table_mispricing_tests.tex}
+
+\begin{tcolorbox}[title=Interpreting Mispricing Diagnostics, colback=yellow!5, colframe=yellow!40, coltitle=black]
+\textbf{Pattern interpretation:}
+\begin{itemize}[leftmargin=*]
+    \item If the premium is \textbf{larger in hard-to-arbitrage stocks} (small, volatile, low coverage), this is more consistent with mispricing.
+    \item If the premium is \textbf{similar across groups}, the mechanism may be risk-based.
+    \item These tests are suggestive, not definitive. A risk-based interpretation does not preclude partial mispricing (and vice versa).
+\end{itemize}
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 8. DISCUSSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Summary of Evidence}
+
+Across Sections~\ref{sec:results}--\ref{sec:robustness}, the evidence is consistent with a positive return premium associated with high R\&D intensity:
+
+\begin{itemize}[leftmargin=*]
+    \item The annual non-overlapping premium averages \AnnualMeanPremium\% with statistical significance ($t = \AnnualTStat$, $p = \AnnualPValue$).
+    \item The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
+    \item Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors.
+    \item The premium exists within size categories (double-sort analysis), suggesting it is not purely a size effect.
+    \item Results are robust to alternative delisting assumptions.
+    \item Regime analysis shows the premium varies across periods but remains positive on average.
+\end{itemize}
+
+Primary inference is anchored on the non-overlapping annual series (Table~\ref{tab:annual_hml_summary}); rolling-window results are presented as descriptive stability checks rather than as a basis for inference.
+
+\subsection{Horizon Dependence and Interpretation}
+
+Rolling windows show lower premiums at longer horizons (Table~\ref{tab:rolling_windows}). This does not imply that ``R\&D stops working''; rather, rolling windows hold quintile assignments fixed at the window start, so the signal becomes stale as firms evolve over time.
+
+The investable analogue of the R\&D signal is therefore an \textbf{annually rebalanced strategy} rather than a buy-and-hold classification over decades. The annual premium evidence (Table~\ref{tab:annual_hml_summary}) directly supports this implementation approach.
+
+\subsection{Sector Structure and Factor Controls}
+
+High-R\&D portfolios mechanically tilt toward R\&D-intensive sectors, particularly Technology and Healthcare (Table~\ref{tab:rd_by_sector}). This does not invalidate the signal, but it makes sector reporting essential and motivates robustness diagnostics.
+
+Factor spanning tests (Table~\ref{tab:spanning_tests}) evaluate whether the premium is explained by standard factor models; a positive and statistically meaningful alpha is consistent with a distinct premium, though omitted risks cannot be ruled out.
+
+\subsection{Mispricing vs.\ Risk Interpretation}
+
+The evidence is consistent with both interpretations:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mispricing:} If investors systematically undervalue intangible assets due to accounting treatment or behavioral biases, high-R\&D stocks would be underpriced and generate positive abnormal returns as the market corrects. The gradual realization of R\&D value through patents, products, and earnings would drive price appreciation.
+    
+    \item \textbf{Risk compensation:} If high-R\&D firms bear innovation-related risks (uncertain payoffs, funding sensitivity, operating leverage), investors would demand higher expected returns as compensation. Under this view, the premium is ``fair'' compensation for bearing risk, not a free lunch.
+\end{itemize}
+
+We do not claim to distinguish these mechanisms definitively. Both can coexist, and the distinction matters primarily for theoretical interpretation rather than portfolio implementation. From a practical perspective, the premium exists and is capturable regardless of its ultimate source.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 9. INVESTABLE STRATEGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Investable Strategy}
+\label{sec:strategy}
+
+\subsection{Rules-Based Implementation}
+
+We translate the signal into an implementable rules-based strategy with annual reconstitution:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Formation:} At the end of June each year, sort S\&P 500 constituents by prior fiscal-year R\&D intensity.
+    \item \textbf{Selection:} Select the top \textbf{20} stocks by R\&D intensity.
+    \item \textbf{Weighting:} Equal-weight all selected stocks (5\% each).
+    \item \textbf{Holding period:} Hold from July through June (12 months).
+    \item \textbf{Rebalancing:} Repeat annually. Sell stocks that leave Q5; buy stocks that enter Q5.
+\end{enumerate}
+
+This simple, transparent strategy requires only annual data updates and one reconstitution event per year.
+
+\subsection{Transaction-Cost Calibration}
+
+Table~\ref{tab:transaction_costs} summarizes the snapshot's transaction-cost calibration and resulting net premium under a literature-calibrated model \citep{novy_marx_velikov_2016}. This provides an explicit check that the documented gross premium is not purely an artifact of ignoring trading frictions.
+
+\input{tables/table_transaction_costs.tex}
+
+Key findings (snapshot-defined):
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Turnover-based cost model:} Trading cost is approximated as (round-trip cost per 100\% turnover) $\times$ (realized turnover from the investable backtest), using S\&P 500 liquidity characteristics \citep{novy_marx_velikov_2016}.
+    \item \textbf{Premium capture:} The strategy retains \PremiumCaptureRatePct\% of the gross premium after trading costs.
+    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus the snapshot benchmark.
+\end{itemize}
+
+\subsection{Backtest Performance}
+
+Figure~\ref{fig:investable_growth} shows cumulative performance of the investable strategy versus benchmarks.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\textwidth,
+    height=7cm,
+    xlabel={Year},
+    ylabel={Cumulative index (start = 1)},
+    grid=both,
+    major grid style={line width=.2pt,draw=gray!30},
+    legend style={at={(0.02,0.98)},anchor=north west},
+]
+\addplot+[mark=none,thick] table [x=year,y=portfolio_index,col sep=comma] {data/investable_growth.csv};
+\addlegendentry{R\&D strategy (net)}
+\addplot+[mark=none,thick] table [x=year,y=benchmark_index,col sep=comma] {data/investable_growth.csv};
+\addlegendentry{Benchmark (net)}
+\addplot+[mark=none,thick] table [x=year,y=sp500_index,col sep=comma] {data/investable_growth.csv};
+\addlegendentry{S\&P 500}
+\end{axis}
+\end{tikzpicture}
+\caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The benchmark is the snapshot-defined equal-weighted cohort universe; the S\&P 500 series is shown separately.}
+\label{fig:investable_growth}
+\end{figure}
+
+\begin{tcolorbox}[title=Important Caveats for Backtests, colback=red!5, colframe=red!40]
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Hindsight bias:} Backtests show what would have happened, not what will happen. Markets evolve, and past performance does not guarantee future results.
+    \item \textbf{Data mining:} Any characteristic sorted with enough data will appear to ``work'' in some backtest. We mitigate this by using well-established methodology (Fama--French timing) and reporting robustness across specifications.
+    \item \textbf{Capacity constraints:} Equal-weighted S\&P 500 strategies have high capacity, but very large portfolios may face liquidity constraints.
+    \item \textbf{Taxes:} Annual rebalancing generates taxable gains. Tax-aware implementation would modify the strategy.
+\end{itemize}
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 10. LIMITATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Limitations}
+\label{sec:limitations}
+
+This study is designed to be transparent and replicable, but several limitations remain:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Data limitations:} Tier-1 fundamentals (FMP) may have coverage gaps relative to CRSP and Compustat datasets commonly used in academic research. Factor inputs inherit their construction and definitions from external sources.
+    
+    \item \textbf{Scope:} Results are specific to U.S.\ large-cap equities (S\&P 500). Small-cap U.S.\ stocks and international markets require separate analysis. The premium may differ in other universes.
+    
+    \item \textbf{Interpretation:} The analysis documents association (a characteristic premium), not causality. We cannot definitively distinguish mispricing from risk compensation or identify the causal mechanism.
+    
+    \item \textbf{Implementation:} Trading frictions are modeled via calibrated parameters rather than observed fund-level execution costs. Taxes, capacity constraints, and behavioral factors (e.g., discipline to stick with the strategy during drawdowns) are not modeled.
+    
+    \item \textbf{Sample period:} The available sample period may not include all relevant market regimes. Future regimes may differ from historical patterns.
+    
+    \item \textbf{Sector concentration:} High-R\&D portfolios are concentrated in Technology and Healthcare. This exposes the strategy to sector-specific risks (e.g., regulatory changes, sector rotations) that may not be fully reflected in historical volatility.
+    
+    \item \textbf{Factor model limitations:} Factor spanning tests assess whether the premium is explained by known factors, but they cannot rule out omitted factors. The R\&D premium might load on an unmeasured risk factor.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 11. REPLICABILITY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Replicability}
+\label{sec:replicability}
+
+All tables and figures in this paper are generated from the snapshot JSON at \path{data/publication_snapshot.json} via \path{scripts/build_assets.py}. This design prevents accidental drift: updating the snapshot and regenerating assets updates the entire manuscript deterministically.
+
+The full codebase is available at: \url{https://github.com/vastdreams/rd-alpha-research}
+
+Researchers can replicate this paper as follows:
+\begin{enumerate}[leftmargin=*]
+    \item Clone the repository:
+    \begin{quote}
+    \texttt{git clone }\url{https://github.com/vastdreams/rd-alpha-research.git}
+    \end{quote}
+    \item Navigate to the LaTeX directory: \texttt{cd research/paper\_latex}
+    \item Run the asset builder: \texttt{python3 scripts/build\_assets.py}
+    \item Compile the manuscript: \texttt{tectonic main.tex} (or any standard LaTeX distribution)
+\end{enumerate}
+
+The repository also contains:
+\begin{itemize}[leftmargin=*]
+    \item Backend code for data ingestion and analysis
+    \item Frontend code for the interactive research platform at \url{https://research.finsoeasy.com}
+    \item Documentation of methodology and data sources
+    \item Citation information (CITATION.cff)
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 12. CONCLUSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+
+In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium that remains statistically significant under conservative inference and appears largely capturable under a calibrated transaction-cost model.
+
+The primary findings are:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$). High-R\&D stocks outperformed low-R\&D stocks by this margin on average over the sample period.
+    
+    \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not driven by a few extreme years.
+    
+    \item \textbf{Distinctiveness:} Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors (market, size, value, profitability, investment, momentum).
+    
+    \item \textbf{Robustness:} The premium exists within size categories (not just a size effect), is robust to delisting assumptions, and persists across multiple market regimes.
+    
+    \item \textbf{Implementability:} After transaction costs, the strategy retains \PremiumCaptureRatePct\% of the gross premium, delivering \NetPremiumAfterCostsPct\% annual net premium.
+\end{enumerate}
+
+While the mechanism remains debated (mispricing vs.\ risk compensation), the evidence supports the view that intangible investment characteristics are economically meaningful for long-horizon portfolio construction. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms.
+
+\textbf{Looking forward:} As economies become increasingly knowledge-based and intangible assets grow relative to physical capital, understanding the relationship between R\&D investment and stock returns becomes more important. This study provides a rigorous, transparent baseline for that understanding.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACKNOWLEDGMENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgments}
+
+This research was independently conceived and funded by FSE Research \& Investments Pty Ltd, of which the author is the founder and sole researcher. The author thanks the open-source community for the statistical and visualization tools that made this analysis possible. All errors and omissions are the author's own.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DATA AVAILABILITY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Data Availability Statement}
+
+The data and code supporting the findings of this study are publicly available at:\\[0.3em]
+\url{https://github.com/vastdreams/rd-alpha-research}\\[0.5em]
+The repository contains:
+\begin{itemize}[leftmargin=*,topsep=0pt]
+    \item Source code for all statistical analyses
+    \item Publication snapshot (JSON) used to generate all tables and figures
+    \item LaTeX source for this manuscript
+    \item Replication scripts
+\end{itemize}
+The live interactive platform is available at \url{https://research.finsoeasy.com}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DISCLOSURE STATEMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Disclosure Statement}
+
+The author is the founder of FSE Research \& Investments Pty Ltd, which funded this research. The author does not actively manage investments or portfolios for third parties. This research is conducted for educational and informational purposes and does not constitute investment advice. The author has no other conflicts of interest to disclose.
+
+\bibliography{references}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX A: STATISTICAL METHODOLOGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{Statistical Methodology Details}
+\label{app:stats}
+
+This appendix provides detailed definitions and interpretations for the statistical methods used throughout the paper.
+
+\subsection{Newey--West HAC Standard Errors}
+
+The Newey--West estimator \citep{newey_west_1987} provides heteroskedasticity and autocorrelation consistent (HAC) standard errors for time-series regression coefficients. This is essential when testing hypotheses on the R\&D premium because:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Heteroskedasticity:} The variance of returns may differ across time periods (e.g., higher in 2008--2009 than in 2013--2014).
+    \item \textbf{Autocorrelation:} Even in ``non-overlapping'' annual series, there may be mild autocorrelation from persistent market conditions or slow-moving factors.
+\end{itemize}
+
+The HAC variance estimator is:
+\begin{equation}
+\hat{V}_{NW} = \hat{\Omega}_0 + \sum_{j=1}^{L} w_j \left( \hat{\Omega}_j + \hat{\Omega}_j^T \right)
+\end{equation}
+where $\hat{\Omega}_j = \frac{1}{T} \sum_{t=j+1}^{T} \hat{u}_t \hat{u}_{t-j} x_t x_{t-j}^T$ is the $j$-th order autocovariance, and $w_j = 1 - \frac{j}{L+1}$ is the Bartlett kernel weight. The lag truncation parameter $L$ is typically set using the rule $L = \lfloor 4(T/100)^{2/9} \rfloor$ or specified by the researcher.
+
+\textbf{Interpretation:} Newey--West standard errors are generally larger (more conservative) than naive OLS standard errors. A significant t-statistic under Newey--West is therefore more reliable evidence against the null hypothesis.
+
+\subsection{ANOVA and F-Statistics}
+
+Analysis of variance (ANOVA) tests whether the means of multiple groups (quintiles) differ significantly. The F-statistic compares between-group variance to within-group variance:
+\begin{equation}
+F = \frac{\text{Between-group variance}}{\text{Within-group variance}} = \frac{SS_B / (k-1)}{SS_W / (N-k)}
+\end{equation}
+where $SS_B$ is the sum of squares between groups, $SS_W$ is the sum of squares within groups, $k$ is the number of groups (5 for quintiles), and $N$ is the total number of observations.
+
+\textbf{Interpretation:} A large F-statistic (with small p-value) indicates that quintile means differ significantly---R\&D intensity is associated with return differences. However, ANOVA does not indicate which quintiles differ; it only tests for any difference.
+
+\subsection{Effect Size: Cohen's d}
+
+Cohen's d measures the standardized difference between two group means:
+\begin{equation}
+d = \frac{\bar{X}_1 - \bar{X}_2}{s_{pooled}}
+\end{equation}
+where $s_{pooled} = \sqrt{\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}}$ is the pooled standard deviation.
+
+\textbf{Conventions:}
+\begin{center}
+\begin{tabular}{cl}
+\toprule
+$|d|$ & Interpretation \\
+\midrule
+0.2 & Small effect \\
+0.5 & Medium effect \\
+0.8 & Large effect \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Effect sizes complement p-values by indicating practical significance. A statistically significant but small effect (d $<$ 0.2) may not be economically meaningful; a large effect (d $>$ 0.8) indicates substantial separation between groups.
+
+\subsection{Eta-Squared ($\eta^2$)}
+
+Eta-squared measures the proportion of total variance explained by group membership:
+\begin{equation}
+\eta^2 = \frac{SS_B}{SS_T} = \frac{SS_B}{SS_B + SS_W}
+\end{equation}
+
+\textbf{Interpretation:} $\eta^2 = 0.10$ means 10\% of return variance is explained by quintile membership. This is an R-squared analogue for ANOVA. Higher values indicate stronger association between R\&D intensity and returns.
+
+\subsection{Sharpe Ratio}
+
+The Sharpe ratio measures risk-adjusted return:
+\begin{equation}
+\text{Sharpe} = \frac{\bar{R}_p - R_f}{\sigma_p}
+\end{equation}
+where $\bar{R}_p$ is the mean portfolio return, $R_f$ is the risk-free rate, and $\sigma_p$ is the portfolio standard deviation.
+
+\textbf{Interpretation:} A higher Sharpe ratio indicates better risk-adjusted performance. However, Sharpe ratios can be misleading for strategies with non-normal return distributions (e.g., skewness, fat tails). For R\&D strategies with sector concentration, additional risk metrics (max drawdown, downside deviation) may be informative.
+
+\subsection{Maximum Drawdown}
+
+Maximum drawdown measures the largest peak-to-trough decline in cumulative returns:
+\begin{equation}
+\text{MaxDD} = \max_{t \in [0,T]} \left( \max_{s \in [0,t]} V_s - V_t \right) / \max_{s \in [0,t]} V_s
+\end{equation}
+where $V_t$ is the portfolio value at time $t$.
+
+\textbf{Interpretation:} Maximum drawdown captures ``worst-case'' loss experience that may not be reflected in volatility. A strategy with moderate volatility but large drawdowns may be psychologically difficult to hold through adversity. For long-only equity strategies, 30--50\% drawdowns are common during bear markets.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX B: DATA SOURCES AND QUALITY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data Sources and Quality}
+\label{app:data}
+
+\subsection{Primary Data Source: Financial Modeling Prep (FMP)}
+
+The analysis uses Tier-1 data from Financial Modeling Prep (FMP), a commercial financial data provider. Key characteristics:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Coverage:} U.S.\ equities with focus on listed securities. S\&P 500 coverage is comprehensive; small-cap coverage may be less complete.
+    \item \textbf{History:} Multi-decade history for large-cap U.S.\ stocks.
+    \item \textbf{Fields:} Income statement (including R\&D expense), balance sheet, price data.
+    \item \textbf{Frequency:} Annual and quarterly fundamentals; daily price data.
+\end{itemize}
+
+\textbf{Limitations vs.\ CRSP/Compustat:} Academic research traditionally uses CRSP (prices, delisting) and Compustat (fundamentals). Tier-1 data may have:
+\begin{itemize}[leftmargin=*]
+    \item Less complete delisting coverage
+    \item Fewer historical adjustments for corporate actions
+    \item Potential data entry errors not caught by academic review processes
+\end{itemize}
+
+We mitigate these issues by (i) implementing explicit delisting sensitivity analysis, (ii) applying filters to remove obvious data errors, and (iii) publishing the full methodology for replication.
+
+\subsection{Factor Data}
+
+Factor returns for spanning tests (MKT, SMB, HML, RMW, CMA, MOM) are sourced from Kenneth French's data library, the academic standard for factor research. These factors are updated monthly and widely used in peer-reviewed research.
+
+\subsection{Snapshot Integrity}
+
+The publication snapshot is a frozen JSON file containing all computed results. This ensures:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Reproducibility:} Every number in this paper can be traced to the snapshot.
+    \item \textbf{Versioning:} Different snapshot versions can be compared to track changes.
+    \item \textbf{Transparency:} The snapshot is included in the public repository.
+\end{itemize}
+
+\textbf{Snapshot ID:} \texttt{\SnapshotId}\\
+\textbf{Build date:} \SnapshotBuiltAt\\
+\textbf{Data tier:} \DataTier\\
+\textbf{Return convention:} \ReturnConvention
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX C: ALTERNATIVE SPECIFICATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Alternative Specifications}
+\label{app:alternatives}
+
+This appendix discusses alternative methodological choices and their implications.
+
+\subsection{Alternative Denominators for R\&D Intensity}
+
+We define R\&D intensity as R\&D / Revenue. Alternative denominators include:
+
+\begin{center}
+\begin{tabular}{l>{\raggedright\arraybackslash}p{8cm}}
+\toprule
+Denominator & Pros and Cons \\
+\midrule
+Revenue & Stable, comparable across firms. Less affected by leverage. Used in this paper. \\
+Total Assets & Common in accounting literature. Affected by intangible asset accounting and acquisitions. \\
+Market Cap & Incorporates market expectations. Highly volatile; endogenous to the signal being tested. \\
+Operating Expenses & Measures R\&D as fraction of total spending. Less intuitive for cross-sector comparison. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Empirically, results are qualitatively similar across denominators for large-cap U.S.\ stocks, but magnitudes may differ.
+
+\subsection{Alternative Timing Conventions}
+
+We use July--June returns following Fama--French. Alternatives include:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Calendar year (January--December):} Simpler but introduces look-ahead bias for December fiscal-year-end firms.
+    \item \textbf{Rolling 12-month:} Form portfolios each month using most recent annual data. Higher frequency but data staleness varies by firm.
+    \item \textbf{Fiscal-year-aligned:} Form portfolios 4 months after each firm's fiscal year end. Firm-specific timing reduces look-ahead but complicates aggregation.
+\end{itemize}
+
+The July--June convention balances look-ahead mitigation with practical implementability.
+
+\subsection{Alternative Weighting Schemes}
+
+We use equal-weighted portfolios. Alternatives include:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Value-weighted (market cap):} More representative of investable market. Reduces premium if the signal is stronger in smaller firms.
+    \item \textbf{R\&D-intensity-weighted:} Overweight highest-intensity firms within quintile. May amplify returns but also volatility.
+    \item \textbf{Risk-parity:} Weight inversely to volatility. Reduces overall portfolio volatility but requires volatility estimation.
+\end{itemize}
+
+Equal-weighting provides a simple, transparent baseline. Value-weighting is recommended for large-scale implementation to reflect capacity constraints.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX D: GLOSSARY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Glossary of Terms}
+\label{app:glossary}
+
+\begin{description}[leftmargin=!,labelwidth=4cm]
+    \item[Alpha ($\alpha$)] The intercept in a factor regression; represents return not explained by factor exposures.
+    \item[ASC 730] Accounting Standards Codification Topic 730, governing R\&D expense treatment.
+    \item[Cohen's d] Standardized effect size measuring group mean differences in standard deviation units.
+    \item[Delisting return] Return assigned when a stock leaves the index (merger, bankruptcy, etc.).
+    \item[Equal-weighted] Portfolio weighting where each stock has equal dollar allocation.
+    \item[Eta-squared ($\eta^2$)] Proportion of variance explained by group membership.
+    \item[FF3/FF5] Fama--French three-factor or five-factor asset pricing models.
+    \item[HAC] Heteroskedasticity and autocorrelation consistent (standard errors).
+    \item[HML] High-minus-low; the return spread between high and low portfolios.
+    \item[Look-ahead bias] Using information that was not available at the time of a historical decision.
+    \item[Newey--West] Procedure for computing HAC standard errors.
+    \item[Non-overlapping] Observations that do not share data with adjacent observations.
+    \item[Point-in-time] Using historical data as it existed at each historical date.
+    \item[Quintile] One of five equal-count groups formed by sorting on a characteristic.
+    \item[R\&D intensity] R\&D expense divided by revenue, expressed as a percentage.
+    \item[Rolling window] Multi-period returns where adjacent windows share some periods.
+    \item[SFAS 2] Statement of Financial Accounting Standards No.\ 2 (1974); now ASC 730.
+    \item[Sharpe ratio] Risk-adjusted return (excess return divided by volatility).
+    \item[Spanning test] Regression testing whether a factor is explained by benchmark factors.
+    \item[Survivorship bias] Bias from excluding failed or delisted firms from analysis.
+    \item[t-statistic] Test statistic for hypothesis testing (coefficient / standard error).
+    \item[Value-weighted] Portfolio weighting by market capitalization.
+    \item[Win rate] Percentage of periods with positive premium.
+\end{description}
+
+\end{document}

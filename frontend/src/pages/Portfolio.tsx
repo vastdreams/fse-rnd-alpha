@@ -1,6 +1,33 @@
+/**
+ * PATH: frontend/src/pages/Portfolio.tsx
+ * PURPOSE:
+ *   - Interactive "ETF{N} R&D Alpha Selection" page: holdings, performance backtest, sector allocation, and methodology.
+ *
+ * WHY:
+ *   - Provides a portfolio/implementation view of the R&D Alpha research.
+ *   - Avoids hard-coded performance claims by sourcing any published “premium” numbers from the frozen publication snapshot.
+ *
+ * FLOW:
+ *   ┌────────────────────────────┐
+ *   │ Fetch backend endpoints     │  holdings / backtest / forecast / snapshot
+ *   └──────────────┬─────────────┘
+ *                  ▼
+ *   ┌────────────────────────────┐
+ *   │ Compute UI metrics          │  selected-year metrics, chart series, labels
+ *   └──────────────┬─────────────┘
+ *                  ▼
+ *   ┌────────────────────────────┐
+ *   │ Render tabs + charts        │  holdings / performance / allocation / methodology
+ *   └────────────────────────────┘
+ *
+ * DEPENDENCIES:
+ *   - @tanstack/react-query: caching + data fetching
+ *   - @/lib/api: portfolioApi (portfolio endpoints) + api (publication snapshot)
+ *   - recharts: charting components
+ */
 import { useState, useMemo, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { portfolioApi } from "@/lib/api"
+import { api, portfolioApi } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -81,6 +108,40 @@ export function Portfolio() {
     })
     return () => cancelAnimationFrame(rafId)
   }, [activeTab])
+
+  // Frozen publication snapshot (source of truth for published premium/inference claims)
+  const { data: publicationSnapshot } = useQuery({
+    queryKey: ["publicationSnapshot"],
+    queryFn: api.getPublicationSnapshot,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const annualHmlPremium = useMemo(() => {
+    const annual = publicationSnapshot?.payload?.annual_hml_premium
+    if (!annual || typeof annual !== "object") return undefined
+    if ("error" in annual) return undefined
+    return annual
+  }, [publicationSnapshot?.payload?.annual_hml_premium])
+
+  const transactionCosts = useMemo(() => {
+    const costs = publicationSnapshot?.payload?.transaction_costs
+    if (!costs || typeof costs !== "object") return undefined
+    if ("error" in costs) return undefined
+    return costs
+  }, [publicationSnapshot?.payload?.transaction_costs])
+
+  const annualMeanPremiumPct =
+    typeof annualHmlPremium?.mean_premium === "number" ? annualHmlPremium.mean_premium : undefined
+  const annualTStat =
+    typeof annualHmlPremium?.hac_adjusted?.t_statistic === "number"
+      ? annualHmlPremium.hac_adjusted.t_statistic
+      : undefined
+  const annualPValue =
+    typeof annualHmlPremium?.hac_adjusted?.p_value === "number" ? annualHmlPremium.hac_adjusted.p_value : undefined
+  const annualNYears = typeof annualHmlPremium?.n_years === "number" ? annualHmlPremium.n_years : undefined
+
+  const annualTradingCostPct =
+    typeof transactionCosts?.annual_trading_cost_pct === "number" ? transactionCosts.annual_trading_cost_pct : undefined
 
   // Dynamic holdings based on selected year
   // Use "rd_alpha" method which uses July-June returns per Fama-French convention
@@ -276,8 +337,9 @@ export function Portfolio() {
     if (!backtest?.yearly_data || backtest.yearly_data.length === 0) return []
     
     const lastActualYear = CURRENT_YEAR - 1 // 2024 is the last year with complete data
-    // Use canonical R&D premium from research (~5% conservative estimate)
-    const forecastPremium = forecastVsActual?.forecast_premium ?? 5.0
+    // Use canonical R&D premium from the frozen publication snapshot when available (fallback: 5%)
+    const defaultForecastPremium = typeof annualMeanPremiumPct === "number" ? annualMeanPremiumPct : 5.0
+    const forecastPremium = forecastVsActual?.forecast_premium ?? defaultForecastPremium
     
     
     // Calculate cumulative values starting at 100
@@ -405,7 +467,7 @@ export function Portfolio() {
     chartData.sort((a, b) => a.year - b.year)
     
     return chartData
-  }, [backtest, asOfYear, forecastVsActual])
+  }, [backtest, asOfYear, forecastVsActual, annualMeanPremiumPct])
 
   // Check if we have actuals data (years after selection with actual portfolio returns)
   const hasActualsData = useMemo(() => {
@@ -680,8 +742,12 @@ export function Portfolio() {
                 but had extraordinary post-IPO returns. This artificially boosts historical performance.
               </p>
               <p>
-                <strong>Realistic expectation:</strong> Based on academic research, the R&D premium is typically 
-                +5-8% annually over the market, not +17%. Use these numbers as directional indicators only.
+                <strong>Realistic expectation:</strong> Treat this backtest as a directional demo. For publication-grade
+                premium estimates, use the frozen snapshot in the{" "}
+                <Link to="/papers/main" className="text-blue-500 hover:underline font-medium">Main Paper</Link>
+                {typeof annualMeanPremiumPct === "number"
+                  ? ` (annual Q5–Q1 mean ≈ ${annualMeanPremiumPct.toFixed(2)}%).`
+                  : "."}
               </p>
               <p className="text-xs">
                 Returns use July-June fiscal year convention per Fama-French methodology. 
@@ -804,7 +870,11 @@ export function Portfolio() {
               <ul className="text-sm text-muted-foreground space-y-1 ml-8">
                 <li>• Past performance ≠ future results</li>
                 <li>• Backtests are subject to data quality limitations</li>
-                <li>• Transaction costs (~0.07% annually) reduce net returns</li>
+                <li>
+                  • Transaction costs
+                  {typeof annualTradingCostPct === "number" ? ` (~${annualTradingCostPct.toFixed(3)}% annually in snapshot calibration)` : ""}{" "}
+                  reduce net returns
+                </li>
                 <li>• This is a research tool, not investment advice</li>
               </ul>
             </div>
@@ -844,9 +914,20 @@ export function Portfolio() {
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 This portfolio implements the findings from our <Link to="/papers/main" className="text-blue-500 hover:underline font-medium">R&D Alpha research paper</Link>: 
-                <strong> R&D intensity</strong> (R&D/Revenue) predicts future stock returns with a statistically significant premium of 
-                <strong> ~5% annually</strong> (t-stat 2.78). Holdings are selected using the July-June return convention 
-                to avoid look-ahead bias, with delisting adjustments for survivorship correction.
+                <strong> R&D intensity</strong> (R&D/Revenue) predicts future stock returns with an annual, non-overlapping Q5–Q1 premium of{" "}
+                <strong>
+                  {typeof annualMeanPremiumPct === "number" ? `${annualMeanPremiumPct.toFixed(2)}%` : "..."}
+                </strong>{" "}
+                per year{" "}
+                {typeof annualTStat === "number" && typeof annualPValue === "number" ? (
+                  <>
+                    (Newey–West t = {annualTStat.toFixed(2)}, p = {annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}
+                    {typeof annualNYears === "number" ? `; N = ${annualNYears}` : ""})
+                  </>
+                ) : (
+                  ""
+                )}
+                . Holdings are selected using the July–June return convention to avoid look-ahead bias, with point-in-time membership (when available) and explicit exit handling (cash-after-exit) plus delisting sensitivity analysis.
               </p>
             </div>
           </div>

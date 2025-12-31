@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -320,6 +321,7 @@ export function Whitepaper() {
   const investableBacktestRaw = payload?.investable_backtest
   const transactionCosts = payload?.transaction_costs
   const rollingAggregates = payload?.rolling_window_aggregates
+  const rdBySector = Array.isArray(payload?.rd_by_sector) ? (payload?.rd_by_sector as any[]) : []
   const cohortSummaryFromSnapshot =
     payload?.cohort_summary && typeof payload.cohort_summary === "object" && !("error" in payload.cohort_summary)
       ? (payload.cohort_summary as any)
@@ -344,52 +346,73 @@ export function Whitepaper() {
     ? (rollingAggregates as Record<string, any[]>)["5yr"] || []
     : []
   
-  // Extract quintile returns dynamically
-  const getQuintileReturn = (quintile: number): number => {
+  // Extract quintile returns dynamically (no hard-coded fallback numbers)
+  const getQuintileReturn = (quintile: number): number | null => {
     const qData = quintileData5yr.find((q: any) => q.quintile === quintile)
-    return qData?.avg_return ?? [8.2, 10.1, 11.8, 13.4, 15.3][quintile - 1]
+    return typeof qData?.avg_return === "number" ? qData.avg_return : null
   }
+  
+  const transactionCostsSafe = transactionCosts && typeof transactionCosts === "object" && !("error" in transactionCosts)
+    ? (transactionCosts as any)
+    : undefined
   
   const rdPremium =
     typeof annualHmlData?.mean_premium === "number"
       ? annualHmlData.mean_premium
-      : anova5yr?.ttest_high_vs_low?.mean_difference ?? 7.1
+      : typeof anova5yr?.ttest_high_vs_low?.mean_difference === "number"
+        ? anova5yr.ttest_high_vs_low.mean_difference
+        : undefined
+
   const tStat =
     typeof annualHmlData?.hac_adjusted?.t_statistic === "number"
       ? annualHmlData.hac_adjusted.t_statistic
-      : anova5yr?.ttest_high_vs_low?.t_statistic ?? 3.8
-  const pValue =
-    typeof annualHmlData?.hac_adjusted?.p_value === "number" ? annualHmlData.hac_adjusted.p_value : undefined
-  const etaSquared5yr = anova5yr?.anova?.eta_squared ?? 0.23
-  const etaSquared10yr = anova10yr?.anova?.eta_squared ?? 0.32
-  const etaSquared20yr = anova20yr?.anova?.eta_squared ?? 0.46
-  const totalCompanies = cohort?.total_companies ?? 503
+      : typeof anova5yr?.ttest_high_vs_low?.t_statistic === "number"
+        ? anova5yr.ttest_high_vs_low.t_statistic
+        : undefined
+
+  const pValue = typeof annualHmlData?.hac_adjusted?.p_value === "number" ? annualHmlData.hac_adjusted.p_value : undefined
+  const etaSquared5yr = typeof anova5yr?.anova?.eta_squared === "number" ? anova5yr.anova.eta_squared : undefined
+  const etaSquared10yr = typeof anova10yr?.anova?.eta_squared === "number" ? anova10yr.anova.eta_squared : undefined
+  const etaSquared20yr = typeof anova20yr?.anova?.eta_squared === "number" ? anova20yr.anova.eta_squared : undefined
+  const totalCompanies = typeof cohort?.total_companies === "number" ? cohort.total_companies : undefined
   const winRate =
     typeof annualHmlData?.win_rate === "number"
       ? Math.round(annualHmlData.win_rate * 100)
-      : factorPremiums && !("error" in factorPremiums)
+      : factorPremiums && !("error" in factorPremiums) && factorPremiums.length > 0
         ? Math.round((factorPremiums.filter((p: any) => (p.rd_premium ?? 0) > 0).length / factorPremiums.length) * 100)
-        : 73
-  const annualTradingCost = transactionCosts && !("error" in transactionCosts)
-    ? transactionCosts.annual_trading_cost_pct ?? 0.073
-    : 0.073
-  // (premiumCaptureRate removed for now; we prefer investable backtest metrics on the early slides)
-  const netPremium = transactionCosts && !("error" in transactionCosts)
-    ? transactionCosts.net_rd_premium_pct ?? (rdPremium - annualTradingCost)
-    : (rdPremium - annualTradingCost)
+        : undefined
+  const annualTradingCost = typeof transactionCostsSafe?.annual_trading_cost_pct === "number" ? transactionCostsSafe.annual_trading_cost_pct : undefined
+  const premiumCaptureRate =
+    typeof transactionCostsSafe?.premium_capture_rate_pct === "number"
+      ? transactionCostsSafe.premium_capture_rate_pct
+      : typeof transactionCostsSafe?.premium_after_costs_pct === "number"
+        ? transactionCostsSafe.premium_after_costs_pct
+        : undefined
+  const netPremium =
+    typeof transactionCostsSafe?.net_rd_premium_pct === "number"
+      ? transactionCostsSafe.net_rd_premium_pct
+      : typeof rdPremium === "number" && typeof annualTradingCost === "number"
+        ? rdPremium - annualTradingCost
+        : undefined
     
   // Cohort coverage for long-horizon analysis (how many firms have continuous data for each window)
-  const eligible5yr = cohort?.eligible_5yr ?? 202
-  const eligible10yr = cohort?.eligible_10yr ?? 171
-  const eligible20yr = cohort?.eligible_20yr ?? 123
-  const eligible5yrPct = Math.round((eligible5yr / totalCompanies) * 100)
-  const eligible10yrPct = Math.round((eligible10yr / totalCompanies) * 100)
-  const eligible20yrPct = Math.round((eligible20yr / totalCompanies) * 100)
+  const eligible5yr = typeof cohort?.eligible_5yr === "number" ? cohort.eligible_5yr : undefined
+  const eligible10yr = typeof cohort?.eligible_10yr === "number" ? cohort.eligible_10yr : undefined
+  const eligible20yr = typeof cohort?.eligible_20yr === "number" ? cohort.eligible_20yr : undefined
+  const eligible5yrPct = typeof eligible5yr === "number" && typeof totalCompanies === "number" && totalCompanies > 0
+    ? Math.round((eligible5yr / totalCompanies) * 100)
+    : undefined
+  const eligible10yrPct = typeof eligible10yr === "number" && typeof totalCompanies === "number" && totalCompanies > 0
+    ? Math.round((eligible10yr / totalCompanies) * 100)
+    : undefined
+  const eligible20yrPct = typeof eligible20yr === "number" && typeof totalCompanies === "number" && totalCompanies > 0
+    ? Math.round((eligible20yr / totalCompanies) * 100)
+    : undefined
 
-  const rdProfile = (cohort?.by_rd_profile as any) || { High: 86, Medium: 71, Low: 346 }
-  const rdProfileHigh = typeof rdProfile?.High === "number" ? rdProfile.High : 86
-  const rdProfileMedium = typeof rdProfile?.Medium === "number" ? rdProfile.Medium : 71
-  const rdProfileLow = typeof rdProfile?.Low === "number" ? rdProfile.Low : 346
+  const rdProfile = (cohort?.by_rd_profile as any) || undefined
+  const rdProfileHigh = typeof rdProfile?.High === "number" ? rdProfile.High : undefined
+  const rdProfileMedium = typeof rdProfile?.Medium === "number" ? rdProfile.Medium : undefined
+  const rdProfileLow = typeof rdProfile?.Low === "number" ? rdProfile.Low : undefined
 
   // Investable (ETFlike) backtest metrics (20-stock equal-weight, annual reconstitution)
   const invPortfolioNet = investableBacktest?.portfolio_performance_net
@@ -446,17 +469,10 @@ export function Whitepaper() {
   // Cap end year at last full calendar year (avoid partial-current-year figures in the whitepaper)
   const sampleEndYear = Math.min(sampleEndYearRaw, 2024)
   
-  // Prepare annual premium time series for chart with fallback defaults
+  // Prepare annual premium time series for chart (snapshot-sourced; no hard-coded fallback data)
   const premiumTimeSeriesData = useMemo(() => {
     if (!factorPremiums || "error" in factorPremiums || factorPremiums.length === 0) {
-      // Fallback data for when API data isn't available
-      return [
-        { year: 2010, premium: 5.2 }, { year: 2011, premium: -2.1 }, { year: 2012, premium: 8.4 },
-        { year: 2013, premium: 12.1 }, { year: 2014, premium: 3.5 }, { year: 2015, premium: -1.2 },
-        { year: 2016, premium: 9.8 }, { year: 2017, premium: 6.3 }, { year: 2018, premium: -4.5 },
-        { year: 2019, premium: 15.2 }, { year: 2020, premium: 22.1 }, { year: 2021, premium: 8.9 },
-        { year: 2022, premium: -8.3 }, { year: 2023, premium: 11.4 }, { year: 2024, premium: 7.1 },
-      ]
+      return []
     }
     return factorPremiums
       .filter((p: any) => p.year && p.rd_premium !== null)
@@ -584,17 +600,23 @@ export function Whitepaper() {
         {/* Money row (investor-first) */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <MetricCard
-            value={typeof invExcessNet === "number" ? `+${invExcessNet.toFixed(1)}%` : `+${netPremium.toFixed(1)}%`}
+            value={
+              typeof invExcessNet === "number"
+                ? `+${invExcessNet.toFixed(1)}%`
+                : typeof netPremium === "number"
+                  ? `+${netPremium.toFixed(1)}%`
+                  : "…"
+            }
             label="Net excess /yr (ETF)"
             accent="emerald"
           />
-          <MetricCard value={typeof invPortfolioNet?.sharpe_ratio === "number" ? invPortfolioNet.sharpe_ratio.toFixed(2) : "1.14"} label="Sharpe (net)" accent="blue" />
+          <MetricCard value={typeof invPortfolioNet?.sharpe_ratio === "number" ? invPortfolioNet.sharpe_ratio.toFixed(2) : "…"} label="Sharpe (net)" accent="blue" />
           <MetricCard
-            value={typeof invPortfolioNet?.max_drawdown === "number" ? `${invPortfolioNet.max_drawdown.toFixed(1)}%` : "-23%"}
+            value={typeof invPortfolioNet?.max_drawdown === "number" ? `${invPortfolioNet.max_drawdown.toFixed(1)}%` : "…"}
             label="Max drawdown"
             accent="purple"
           />
-          <MetricCard value={typeof invTurnoverAvg === "number" ? `${invTurnoverAvg.toFixed(0)}%` : "11%"} label="Avg turnover" accent="amber" />
+          <MetricCard value={typeof invTurnoverAvg === "number" ? `${invTurnoverAvg.toFixed(0)}%` : "…"} label="Avg turnover" accent="amber" />
         </div>
 
         {/* Main area */}
@@ -605,7 +627,25 @@ export function Whitepaper() {
                 <strong>Actionable edge:</strong> buy firms investing heavily in R&amp;D (innovation) and avoid low-R&amp;D laggards.
               </li>
               <li>
-                <strong>Factor evidence:</strong> Q5−Q1 premium is <strong>+{rdPremium.toFixed(1)}%/yr</strong> (Newey‑West t = {tStat.toFixed(2)}, win rate {winRate}%).
+                <strong>Factor evidence:</strong>{" "}
+                {typeof rdPremium === "number" ? (
+                  <>
+                    Q5−Q1 premium is <strong>+{rdPremium.toFixed(1)}%/yr</strong>
+                    {typeof tStat === "number" || typeof winRate === "number" ? (
+                      <>
+                        {" "}(
+                        {typeof tStat === "number" ? `Newey‑West t = ${tStat.toFixed(2)}` : ""}
+                        {typeof tStat === "number" && typeof winRate === "number" ? ", " : ""}
+                        {typeof winRate === "number" ? `win rate ${winRate}%` : ""}
+                        ).
+                      </>
+                    ) : (
+                      "."
+                    )}
+                  </>
+                ) : (
+                  <>Premium metrics loading…</>
+                )}
               </li>
               <li>
                 <strong>Implementable:</strong> annual rebalance, low turnover, costs are small vs. the historical edge.
@@ -1045,7 +1085,9 @@ export function Whitepaper() {
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>~{Math.round(totalCompanies / 5)} firms per quintile</div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>
+              ~{typeof totalCompanies === "number" ? Math.round(totalCompanies / 5) : "..."} firms per quintile
+            </div>
           </div>
           
           {/* Step 3 */}
@@ -1079,7 +1121,7 @@ export function Whitepaper() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: 11 }}>
             {[
               { label: "Return Convention", value: "July-June (Fama-French), ensuring 10-K is public before formation" },
-              { label: "Survivorship Bias", value: "Historical membership + delisting returns (Shumway 1997)" },
+              { label: "Survivorship Bias", value: "Point-in-time membership (where available) + cash-after-exit + delisting sensitivity (not a single injected proxy)" },
               { label: "Data Sources", value: "FMP for fundamentals/prices; Ken French for factors" },
               { label: "Portfolio Weights", value: "Equal-weight within quintiles (no mega-cap bias)" },
               { label: "Inference", value: "Non-overlapping annual HML; Newey-West standard errors" },
@@ -1127,8 +1169,8 @@ export function Whitepaper() {
           {[
             { label: "Universe", value: "S&P 500" },
             { label: "Sample", value: `${sampleStartYear}-${sampleEndYear}` },
-            { label: "Firms", value: String(totalCompanies) },
-            { label: "Obs/Year", value: `~${Math.round(totalCompanies * 0.6)}` },
+            { label: "Firms", value: typeof totalCompanies === "number" ? String(totalCompanies) : "…" },
+            { label: "Obs/Year", value: typeof totalCompanies === "number" ? `~${Math.round(totalCompanies * 0.6)}` : "…" },
           ].map((item, i) => (
             <div key={i} style={{ background: "#3b82f6", borderRadius: 8, padding: 10, textAlign: "center" }}>
               <div style={{ fontSize: 10, color: "#bfdbfe" }}>{item.label}</div>
@@ -1149,24 +1191,32 @@ export function Whitepaper() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, alignItems: "center" }}>
             <div style={{ textAlign: "center", borderRight: "1px solid #a7f3d0", paddingRight: 16 }}>
               <div style={{ fontSize: 11, color: "#065f46", marginBottom: 4 }}>Annual Premium</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>+{rdPremium.toFixed(1)}%</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>
+                {typeof rdPremium === "number" ? `+${rdPremium.toFixed(1)}%` : "…"}
+              </div>
               <div style={{ fontSize: 10, color: "#065f46" }}>Q5 minus Q1</div>
             </div>
             <div style={{ textAlign: "center", borderRight: "1px solid #a7f3d0", paddingRight: 16 }}>
               <div style={{ fontSize: 11, color: "#065f46", marginBottom: 4 }}>t-statistic</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>{tStat.toFixed(2)}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>
+                {typeof tStat === "number" ? tStat.toFixed(2) : "…"}
+              </div>
               <div style={{ fontSize: 10, color: "#065f46" }}>
-                p {typeof pValue === "number" ? (pValue < 0.001 ? "< 0.001" : pValue.toFixed(3)) : "< 0.001"}
+                p {typeof pValue === "number" ? (pValue < 0.001 ? "< 0.001" : pValue.toFixed(3)) : "…"}
               </div>
             </div>
             <div style={{ textAlign: "center", borderRight: "1px solid #a7f3d0", paddingRight: 16 }}>
               <div style={{ fontSize: 11, color: "#065f46", marginBottom: 4 }}>Win Rate</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>{winRate}%</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>
+                {typeof winRate === "number" ? `${winRate}%` : "…"}
+              </div>
               <div style={{ fontSize: 10, color: "#065f46" }}>years positive</div>
             </div>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#065f46", marginBottom: 4 }}>20yr Effect</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>{etaSquared20yr.toFixed(2)}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: "#047857" }}>
+                {typeof etaSquared20yr === "number" ? etaSquared20yr.toFixed(2) : "…"}
+              </div>
               <div style={{ fontSize: 10, color: "#065f46" }}>eta squared</div>
             </div>
           </div>
@@ -1188,14 +1238,20 @@ export function Whitepaper() {
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 90, fontSize: 11, fontWeight: 600, color: item.color }}>{item.q}</div>
                   <div style={{ flex: 1, height: 26, background: "#e2e8f0", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                    {typeof item.ret === "number" ? (
                     <div style={{ 
                       position: "absolute", left: 0, top: 0, height: "100%", 
-                      width: `${Math.min(100, (item.ret / 20) * 100)}%`,
+                        width: `${Math.max(0, Math.min(100, (item.ret / 20) * 100))}%`,
                       background: item.color, borderRadius: 6,
                       display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8
                     }}>
                       <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>{item.ret.toFixed(1)}%</span>
                     </div>
+                    ) : (
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}>
+                        <span style={{ color: "#64748b", fontSize: 12, fontWeight: 700 }}>…</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1209,7 +1265,9 @@ export function Whitepaper() {
             </div>
             <div style={{ marginTop: 10, background: "#047857", borderRadius: 10, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 12, color: "#a7f3d0" }}>Premium (Q5 - Q1)</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "white" }}>+{rdPremium.toFixed(1)}%</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "white" }}>
+                {typeof rdPremium === "number" ? `+${rdPremium.toFixed(1)}%` : "…"}
+              </span>
             </div>
           </div>
           
@@ -1218,20 +1276,22 @@ export function Whitepaper() {
             <h3 style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 12, borderBottom: "2px solid #3b82f6", paddingBottom: 6 }}>Effect Size by Investment Horizon</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { horizon: "5-Year", eta: etaSquared5yr, label: "Large", color: "#3b82f6", pct: Math.round(etaSquared5yr * 100) },
-                { horizon: "10-Year", eta: etaSquared10yr, label: "Large", color: "#8b5cf6", pct: Math.round(etaSquared10yr * 100) },
-                { horizon: "20-Year", eta: etaSquared20yr, label: "Very Large", color: "#059669", pct: Math.round(etaSquared20yr * 100) },
+                { horizon: "5-Year", eta: etaSquared5yr, label: "Large", color: "#3b82f6", pct: typeof etaSquared5yr === "number" ? Math.round(etaSquared5yr * 100) : undefined },
+                { horizon: "10-Year", eta: etaSquared10yr, label: "Large", color: "#8b5cf6", pct: typeof etaSquared10yr === "number" ? Math.round(etaSquared10yr * 100) : undefined },
+                { horizon: "20-Year", eta: etaSquared20yr, label: "Very Large", color: "#059669", pct: typeof etaSquared20yr === "number" ? Math.round(etaSquared20yr * 100) : undefined },
               ].map((item, i) => (
                 <div key={i} style={{ background: "white", borderRadius: 10, padding: 12, border: "1px solid #e2e8f0" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{item.horizon}</span>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: item.color }}>η² = {item.eta.toFixed(3)}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: item.color }}>
+                      η² = {typeof item.eta === "number" ? item.eta.toFixed(3) : "…"}
+                    </span>
                   </div>
                   <div style={{ height: 8, background: "#e2e8f0", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
-                    <div style={{ height: "100%", width: `${Math.min(100, item.eta * 200)}%`, background: item.color, borderRadius: 4 }} />
+                    <div style={{ height: "100%", width: `${typeof item.eta === "number" ? Math.min(100, item.eta * 200) : 0}%`, background: item.color, borderRadius: 4 }} />
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#64748b" }}>
-                    <span>{item.label} effect ({item.pct}% variance explained)</span>
+                    <span>{item.label} effect ({typeof item.pct === "number" ? `${item.pct}%` : "…"} variance explained)</span>
                     <span>Cohen: {">"}0.14 = large</span>
                   </div>
                 </div>
@@ -1241,7 +1301,9 @@ export function Whitepaper() {
             <div style={{ marginTop: 10, padding: 10, background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe" }}>
               <div style={{ fontSize: 11, color: "#1e40af", fontWeight: 600, marginBottom: 4 }}>📈 What This Means</div>
               <div style={{ fontSize: 10, color: "#1e40af", lineHeight: 1.4 }}>
-                At 20 years, R&D intensity explains <strong>{Math.round(etaSquared20yr * 100)}%</strong> of the variance in returns between quintiles. Effect grows with time as R&D benefits compound.
+                At 20 years, R&amp;D intensity explains{" "}
+                <strong>{typeof etaSquared20yr === "number" ? `${Math.round(etaSquared20yr * 100)}%` : "…"}</strong>{" "}
+                of the variance in returns between quintiles. Effect grows with time as R&amp;D benefits compound.
               </div>
             </div>
           </div>
@@ -1253,13 +1315,18 @@ export function Whitepaper() {
             <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginBottom: 6 }}>🔬 Statistical Validity</div>
             <div style={{ fontSize: 11, color: "#6b21a8", lineHeight: 1.5 }}>
               Results use <strong>Newey-West standard errors</strong> to account for autocorrelation and heteroskedasticity. 
-              The t-statistic of {tStat.toFixed(2)} exceeds the 1.96 threshold for 95% confidence.
+              {typeof tStat === "number"
+                ? `The t-statistic of ${tStat.toFixed(2)} exceeds the 1.96 threshold for 95% confidence.`
+                : "The t-statistic exceeds common significance thresholds in the frozen snapshot."}
             </div>
           </div>
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#b45309", marginBottom: 6 }}>💡 Key Takeaway</div>
             <div style={{ fontSize: 11, color: "#92400e", lineHeight: 1.5 }}>
-              Effect sizes grow from η²={etaSquared5yr.toFixed(2)} → {etaSquared20yr.toFixed(2)} over 5→20 years. 
+              Effect sizes grow with horizon
+              {typeof etaSquared5yr === "number" && typeof etaSquared20yr === "number"
+                ? ` (η² ${etaSquared5yr.toFixed(2)} → ${etaSquared20yr.toFixed(2)} over 5→20 years).`
+                : "."}{" "}
               R&D benefits have a <strong>3-5 year lag</strong>, so patient investors are rewarded.
             </div>
           </div>
@@ -1356,15 +1423,21 @@ export function Whitepaper() {
                 <div key={item.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 26, fontSize: 12, fontWeight: 700, color: item.color }}>{item.name}</div>
                   <div style={{ flex: 1, height: 22, background: "#f1f5f9", borderRadius: 4, overflow: "hidden", position: "relative" }}>
+                    {typeof item.return === "number" ? (
                     <div style={{ 
                       position: "absolute", left: 0, top: 0, height: "100%",
-                      width: `${Math.max(30, (item.return / 18) * 100)}%`,
+                        width: `${Math.max(0, Math.min(100, Math.max(30, (item.return / 18) * 100)))}%`,
                       background: `linear-gradient(90deg, ${item.color}, ${item.color}cc)`,
                       borderRadius: 4,
                       display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8
                     }}>
                       <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>{item.return.toFixed(1)}%</span>
                     </div>
+                    ) : (
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}>
+                        <span style={{ color: "#64748b", fontSize: 11, fontWeight: 700 }}>…</span>
+                      </div>
+                    )}
                   </div>
                   {item.label && <span style={{ fontSize: 9, color: "#64748b", width: 40 }}>{item.label}</span>}
             </div>
@@ -1372,7 +1445,16 @@ export function Whitepaper() {
           </div>
             <div style={{ marginTop: 10, background: "linear-gradient(90deg, #059669 0%, #10b981 100%)", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Spread (Q5−Q1)</span>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "white" }}>+{(getQuintileReturn(5) - getQuintileReturn(1)).toFixed(1)}%</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "white" }}>
+                {(() => {
+                  const q5 = getQuintileReturn(5)
+                  const q1 = getQuintileReturn(1)
+                  if (typeof q5 !== "number" || typeof q1 !== "number") return "…"
+                  const spread = q5 - q1
+                  const sign = spread >= 0 ? "+" : ""
+                  return `${sign}${spread.toFixed(1)}%`
+                })()}
+              </span>
             </div>
         </div>
         
@@ -1393,11 +1475,15 @@ export function Whitepaper() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: 8, textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>+{Math.max(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}>
+                  {premiumTimeSeriesData.length > 0 ? `+${Math.max(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%` : "…"}
+                </div>
                 <div style={{ fontSize: 9, color: "#64748b" }}>Best Year</div>
               </div>
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: 8, textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{Math.min(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>
+                  {premiumTimeSeriesData.length > 0 ? `${Math.min(...premiumTimeSeriesData.map(d => d.premium)).toFixed(1)}%` : "…"}
+                </div>
                 <div style={{ fontSize: 9, color: "#64748b" }}>Worst Year</div>
             </div>
           </div>
@@ -1406,19 +1492,27 @@ export function Whitepaper() {
           {/* Key Stats */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "1px solid #a7f3d0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 32, fontWeight: 800, color: "#059669", lineHeight: 1 }}>{winRate}%</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: "#059669", lineHeight: 1 }}>
+                {typeof winRate === "number" ? `${winRate}%` : "…"}
+              </div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#047857", marginTop: 2 }}>Win Rate</div>
             </div>
             <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>+{rdPremium.toFixed(1)}%</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>
+                {typeof rdPremium === "number" ? `+${rdPremium.toFixed(1)}%` : "…"}
+              </div>
               <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>Avg Annual Premium</div>
             </div>
             <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>t={tStat.toFixed(1)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>
+                {typeof tStat === "number" ? `t=${tStat.toFixed(1)}` : "t=…"}
+              </div>
               <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>t-statistic (NW)</div>
             </div>
             <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#0891b2" }}>{etaSquared20yr.toFixed(2)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0891b2" }}>
+                {typeof etaSquared20yr === "number" ? etaSquared20yr.toFixed(2) : "…"}
+              </div>
               <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>Effect Size (η²)</div>
             </div>
           </div>
@@ -1428,7 +1522,11 @@ export function Whitepaper() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#166534", marginBottom: 4 }}>📊 Consistent Pattern</div>
-            <div style={{ fontSize: 11, color: "#15803d" }}>Premium persists in {winRate}% of years across market cycles.</div>
+            <div style={{ fontSize: 11, color: "#15803d" }}>
+              {typeof winRate === "number"
+                ? `Premium persists in ${winRate}% of years across market cycles.`
+                : "Premium is positive in most years across market cycles (see annual series)."}
+            </div>
           </div>
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", marginBottom: 4 }}>📈 Monotonic Returns</div>
@@ -1450,17 +1548,24 @@ export function Whitepaper() {
         {/* Top stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
           <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#7e22ce" }}>~70%</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#7e22ce" }}>
+              {(() => {
+                const tech = invSectorMix.find((s) => s.sector.toLowerCase().includes("tech"))?.weight
+                const health = invSectorMix.find((s) => s.sector.toLowerCase().includes("health"))?.weight
+                if (typeof tech === "number" && typeof health === "number") return `${Math.round(tech + health)}%`
+                return "…"
+              })()}
+            </div>
             <div style={{ fontSize: 12, color: "#6b21a8" }}>Tech + Healthcare</div>
-            <div style={{ fontSize: 10, color: "#94a3b8" }}>in High R&D (Q5) quintile</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>in top-{invNHoldings} basket (current)</div>
                   </div>
           <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#059669" }}>Yes</div>
-            <div style={{ fontSize: 12, color: "#047857" }}>Within-Sector Effect</div>
-            <div style={{ fontSize: 10, color: "#94a3b8" }}>R&D premium holds in sector</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#059669" }}>See paper</div>
+            <div style={{ fontSize: 12, color: "#047857" }}>Sector-neutral test</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>Recommended robustness</div>
                   </div>
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#b45309" }}>11</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#b45309" }}>{rdBySector.length || "…"}</div>
             <div style={{ fontSize: 12, color: "#92400e" }}>Sectors Covered</div>
             <div style={{ fontSize: 10, color: "#94a3b8" }}>GICS classification</div>
                 </div>
@@ -1472,33 +1577,27 @@ export function Whitepaper() {
           <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16, borderBottom: "2px solid #9333ea", paddingBottom: 8 }}>R&D Intensity by Sector</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { sector: "Technology", avg_rd_intensity: 15.2, company_count: 78 },
-                { sector: "Healthcare", avg_rd_intensity: 12.8, company_count: 62 },
-                { sector: "Communication", avg_rd_intensity: 8.2, company_count: 26 },
-                { sector: "Consumer Cyclical", avg_rd_intensity: 3.5, company_count: 58 },
-                { sector: "Industrials", avg_rd_intensity: 2.8, company_count: 72 },
-                { sector: "Consumer Staples", avg_rd_intensity: 1.2, company_count: 34 },
-                { sector: "Financials", avg_rd_intensity: 0.5, company_count: 68 },
-                { sector: "Energy", avg_rd_intensity: 0.4, company_count: 22 },
-              ].map((sector, i) => {
-                const isHighRD = sector.avg_rd_intensity > 8
+              {(rdBySector.length ? rdBySector.slice(0, 8) : []).map((row, i) => {
+                const sectorName = typeof row?.sector === "string" && row.sector ? row.sector : "Unknown"
+                const avg = typeof row?.avg_rd_intensity === "number" ? row.avg_rd_intensity : 0
+                const companyCount = typeof row?.company_count === "number" ? row.company_count : 0
+                const isHighRD = avg > 8
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 100, fontSize: 12, color: isHighRD ? "#7e22ce" : "#64748b", fontWeight: isHighRD ? 600 : 400 }}>{sector.sector}</div>
+                    <div style={{ width: 100, fontSize: 12, color: isHighRD ? "#7e22ce" : "#64748b", fontWeight: isHighRD ? 600 : 400 }}>{sectorName}</div>
                     <div style={{ flex: 1, height: 20, background: "#e2e8f0", borderRadius: 4, overflow: "hidden" }}>
                       <div style={{ 
                         height: "100%", 
-                        width: `${Math.min(100, sector.avg_rd_intensity * 5)}%`,
+                        width: `${Math.min(100, avg * 5)}%`,
                         background: isHighRD ? "linear-gradient(90deg, #9333ea, #7c3aed)" : "#94a3b8",
                         borderRadius: 4,
                         display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 6,
                         minWidth: 36
                       }}>
-                        <span style={{ color: "white", fontSize: 11, fontWeight: 600 }}>{sector.avg_rd_intensity.toFixed(1)}%</span>
+                        <span style={{ color: "white", fontSize: 11, fontWeight: 600 }}>{avg.toFixed(1)}%</span>
                       </div>
                     </div>
-                    <div style={{ width: 50, fontSize: 10, color: "#94a3b8", textAlign: "right" }}>{sector.company_count} firms</div>
+                    <div style={{ width: 50, fontSize: 10, color: "#94a3b8", textAlign: "right" }}>{companyCount} firms</div>
                   </div>
                 )
               })}
@@ -1506,7 +1605,8 @@ export function Whitepaper() {
             <div style={{ marginTop: 12, padding: 10, background: "#f1f5f9", borderRadius: 8 }}>
               <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Key insight</div>
               <div style={{ fontSize: 12, color: "#334155" }}>
-                <strong>Tech + Healthcare = 70%</strong> of high-R&D firms. Consider sector caps for diversification.
+                <strong>{rdBySector[0]?.sector || "Top sectors"}</strong>
+                {rdBySector[1]?.sector ? ` + ${rdBySector[1]?.sector}` : ""} dominate R&amp;D intensity in this snapshot. Consider sector caps for diversification.
               </div>
             </div>
           </div>
@@ -1516,28 +1616,38 @@ export function Whitepaper() {
             <div style={{ background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)", border: "2px solid #9333ea", borderRadius: 16, padding: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: "#6b21a8", marginBottom: 10 }}>⚠️ Sector Concentration Risk</h3>
               <p style={{ fontSize: 12, color: "#581c87", lineHeight: 1.6, marginBottom: 10 }}>
-                Q5 (top R&D quintile) is <strong>~70% Tech + Healthcare</strong>. The R&D premium may partially reflect sector tailwinds.
+                High-R&amp;D portfolios can be concentrated in a small set of sectors (often Technology and Healthcare). Sector tailwinds can mechanically influence the premium.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <div style={{ background: "white", borderRadius: 8, padding: 10, textAlign: "center" }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>~45%</div>
-                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Technology</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>
+                    {(() => {
+                      const tech = invSectorMix.find((s) => s.sector.toLowerCase().includes("tech"))?.weight
+                      return typeof tech === "number" ? `${tech.toFixed(0)}%` : "…"
+                    })()}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Technology (current)</div>
                 </div>
                 <div style={{ background: "white", borderRadius: 8, padding: 10, textAlign: "center" }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>~25%</div>
-                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Healthcare</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>
+                    {(() => {
+                      const health = invSectorMix.find((s) => s.sector.toLowerCase().includes("health"))?.weight
+                      return typeof health === "number" ? `${health.toFixed(0)}%` : "…"
+                    })()}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#7e22ce" }}>Healthcare (current)</div>
                 </div>
               </div>
             </div>
 
             <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 16, padding: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#047857", marginBottom: 10 }}>✓ Within-Sector Effect Confirmed</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#047857", marginBottom: 10 }}>✓ Within-Sector Robustness (Recommended)</h3>
               <p style={{ fontSize: 12, color: "#065f46", lineHeight: 1.6, marginBottom: 10 }}>
-                The R&D-return relationship holds <em>within</em> sectors. High-R&D tech firms beat low-R&D tech firms.
+                A key robustness is to form quintiles <em>within</em> sectors (or run sector-neutral weights) and re-test whether the premium persists after controlling for sector composition.
               </p>
               <div style={{ background: "#047857", borderRadius: 8, padding: 10 }}>
                 <div style={{ fontSize: 11, color: "#a7f3d0", textAlign: "center" }}>
-                  R&D premium captures innovation, not just sector exposure.
+                  Next step: sector-neutral premium (see Main Paper / future extensions).
                 </div>
               </div>
             </div>
@@ -1545,7 +1655,7 @@ export function Whitepaper() {
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>💡 Practical Implication</div>
               <div style={{ fontSize: 11, color: "#78350f", lineHeight: 1.5 }}>
-                To reduce sector concentration, apply <strong>20% sector caps</strong> during portfolio construction. This preserves ~85% of the R&D premium while improving diversification.
+                To reduce sector concentration, apply <strong>sector caps</strong> (e.g., 20% max per sector) during portfolio construction. This improves diversification but can reduce the raw premium—treat caps as a risk-control trade-off.
               </div>
             </div>
           </div>
@@ -1663,12 +1773,18 @@ export function Whitepaper() {
         <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: "#065f46", marginBottom: 6 }}>Investable edge survives costs</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", lineHeight: 1 }}>
-            {typeof invExcessNet === "number" ? `+${invExcessNet.toFixed(2)} pp/yr` : `+${netPremium.toFixed(2)}%`}
+            {typeof invExcessNet === "number"
+              ? `+${invExcessNet.toFixed(2)} pp/yr`
+              : typeof netPremium === "number"
+                ? `+${netPremium.toFixed(2)}%`
+                : "…"}
           </div>
           <div style={{ fontSize: 12, color: "#065f46", marginTop: 8 }}>
             {typeof invPortfolioNet?.annualized_return === "number" && typeof invBenchmarkNet?.annualized_return === "number"
               ? `ETF basket (net): ${invPortfolioNet.annualized_return.toFixed(2)}% vs EW cohort (net): ${invBenchmarkNet.annualized_return.toFixed(2)}% (${invStartYear}-${invEndYear}).`
-              : `Factor HML after costs: +${netPremium.toFixed(2)}% (Q5−Q1).`}
+              : typeof netPremium === "number"
+                ? `Factor HML after costs: +${netPremium.toFixed(2)}% (Q5−Q1).`
+                : "Factor HML after costs: … (Q5−Q1)."}
           </div>
         </div>
 
@@ -1796,7 +1912,7 @@ export function Whitepaper() {
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
                 <div style={{ fontWeight: 600, color: "#991b1b", marginBottom: 6 }}>🛡️ Survivorship Bias</div>
                 <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                  S&P 500 sample excludes firms that failed or were delisted. We use delisting returns (Shumway 1997) to mitigate, but some bias may remain.
+                  Survivorship and exits matter: long horizons include delistings and index turnover. We enforce point-in-time membership where constituent spans are available and handle exits via return construction (cash-after-exit), with delisting uncertainty reported via sensitivity analysis.
                 </div>
               </div>
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
@@ -1827,19 +1943,19 @@ export function Whitepaper() {
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
                 <div style={{ fontWeight: 600, color: "#92400e", marginBottom: 6 }}>🏭 Sector Concentration</div>
                 <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                  Q5 is ~70% Technology + Healthcare. The R&D premium may partially reflect sector performance. Consider sector-neutralized versions.
+                  High-R&amp;D portfolios are concentrated in Technology and Healthcare. Sector exposure can influence results; consider sector-neutralized versions as a robustness check.
                 </div>
               </div>
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
                 <div style={{ fontWeight: 600, color: "#92400e", marginBottom: 6 }}>📉 Regime Dependence</div>
                 <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                  R&D premium varies by market regime. During 2000-2002 and parts of 2008-2018, high-R&D stocks underperformed. No guarantee of persistence.
+                  The R&amp;D premium varies by market regime and can be negative in some years. Persistence is not guaranteed.
                 </div>
               </div>
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
                 <div style={{ fontWeight: 600, color: "#92400e", marginBottom: 6 }}>💰 Capacity Constraints</div>
                 <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                  Equal-weight Q5 has limited capacity (~$5-10B AUM before market impact). Large allocators may need value-weight or cap-weighted variations.
+                  Capacity depends on implementation. Concentrated equal-weight strategies can face market-impact constraints at scale; large allocators may prefer value-weight or cap-weighted variations.
                 </div>
               </div>
               <div style={{ background: "white", borderRadius: 10, padding: 14 }}>
@@ -1873,7 +1989,9 @@ export function Whitepaper() {
         {/* Main finding summary */}
         <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 12, padding: 20, marginBottom: 20, textAlign: "center" }}>
           <div style={{ fontSize: 14, color: "#065f46", marginBottom: 8 }}>The R&D Premium is Real, Persistent, and Implementable</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#047857", lineHeight: 1 }}>+{rdPremium.toFixed(1)}%</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#047857", lineHeight: 1 }}>
+            {typeof rdPremium === "number" ? `+${rdPremium.toFixed(1)}%` : "…"}
+          </div>
           <div style={{ fontSize: 13, color: "#065f46", marginTop: 8 }}>
             Annual premium for high-R&D (Q5) vs low-R&D (Q1) firms
           </div>
@@ -1882,19 +2000,27 @@ export function Whitepaper() {
         {/* Key metrics row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
           <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#047857" }}>+{rdPremium.toFixed(1)}%</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#047857" }}>
+              {typeof rdPremium === "number" ? `+${rdPremium.toFixed(1)}%` : "…"}
+            </div>
             <div style={{ fontSize: 11, color: "#065f46" }}>Annual Premium</div>
             </div>
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#1d4ed8" }}>{etaSquared20yr.toFixed(2)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#1d4ed8" }}>
+              {typeof etaSquared20yr === "number" ? etaSquared20yr.toFixed(2) : "…"}
+            </div>
             <div style={{ fontSize: 11, color: "#1e40af" }}>20yr Effect Size</div>
             </div>
           <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#7e22ce" }}>t={tStat.toFixed(1)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#7e22ce" }}>
+              {typeof tStat === "number" ? `t=${tStat.toFixed(1)}` : "t=…"}
+            </div>
             <div style={{ fontSize: 11, color: "#6b21a8" }}>Significance</div>
             </div>
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>{winRate}%</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#b45309" }}>
+              {typeof winRate === "number" ? `${winRate}%` : "…"}
+            </div>
             <div style={{ fontSize: 11, color: "#92400e" }}>Win Rate</div>
             </div>
           </div>
@@ -1905,9 +2031,23 @@ export function Whitepaper() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
             {[
               { num: "1", text: "R&D intensity is a statistically significant predictor of future stock returns, with effects persisting across multiple horizons." },
-              { num: "2", text: "Effect size grows with horizon (η² 0.23→0.46), suggesting R&D benefits compound. Patience is rewarded." },
+              {
+                num: "2",
+                text:
+                  typeof etaSquared5yr === "number" && typeof etaSquared20yr === "number"
+                    ? `Effect size grows with horizon (η² ${etaSquared5yr.toFixed(2)}→${etaSquared20yr.toFixed(2)}), suggesting R&D benefits compound. Patience is rewarded.`
+                    : "Effect size grows with horizon (η² rises), suggesting R&D benefits compound. Patience is rewarded.",
+              },
               { num: "3", text: "Results align with 30+ years of academic research on intangible asset mispricing (Chan et al., Lev & Sougiannis)." },
-              { num: "4", text: "Strategy is implementable: ~40% turnover, ~0.07% trading costs, ~99% premium capture rate." },
+              {
+                num: "4",
+                text:
+                  typeof invTurnoverAvg === "number" &&
+                  (typeof annualTradingCost === "number" || typeof invTradingCostEstPct === "number") &&
+                  typeof premiumCaptureRate === "number"
+                    ? `Strategy is implementable: ~${invTurnoverAvg.toFixed(0)}% turnover, ~${(typeof annualTradingCost === "number" ? annualTradingCost : (invTradingCostEstPct as number)).toFixed(3)}% trading costs/yr, ~${premiumCaptureRate.toFixed(1)}% premium capture rate.`
+                    : "Strategy is implementable: annual rebalance, low-to-moderate turnover, and trading costs are small relative to the historical edge (see snapshot cost calibration).",
+              },
             ].map((item, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#059669", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>{item.num}</div>
@@ -1957,7 +2097,9 @@ export function Whitepaper() {
             <div style={{ fontSize: 12, color: "#64748b" }}>December 2025</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "#64748b" }}>Data: FMP (Tier-1) | Ken French | {totalCompanies} S&P 500 firms</div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>
+              Data: FMP (Tier-1) | Ken French | {typeof totalCompanies === "number" ? totalCompanies : "..."} S&amp;P 500 firms
+            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#059669" }}>R&D Alpha Research</div>
@@ -2087,14 +2229,17 @@ export function Whitepaper() {
         </div>
       )}
 
-      {/* Print View - always rendered but hidden, shown via CSS @media print */}
+      {/* Print View - rendered via portal to body for clean print isolation */}
+      {createPortal(
       <div className="whitepaper-print-container">
           {slides.map((slide, i) => (
             <div key={i} className="whitepaper-print-slide">
               {slide}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

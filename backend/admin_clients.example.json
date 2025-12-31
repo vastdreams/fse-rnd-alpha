@@ -1,0 +1,39 @@
+[
+  {
+    "id": "ozpremium",
+    "name": "Oz Premium Finance",
+    "slug": "ozpremium",
+    "description": "Warehouse Credit Package - Premium funding trust for insurance premium financing",
+    "portal_url": "https://finsoeasy.com/ozpremium",
+    "status": "active",
+    "sector": "Financial Services",
+    "location": "Sydney, Australia",
+    "afsl": "556051",
+    "documents": [
+      "Information Memorandum",
+      "Warehouse Model",
+      "Credit Underwriting Policy",
+      "AML-CTF Policy",
+      "Compliance Plan & Framework"
+    ],
+    "access_password": "REPLACE_ME"
+  },
+  {
+    "id": "ecojv",
+    "name": "EcoJV Project",
+    "slug": "ecojvproject",
+    "description": "Indonesia/Brunei renewable energy joint venture - Solar and sustainability infrastructure",
+    "portal_url": "https://finsoeasy.com/ecojvproject",
+    "status": "active",
+    "sector": "Renewable Energy",
+    "location": "Indonesia / Brunei",
+    "documents": [
+      "Investor Deck",
+      "Project Overview",
+      "JV Structure"
+    ],
+    "access_password": "REPLACE_ME"
+  }
+]
+
+

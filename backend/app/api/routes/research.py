@@ -1802,6 +1802,7 @@ async def get_mispricing_tests(
     start_year: int = Query(1995, ge=1990),
     end_year: int = Query(2024, le=2030),
     use_july_june: bool = Query(True, description="Use July-June returns (Fama-French convention)"),
+    data_tier: str = Query("tier1", description="Data tier: tier1 (FMP) or tier2 (CRSP)"),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -1829,7 +1830,14 @@ async def get_mispricing_tests(
     from app.services.factor_tests import MispricingAnalyzer
     
     analyzer = MispricingAnalyzer(session)
-    return await analyzer.run_mispricing_tests(start_year, end_year, use_july_june=use_july_june)
+    if data_tier not in {"tier1", "tier2"}:
+        raise HTTPException(status_code=400, detail="data_tier must be 'tier1' or 'tier2'")
+    return await analyzer.run_mispricing_tests(
+        start_year,
+        end_year,
+        use_july_june=use_july_june,
+        data_tier=data_tier,
+    )
 
 
 @router.get("/spanning-tests-full")

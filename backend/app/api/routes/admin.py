@@ -8,7 +8,9 @@ Publication: https://research.finsoeasy.com
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
+import json
+from pathlib import Path
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -25,14 +27,14 @@ from app.api.routes.donations import get_all_donations
 router = APIRouter()
 
 # JWT settings
-SECRET_KEY = settings.SECRET_KEY if hasattr(settings, 'SECRET_KEY') and settings.SECRET_KEY else "fse-rnd-alpha-secret-key-2025"
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 security = HTTPBearer()
 
 # Admin credentials
-# Pre-hashed password for "FSE@123"
+# Pre-hashed admin password (bcrypt). Prefer moving this to an environment variable for production.
 ADMIN_PASSWORD_HASH = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S6W4P2fF6Bz.Pu"
 ADMIN_USERNAME = "admin"
 
@@ -51,6 +53,64 @@ class TokenResponse(BaseModel):
 class AdminUser(BaseModel):
     username: str
     is_admin: bool = True
+
+
+class ClientPortalResponse(BaseModel):
+    """
+    Admin-only representation of a client portal configuration.
+    Note: This is deliberately served from a local config file to avoid committing client credentials.
+    """
+
+    id: str
+    name: str
+    slug: str
+    description: str
+    portal_url: str
+    status: str
+    sector: str
+    location: str
+    afsl: Optional[str] = None
+    documents: List[str] = []
+    access_password: Optional[str] = None
+
+
+def _load_client_portals_from_file() -> List[ClientPortalResponse]:
+    """
+    Load admin client portal configs from disk.
+
+    Expected location:
+      - settings.ADMIN_CLIENTS_CONFIG_PATH (absolute or relative), OR
+      - backend/admin_clients.json (default)
+
+    This file MUST NOT be committed (contains client passwords).
+    """
+    configured_path = (settings.ADMIN_CLIENTS_CONFIG_PATH or "").strip()
+    if configured_path:
+        path = Path(configured_path)
+    else:
+        # research/backend/app/api/routes/admin.py -> parents[3] == research/backend
+        path = Path(__file__).resolve().parents[3] / "admin_clients.json"
+
+    if not path.exists():
+        return []
+
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+    if not isinstance(raw, list):
+        return []
+
+    out: List[ClientPortalResponse] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out.append(ClientPortalResponse(**item))
+        except Exception:
+            continue
+    return out
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -104,16 +164,12 @@ async def admin_login(login_data: LoginRequest):
             detail="Invalid username or password",
         )
     
-    # Check password (support both hashed and direct comparison for FSE@123)
+    # Check password (bcrypt hash)
     password_valid = False
     try:
         password_valid = verify_password(login_data.password, ADMIN_PASSWORD_HASH)
     except Exception:
         pass
-    
-    # Fallback: direct comparison for known password
-    if not password_valid and login_data.password == "FSE@123":
-        password_valid = True
     
     if not password_valid:
         raise HTTPException(
@@ -194,3 +250,12 @@ async def clear_cache(current_admin: AdminUser = Depends(get_current_admin)):
         "cleared_by": current_admin.username,
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+@router.get("/clients", response_model=List[ClientPortalResponse])
+async def get_client_portals_admin(current_admin: AdminUser = Depends(get_current_admin)):
+    """
+    Return client portal configurations for the unified admin UI.
+    """
+    _ = current_admin  # explicit: auth guard is the only requirement
+    return _load_client_portals_from_file()

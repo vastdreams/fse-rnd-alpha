@@ -202,6 +202,100 @@ async def build_snapshot_payload(
     except Exception as e:
         payload["delisting_sensitivity"] = {"error": str(e)}
 
+    # Point-in-time membership diagnostics (publication defensibility)
+    try:
+        from datetime import date as _date
+        from collections import Counter
+        from app.db.models import SP500HistoricalConstituent, JulyJuneReturn
+        from sqlalchemy import func, select
+
+        membership_rows = await session.execute(
+            select(
+                SP500HistoricalConstituent.symbol,
+                SP500HistoricalConstituent.added_date,
+                SP500HistoricalConstituent.removed_date,
+                SP500HistoricalConstituent.membership_source,
+            )
+        )
+        spans = membership_rows.fetchall()
+
+        # Study years: derive from the returns table so diagnostics align with what we can actually compute.
+        if use_july_june:
+            yrs_result = await session.execute(
+                select(func.min(JulyJuneReturn.formation_year), func.max(JulyJuneReturn.formation_year))
+                .where(JulyJuneReturn.data_tier == data_tier)
+            )
+            min_fy, max_fy = yrs_result.fetchone()
+            start_return_year = int(min_fy) + 1 if min_fy is not None else None
+            end_return_year = int(max_fy) + 1 if max_fy is not None else None
+        else:
+            start_return_year = 1995
+            end_return_year = 2024
+
+        years: List[int] = []
+        if start_return_year and end_return_year and start_return_year <= end_return_year:
+            years = list(range(int(start_return_year), int(end_return_year) + 1))
+
+        members_by_year: Dict[int, Dict[str, Any]] = {}
+        union_members: set[str] = set()
+        membership_source_totals: Counter = Counter()
+
+        for y in years:
+            formation_date = _date(int(y), 7, 1) if use_july_june else _date(int(y), 1, 1)
+            members: List[Tuple[str, str]] = []
+            for sym, added, removed, src in spans:
+                if not sym or not added:
+                    continue
+                if added <= formation_date and (removed is None or removed >= formation_date):
+                    members.append((str(sym), str(src or "unknown")))
+
+            unique_syms = sorted({m[0] for m in members})
+            union_members.update(unique_syms)
+
+            src_counts = Counter([m[1] for m in members])
+            membership_source_totals.update(src_counts)
+
+            members_by_year[int(y)] = {
+                "formation_date": formation_date.isoformat(),
+                "n_constituents": len(unique_syms),
+                "membership_source_counts": dict(src_counts),
+            }
+
+        # Additions/removals during the study window (span events, not unique symbols)
+        if years:
+            start_date = _date(int(years[0]), 1, 1)
+            end_date = _date(int(years[-1]), 12, 31)
+            n_additions = sum(1 for _, added, _, _ in spans if added and start_date <= added <= end_date)
+            n_removals = sum(1 for _, _, removed, _ in spans if removed and start_date <= removed <= end_date)
+        else:
+            n_additions = 0
+            n_removals = 0
+
+        counts = [v.get("n_constituents", 0) for v in members_by_year.values() if v.get("n_constituents", 0) > 0]
+        payload["membership_diagnostics"] = {
+            "mode": "point_in_time_membership" if spans else "unavailable",
+            "return_convention": return_convention,
+            "data_tier": data_tier,
+            "years": years,
+            "per_year": members_by_year,
+            "summary": {
+                "unique_tickers_union": len(union_members),
+                "avg_constituents_per_year": float(round(sum(counts) / len(counts), 2)) if counts else None,
+                "min_constituents_per_year": int(min(counts)) if counts else None,
+                "max_constituents_per_year": int(max(counts)) if counts else None,
+                "n_years_with_membership": int(len(counts)),
+                "n_additions_spans": int(n_additions),
+                "n_removals_spans": int(n_removals),
+                "membership_source_totals": dict(membership_source_totals),
+            },
+            "notes": [
+                "Membership is evaluated at portfolio formation date (July 1 for July–June convention).",
+                "Counts are based on SP500HistoricalConstituent spans; if spans are missing for a year, the analysis falls back to available-data universes and diagnostics will show low/zero counts.",
+            ],
+        }
+    except Exception as e:
+        payload["membership_diagnostics"] = {"error": str(e)}
+
     # Sector context (computed from ResearchCohort so it stays tier-consistent)
     try:
         sector_result = await session.execute(
@@ -397,30 +491,8 @@ async def build_snapshot_payload(
     except Exception as e:
         payload["rolling_windows"] = {"error": str(e)}
 
-    # Transaction cost analysis for headline premium (uses 5yr mean-diff if present)
-    try:
-        gross_premium_pct_points = None
-        if isinstance(payload.get("aggregate_anova"), dict):
-            mean_diff = (
-                payload.get("aggregate_anova", {})
-                .get("5yr", {})
-                .get("ttest_high_vs_low", {})
-                .get("mean_difference")
-            )
-            if isinstance(mean_diff, (int, float)):
-                gross_premium_pct_points = float(mean_diff)
-
-        rd_premium_gross = (gross_premium_pct_points / 100.0) if gross_premium_pct_points is not None else 0.04
-        payload["transaction_costs"] = _json_safe(
-            estimate_rd_strategy_costs(
-                rd_premium_gross=rd_premium_gross,
-                market_return=0.10,
-                universe="sp500",
-                n_holdings=20,
-            )
-        )
-    except Exception as e:
-        payload["transaction_costs"] = {"error": str(e)}
+    # Transaction costs (computed after investable_backtest so definitions align)
+    payload["transaction_costs"] = {"status": "pending", "note": "Populated after investable_backtest (benchmark-relative definition)."}
 
     # Investable strategy backtest (best-effort; frozen benchmark comparison for Main Paper)
     try:
@@ -453,6 +525,74 @@ async def build_snapshot_payload(
         )
     except Exception as e:
         payload["investable_backtest"] = {"error": str(e)}
+
+    # Transaction cost analysis (benchmark-relative; consistent with investable_backtest)
+    try:
+        inv = payload.get("investable_backtest")
+        if isinstance(inv, dict) and isinstance(inv.get("portfolio_performance"), dict) and isinstance(inv.get("benchmark_performance"), dict):
+            meta = inv.get("meta") if isinstance(inv.get("meta"), dict) else {}
+            n_holdings = int(meta.get("n_holdings") or 20)
+            benchmark_universe = meta.get("benchmark_universe") if isinstance(meta.get("benchmark_universe"), str) else "benchmark"
+
+            gross_premium_pct = inv.get("excess_return")
+            net_premium_pct = inv.get("excess_return_net")
+
+            # Trading cost estimate from realized turnover (excluding first year by construction in backtest)
+            turnover_meta = inv.get("turnover") if isinstance(inv.get("turnover"), dict) else {}
+            avg_turnover_pct = turnover_meta.get("avg_turnover_pct")
+
+            cost_meta = inv.get("cost_assumptions") if isinstance(inv.get("cost_assumptions"), dict) else {}
+            round_trip_cost_per_100pct_turnover_pct = cost_meta.get("round_trip_cost_per_100pct_turnover_pct")
+
+            annual_trading_cost_pct = None
+            if isinstance(avg_turnover_pct, (int, float)) and isinstance(round_trip_cost_per_100pct_turnover_pct, (int, float)):
+                annual_trading_cost_pct = float(round_trip_cost_per_100pct_turnover_pct) * (float(avg_turnover_pct) / 100.0)
+
+            capture_rate_pct = None
+            if isinstance(gross_premium_pct, (int, float)) and isinstance(net_premium_pct, (int, float)) and float(gross_premium_pct) != 0.0:
+                capture_rate_pct = round(float(net_premium_pct) / float(gross_premium_pct) * 100.0, 1)
+
+            payload["transaction_costs"] = {
+                # Backward-compatible fields used by LaTeX asset generation
+                "annual_trading_cost_pct": round(float(annual_trading_cost_pct), 3) if annual_trading_cost_pct is not None else None,
+                "gross_rd_premium_pct": round(float(gross_premium_pct), 2) if isinstance(gross_premium_pct, (int, float)) else None,
+                "net_rd_premium_pct": round(float(net_premium_pct), 2) if isinstance(net_premium_pct, (int, float)) else None,
+                "premium_after_costs_pct": capture_rate_pct,
+                "premium_capture_rate_pct": capture_rate_pct,
+                # Transparency / definitions
+                "definition": {
+                    "strategy": f"Top-{n_holdings} R&D strategy (annual reconstitution)",
+                    "benchmark": benchmark_universe,
+                    "gross_premium": "strategy_gross_annualized_return − benchmark_gross_annualized_return",
+                    "net_premium": "strategy_net_annualized_return − benchmark_net_annualized_return",
+                    "turnover_definition": "0.5 * sum |w_t − w_{t-1}| (first year excluded from averages)",
+                    "annual_cost_approx": "round_trip_cost_per_100pct_turnover × realized_turnover",
+                },
+                "turnover": turnover_meta,
+                "cost_assumptions": cost_meta,
+                "strategy_returns": {
+                    "gross_annualized_return_pct": inv.get("portfolio_performance", {}).get("annualized_return"),
+                    "net_annualized_return_pct": inv.get("portfolio_performance_net", {}).get("annualized_return"),
+                },
+                "benchmark_returns": {
+                    "gross_annualized_return_pct": inv.get("benchmark_performance", {}).get("annualized_return"),
+                    "net_annualized_return_pct": inv.get("benchmark_performance_net", {}).get("annualized_return"),
+                },
+                "note": "Transaction-cost summary is derived from the investable backtest using realized turnover (preferred).",
+            }
+        else:
+            # Fallback: provide a clearly labeled model-based estimate so tables can still render.
+            payload["transaction_costs"] = _json_safe(
+                estimate_rd_strategy_costs(
+                    rd_premium_gross=0.04,
+                    market_return=0.10,
+                    universe="sp500",
+                    n_holdings=20,
+                )
+            )
+            payload["transaction_costs"]["note"] = "Fallback estimate (investable_backtest unavailable)."
+    except Exception as e:
+        payload["transaction_costs"] = {"error": str(e)}
 
     # Robustness analyzers (best-effort; snapshot should still build if missing factor tables)
     try:
@@ -487,7 +627,12 @@ async def build_snapshot_payload(
 
         analyzer = MispricingAnalyzer(session)
         payload["mispricing_tests"] = _json_safe(
-            await analyzer.run_mispricing_tests(1995, 2024, use_july_june=use_july_june)
+            await analyzer.run_mispricing_tests(
+                1995,
+                2024,
+                use_july_june=use_july_june,
+                data_tier=data_tier,
+            )
         )
     except Exception as e:
         payload["mispricing_tests"] = {"error": str(e)}

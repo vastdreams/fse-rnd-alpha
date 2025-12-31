@@ -216,9 +216,12 @@ export function Methodology() {
                   </div>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li>• <strong>What:</strong> List of companies in the S&P 500 over time</li>
-                    <li>• <strong>Why:</strong> Defines our sample universe</li>
-                    <li>• <strong>Source:</strong> Standard & Poor's, cross-referenced with SEC CIK numbers</li>
-                    <li>• <strong>Caveat:</strong> We include all companies that have been in the index; survivor bias exists</li>
+                    <li>• <strong>Why:</strong> Enables point-in-time membership (include only names actually in the index at formation dates)</li>
+                    <li>• <strong>Source:</strong> Historical membership spans (added/removed dates) ingested into our database</li>
+                    <li>
+                      • <strong>Caveat:</strong> Coverage can be incomplete in Tier-1; when spans are missing, some analyses fall back to an
+                      “available-data” universe and we disclose this via diagnostics in the publication snapshot.
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -284,12 +287,12 @@ export function Methodology() {
             <CardContent className="pt-6 space-y-6">
               <h3 className="text-lg font-semibold text-foreground">Process</h3>
               <p className="text-muted-foreground leading-relaxed">
-                At the beginning of each calendar year t, we construct 5 portfolios:
+                At portfolio formation (July 1 each year, per the Fama-French convention), we construct 5 portfolios:
               </p>
 
               <div className="p-4 bg-muted/50 rounded-lg border border-border font-mono text-sm space-y-2">
-                <p className="text-muted-foreground"># Step 1: Gather R&D intensity for all companies using fiscal year t-1 data</p>
-                <p className="text-emerald-500">intensities = get_rd_intensity(companies, fiscal_year=t-1)</p>
+                <p className="text-muted-foreground"># Step 1: Gather R&D intensity using fiscal-year data (FY T-1 for returns starting in July T)</p>
+                <p className="text-emerald-500">intensities = get_rd_intensity(companies, fiscal_year=T-1)</p>
                 <p className="text-muted-foreground mt-3"># Step 2: Rank all companies by R&D intensity</p>
                 <p className="text-emerald-500">ranked = intensities.sort_values(ascending=True)</p>
                 <p className="text-muted-foreground mt-3"># Step 3: Assign to quintiles (equal-sized groups)</p>
@@ -337,7 +340,9 @@ export function Methodology() {
               <div className="flex flex-wrap items-start gap-4 mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">Total Shareholder Return</h3>
-                  <p className="text-xs text-muted-foreground">where <Var>P</Var> = split-adjusted price</p>
+                  <p className="text-xs text-muted-foreground">
+                    where <Var>P</Var> is approximated using provider-adjusted close (split + dividend adjusted per vendor)
+                  </p>
                 </div>
                 <Formulas.TSR />
               </div>
@@ -352,8 +357,8 @@ export function Methodology() {
 
               <h3 className="text-lg font-semibold text-foreground">Benchmark</h3>
               <p className="text-muted-foreground leading-relaxed">
-                We compare quintile portfolios against the S&P 500 Total Return Index, which includes dividends 
-                reinvested. This provides a fair benchmark for total shareholder return comparison.
+                The core research object is the within-universe premium (Q5 − Q1). Benchmark comparisons (e.g., vs an S&P 500 proxy) are reported
+                separately in the investable strategy exhibits, using consistent return conventions and cost assumptions.
               </p>
             </CardContent>
           </Card>
@@ -554,30 +559,28 @@ export function Methodology() {
           </div>
           <Card>
             <CardContent className="pt-6 space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Publication-Blocking Issues</h3>
+              <h3 className="text-lg font-semibold text-foreground">Key Limitations (what reviewers should focus on)</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                  <p className="text-sm font-semibold text-red-500 mb-2">Survivorship Bias</p>
+                  <p className="text-sm font-semibold text-red-500 mb-2">Membership coverage (survivorship risk)</p>
                   <p className="text-xs text-muted-foreground">
-                    We only analyze companies that remained in the S&P 500. Failed companies are excluded, 
-                    potentially overstating returns. This is a fundamental limitation of the S&P 500 sample.
+                    Where historical constituent spans are available, we enforce point-in-time S&amp;P 500 membership at formation dates.
+                    In Tier-1, membership coverage can still be incomplete, and we disclose coverage diagnostics in the frozen publication snapshot.
                   </p>
                 </div>
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                  <p className="text-sm font-semibold text-red-500 mb-2">Look-Ahead Bias (Calendar Year)</p>
+                  <p className="text-sm font-semibold text-red-500 mb-2">Look-ahead bias (calendar-year risk)</p>
                   <p className="text-xs text-muted-foreground">
-                    We use FY(T-1) data for calendar year T portfolios. However, 10-K filings are not 
-                    available until 60-90 days after fiscal year-end. For December FY companies, FY2023 
-                    data isn't filed until March 2024. Using January returns introduces slight look-ahead bias. 
-                    <strong> Fama-French convention uses July-June returns to address this.</strong>
+                    Calendar-year (Jan–Dec) sorts can inadvertently use accounting data that wasn’t public at the start of the return window.
+                    Our primary analysis uses the July–June convention to mitigate this.
                   </p>
                 </div>
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                   <p className="text-sm font-semibold text-red-500 mb-2">Overlapping Windows</p>
                   <p className="text-xs text-muted-foreground">
                     Rolling k-year windows overlap by k-1 years, violating the independence assumption of 
-                    standard statistical tests. We apply HAC (Newey-West) corrections with lags=k-1, but 
-                    p-values should still be interpreted conservatively.
+                    standard statistical tests. We treat rolling windows as descriptive context; primary inference uses the annual non-overlapping series
+                    with Newey–West standard errors.
                   </p>
                 </div>
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -601,10 +604,10 @@ export function Methodology() {
                   </p>
                 </div>
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <p className="text-sm font-semibold text-amber-500 mb-2">Transaction Costs Not Modeled</p>
+                  <p className="text-sm font-semibold text-amber-500 mb-2">Transaction costs are modeled (but model-based)</p>
                   <p className="text-xs text-muted-foreground">
-                    Equal-weighted portfolios with annual rebalancing have high turnover. Real-world 
-                    implementation would incur transaction costs, reducing the net R&D premium.
+                    We report net-of-cost results using literature-calibrated cost parameters and realized turnover from the investable backtest.
+                    These are still estimates (not an execution simulation), so cost results should be interpreted as approximations.
                   </p>
                 </div>
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -618,8 +621,8 @@ export function Methodology() {
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm font-semibold text-blue-500 mb-2">Rebalancing Assumption</p>
                   <p className="text-xs text-muted-foreground">
-                    We use <strong>annual equal-weight rebalancing</strong> (portfolios reformed each January). 
-                    This follows standard factor research methodology and differs from buy-and-hold approaches.
+                    We use <strong>annual formation/reconstitution in July</strong> (Fama–French convention) with equal-weight portfolios.
+                    Rolling windows are reported as descriptive and do not re-sort annually by design.
                   </p>
                 </div>
               </div>
@@ -643,8 +646,8 @@ export function Methodology() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Full analysis code available on GitHub:
                 </p>
-                <a href="https://github.com/vastdreams/fse-rnd-alpha" className="text-primary hover:underline flex items-center gap-2">
-                  github.com/vastdreams/fse-rnd-alpha
+                <a href="https://github.com/vastdreams/rd-alpha-research" className="text-primary hover:underline flex items-center gap-2">
+                  github.com/vastdreams/rd-alpha-research
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </div>
@@ -652,8 +655,8 @@ export function Methodology() {
               <h3 className="text-lg font-semibold text-foreground">Quick Start</h3>
               <div className="p-4 bg-muted/50 rounded-lg border border-border font-mono text-xs space-y-2">
                 <p className="text-muted-foreground"># Clone repository</p>
-                <p className="text-foreground">git clone https://github.com/vastdreams/fse-rnd-alpha.git</p>
-                <p className="text-foreground">cd fse-rnd-alpha</p>
+                <p className="text-foreground">git clone https://github.com/vastdreams/rd-alpha-research.git</p>
+                <p className="text-foreground">cd rd-alpha-research</p>
                 <p className="text-muted-foreground mt-2"># Install dependencies</p>
                 <p className="text-foreground">pip install -r requirements.txt</p>
                 <p className="text-muted-foreground mt-2"># Run full pipeline</p>
@@ -709,7 +712,7 @@ export function Methodology() {
                   <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-foreground">Returns Are Total Shareholder Return</p>
-                    <p className="text-xs text-muted-foreground">Price appreciation + dividends (split-adjusted)</p>
+                    <p className="text-xs text-muted-foreground">Approximated via provider-adjusted close (split + dividend adjusted; no separate dividend add)</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
@@ -730,7 +733,7 @@ export function Methodology() {
                   <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-foreground">Survivorship Bias Acknowledged</p>
-                    <p className="text-xs text-muted-foreground">S&P 500 sample excludes failed companies</p>
+                    <p className="text-xs text-muted-foreground">Point-in-time membership is enforced where spans exist; remaining coverage gaps are disclosed</p>
                   </div>
                 </div>
               </div>

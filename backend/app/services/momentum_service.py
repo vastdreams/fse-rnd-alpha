@@ -91,8 +91,9 @@ class MomentumCalculator:
     This suggests past R&D outperformers tend to continue outperforming.
     """
     
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, *, data_tier: str = "tier1"):
         self.session = session
+        self.data_tier = data_tier
         self._market_returns_cache: Dict[int, float] = {}
     
     async def compute_momentum(
@@ -174,6 +175,7 @@ class MomentumCalculator:
             .where(
                 JulyJuneReturn.symbol == symbol,
                 JulyJuneReturn.formation_year.in_(years),
+                JulyJuneReturn.data_tier == self.data_tier,
                 JulyJuneReturn.total_return.isnot(None)
             )
         )
@@ -213,6 +215,7 @@ class MomentumCalculator:
                 .where(
                     JulyJuneReturn.symbol == market_symbol,
                     JulyJuneReturn.formation_year.in_(years),
+                    JulyJuneReturn.data_tier == self.data_tier,
                     JulyJuneReturn.total_return.isnot(None)
                 )
             )
@@ -259,6 +262,7 @@ class MomentumCalculator:
             if use_july_june:
                 result = await self.session.execute(
                     select(func.distinct(JulyJuneReturn.symbol))
+                    .where(JulyJuneReturn.data_tier == self.data_tier)
                 )
             else:
                 result = await self.session.execute(

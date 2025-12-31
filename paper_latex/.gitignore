@@ -1,0 +1,16 @@
+# Local build tools + caches
+.tools/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.xdv
+*.fls
+*.fdb_latexmk
+
+# (Optional) keep PDF tracked for submission; do NOT ignore *.pdf by default
+

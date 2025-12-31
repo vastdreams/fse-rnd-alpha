@@ -586,7 +586,13 @@ export function Documentation() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-3">
                     Each quintile represents an equal-weighted portfolio. Q5 (high R&D) outperforms
-                    Q1 (low R&D) by +7.1% (5yr) to +2.6% (20yr) annually.
+                    Q1 (low R&D) by{" "}
+                    <strong className="text-foreground">
+                      {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "..."} (5yr)
+                      {" "}to{" "}
+                      {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "..."} (20yr)
+                    </strong>{" "}
+                    annually (rolling-window averages; descriptive due to overlap).
                   </p>
                 </div>
 
@@ -616,18 +622,30 @@ export function Documentation() {
                   <div className="grid gap-2 md:grid-cols-3 mt-3">
                     <div className="p-3 border rounded">
                       <Badge>5-Year Windows</Badge>
-                      <p className="text-xs mt-2 text-muted-foreground">28 windows (1995-2023)</p>
-                      <p className="text-xs text-muted-foreground">η² = 0.225</p>
+                      <p className="text-xs mt-2 text-muted-foreground">
+                        {aggregateAnova?.["5yr"]?.n_windows ?? "..."} windows
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        η² = {typeof eta5yr === "number" ? eta5yr.toFixed(3) : "..."}
+                      </p>
                     </div>
                     <div className="p-3 border rounded">
                       <Badge>10-Year Windows</Badge>
-                      <p className="text-xs mt-2 text-muted-foreground">23 windows (1995-2014)</p>
-                      <p className="text-xs text-muted-foreground">η² = 0.319</p>
+                      <p className="text-xs mt-2 text-muted-foreground">
+                        {aggregateAnova?.["10yr"]?.n_windows ?? "..."} windows
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        η² = {typeof aggregateAnova?.["10yr"]?.anova?.eta_squared === "number" ? aggregateAnova["10yr"].anova.eta_squared.toFixed(3) : "..."}
+                      </p>
                     </div>
                     <div className="p-3 border rounded">
                       <Badge>20-Year Windows</Badge>
-                      <p className="text-xs mt-2 text-muted-foreground">13 windows (1995-2014)</p>
-                      <p className="text-xs text-muted-foreground">η² = 0.458</p>
+                      <p className="text-xs mt-2 text-muted-foreground">
+                        {aggregateAnova?.["20yr"]?.n_windows ?? "..."} windows
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        η² = {typeof eta20yr === "number" ? eta20yr.toFixed(3) : "..."}
+                      </p>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-3">
@@ -743,8 +761,14 @@ export function Documentation() {
                 <div className="p-4 border rounded-lg bg-emerald-500/10 border-emerald-500/20">
                   <h3 className="font-semibold mb-2 text-emerald-400">Key Finding</h3>
                   <p className="text-sm text-muted-foreground">
-                    High-R&D companies (Q5) outperform low-R&D companies (Q1) by <strong>+7.1% (5yr) to +2.6% (20yr) annually</strong>.
-                    ANOVA testing confirms statistical significance (p &lt; 0.001) with η² = 0.225-0.458.
+                    High-R&amp;D companies (Q5) outperform low-R&amp;D companies (Q1) by{" "}
+                    <strong>
+                      {premium5yr !== undefined ? `${premium5yr >= 0 ? "+" : ""}${premium5yr.toFixed(2)}%` : "..."} (5yr){" "}
+                      to{" "}
+                      {premium20yr !== undefined ? `${premium20yr >= 0 ? "+" : ""}${premium20yr.toFixed(2)}%` : "..."} (20yr)
+                    </strong>{" "}
+                    annually (rolling-window averages; descriptive due to overlap). ANOVA effect size rises with horizon (η²{" "}
+                    {eta5yr !== undefined ? eta5yr.toFixed(3) : "..."} → {eta20yr !== undefined ? eta20yr.toFixed(3) : "..."}).
                   </p>
                 </div>
 

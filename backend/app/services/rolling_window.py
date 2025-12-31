@@ -179,12 +179,14 @@ class RollingWindowAnalyzer:
         
         # 1. Determine constituents at start of window (Year T)
         # CRITICAL for survivorship-bias-free research
-        start_date = date(start_year, 1, 1)
+        # For July–June convention, portfolios are formed on July 1 of start_year.
+        # For calendar-year convention, we use Jan 1 of start_year.
+        formation_date = date(start_year, 7, 1) if self.use_july_june else date(start_year, 1, 1)
         hist_result = await self.session.execute(
             select(SP500HistoricalConstituent.symbol)
             .where(
-                SP500HistoricalConstituent.added_date <= start_date,
-                (SP500HistoricalConstituent.removed_date == None) | (SP500HistoricalConstituent.removed_date >= start_date)
+                SP500HistoricalConstituent.added_date <= formation_date,
+                (SP500HistoricalConstituent.removed_date == None) | (SP500HistoricalConstituent.removed_date >= formation_date)
             )
         )
         constituents = {r[0] for r in hist_result.fetchall()}
@@ -204,7 +206,7 @@ class RollingWindowAnalyzer:
             .where(FMPIncomeStatement.revenue >= MIN_REVENUE_THRESHOLD)
          
         if constituents:
-            logger.info(f"Filtering by {len(constituents)} historical constituents for {start_year}")
+            logger.info(f"Filtering by {len(constituents)} point-in-time constituents for {start_year} (formation_date={formation_date})")
             rd_query = rd_query.where(FMPIncomeStatement.symbol.in_(constituents))
         else:
             logger.info(f"No historical constituents found for {start_year}, using all available")
@@ -299,7 +301,8 @@ class RollingWindowAnalyzer:
         Calculate statistics for a quintile using PROPER TIME-SERIES methodology.
         
         Survivorship Correction:
-        - Incorporates delisting returns for companies that exit during the window.
+        - Delistings are handled upstream in the July–June return series (return ends at last observed price;
+          cash is treated as earning 0% thereafter for the remainder of the window).
         - Uses time-varying risk-free rate from database.
         """
         if not companies:
@@ -320,15 +323,6 @@ class RollingWindowAnalyzer:
         symbols = [c["symbol"] for c in companies]
         rd_intensities = [c["rd_intensity"] for c in companies]
         
-        from app.db.models import DelistingReturn
-        
-        # Pre-fetch delisting returns for these companies
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-            .where(DelistingReturn.symbol.in_(symbols))
-        )
-        delisting_map = {r.symbol: (r.delist_date, r.delist_return) for r in delist_result.fetchall()}
-        
         def safe_float(val):
             """Convert NaN/Inf to 0."""
             if val is None or np.isnan(val) or np.isinf(val):
@@ -344,22 +338,6 @@ class RollingWindowAnalyzer:
             
             for c in companies:
                 symbol = c["symbol"]
-                
-                # Handle delisting
-                if symbol in delisting_map:
-                    delist_date, delist_ret = delisting_map[symbol]
-                    if delist_date:
-                        # IMPORTANT (publication): map delisting date to the same year key used by returns
-                        # - Calendar: delist_key = delist_date.year
-                        # - July-June: delist_key = return_year (Jul start year)
-                        delist_key = delisting_key_year(delist_date, use_july_june=self.use_july_june)
-                        if delist_key == year:
-                            # Company delisted during THIS return period
-                            year_returns.append(delist_ret)
-                            continue
-                        elif delist_key < year:
-                            # Company already delisted in a prior return period
-                            continue
                 
                 # Normal return
                 if "returns" in c and year in c["returns"]:
@@ -597,22 +575,12 @@ class RollingWindowAnalyzer:
         
         PUBLICATION FIX (Dec 2025):
         - Uses July-June returns (controlled by self.use_july_june)
-        - Integrates delisting returns for survivorship correction
+        - Delistings are handled upstream in the July–June return series (return ends at last observed price;
+          cash is treated as earning 0% thereafter for the remainder of the window).
         """
-        from app.db.models import DelistingReturn
-        
-        # Pre-fetch delisting returns
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_date, DelistingReturn.delist_return)
-        )
-        delisting_map = {}
-        for r in delist_result.fetchall():
-            if not r.delist_date:
-                continue
-            key_year = delisting_key_year(r.delist_date, use_july_june=self.use_july_june)
-            if key_year not in delisting_map:
-                delisting_map[key_year] = {}
-            delisting_map[key_year][r.symbol] = r.delist_return
+        from app.db.models import SP500HistoricalConstituent
+        from sqlalchemy import or_
+        from datetime import date
         
         # Get year range
         return_convention = "july_june" if self.use_july_june else "calendar"
@@ -635,6 +603,7 @@ class RollingWindowAnalyzer:
                     func.min(JulyJuneReturn.formation_year),
                     func.max(JulyJuneReturn.formation_year),
                 )
+                .where(JulyJuneReturn.data_tier == self.data_tier)
             )
         else:
             year_result = await self.session.execute(
@@ -648,6 +617,9 @@ class RollingWindowAnalyzer:
         if not min_year or not max_year:
             return []
         
+        membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+        membership_available = bool(isinstance(membership_total, int) and membership_total > 0)
+
         all_premiums = []
         
         # For July-June: formation_year is the FY data year
@@ -656,17 +628,39 @@ class RollingWindowAnalyzer:
             return_year = formation_year + 1  # For labeling purposes
             
             # Get R&D intensities from formation year
-            rd_result = await self.session.execute(
-                select(
-                    FMPIncomeStatement.symbol,
-                    FMPIncomeStatement.rd_expenses,
-                    FMPIncomeStatement.revenue
+            if self.use_july_june and membership_available:
+                formation_date = date(int(return_year), 7, 1)
+                rd_result = await self.session.execute(
+                    select(
+                        FMPIncomeStatement.symbol,
+                        FMPIncomeStatement.rd_expenses,
+                        FMPIncomeStatement.revenue
+                    )
+                    .join(SP500HistoricalConstituent, SP500HistoricalConstituent.symbol == FMPIncomeStatement.symbol)
+                    .where(
+                        SP500HistoricalConstituent.added_date <= formation_date,
+                        or_(
+                            SP500HistoricalConstituent.removed_date == None,
+                            SP500HistoricalConstituent.removed_date >= formation_date,
+                        ),
+                    )
+                    .where(FMPIncomeStatement.fiscal_year == formation_year)
+                    .where(FMPIncomeStatement.period == "FY")
+                    .where(FMPIncomeStatement.rd_expenses >= 0)
+                    .where(FMPIncomeStatement.revenue >= MIN_REVENUE_THRESHOLD)
                 )
-                .where(FMPIncomeStatement.fiscal_year == formation_year)
-                .where(FMPIncomeStatement.period == "FY")
-                .where(FMPIncomeStatement.rd_expenses >= 0)
-                .where(FMPIncomeStatement.revenue >= MIN_REVENUE_THRESHOLD)
-            )
+            else:
+                rd_result = await self.session.execute(
+                    select(
+                        FMPIncomeStatement.symbol,
+                        FMPIncomeStatement.rd_expenses,
+                        FMPIncomeStatement.revenue
+                    )
+                    .where(FMPIncomeStatement.fiscal_year == formation_year)
+                    .where(FMPIncomeStatement.period == "FY")
+                    .where(FMPIncomeStatement.rd_expenses >= 0)
+                    .where(FMPIncomeStatement.revenue >= MIN_REVENUE_THRESHOLD)
+                )
             rd_data = {
                 r.symbol: r.rd_expenses / r.revenue * 100
                 for r in rd_result.fetchall()
@@ -678,6 +672,7 @@ class RollingWindowAnalyzer:
                     select(JulyJuneReturn.symbol, JulyJuneReturn.annualized_return)
                     .where(JulyJuneReturn.formation_year == formation_year)
                     .where(JulyJuneReturn.annualized_return.isnot(None))
+                    .where(JulyJuneReturn.data_tier == self.data_tier)
                 )
                 returns = {r.symbol: r.annualized_return for r in return_result.fetchall()}
             else:
@@ -688,16 +683,10 @@ class RollingWindowAnalyzer:
                 )
                 returns = {r.symbol: r.annual_return for r in return_result.fetchall()}
             
-            # Integrate delisting returns
-            year_delistings = delisting_map.get(return_year, {})
-            
             # Combine and assign quintiles
             combined = []
             for s, rd in rd_data.items():
-                # Check for delisting
-                if s in year_delistings:
-                    ret = year_delistings[s]
-                elif s in returns and returns[s] is not None:
+                if s in returns and returns[s] is not None:
                     ret = returns[s]
                 else:
                     continue  # No return data
@@ -971,7 +960,8 @@ class RollingWindowAnalyzer:
         
         PUBLICATION FIX (Dec 2025):
         - Uses July-June returns (controlled by self.use_july_june)
-        - Integrates delisting returns for survivorship correction
+        - Delistings are handled upstream in the July–June return series (return ends at last observed price;
+          cash is treated as earning 0% thereafter for the remainder of the window).
         
         Args:
             year: Year for which to compute premium (return year for calendar, formation_year+1 for July-June)
@@ -980,21 +970,8 @@ class RollingWindowAnalyzer:
             Dict with sector-neutral premium and breakdown by sector
         """
         from app.core.sectors import normalize_sector, GICS_SECTORS
-        from app.db.models import DelistingReturn
         
         formation_year = year - 1  # FY data from year-1
-        
-        # Pre-fetch delisting returns
-        start_date, end_date = bounds_for_return_year(year, use_july_june=self.use_july_june)
-        delist_result = await self.session.execute(
-            select(DelistingReturn.symbol, DelistingReturn.delist_return)
-            .where(
-                DelistingReturn.delist_date.isnot(None),
-                DelistingReturn.delist_date >= start_date,
-                DelistingReturn.delist_date <= end_date,
-            )
-        )
-        year_delistings = {r.symbol: r.delist_return for r in delist_result.fetchall()}
         
         # Get R&D data with sector info from formation year
         rd_result = await self.session.execute(
@@ -1030,6 +1007,7 @@ class RollingWindowAnalyzer:
                 select(JulyJuneReturn.symbol, JulyJuneReturn.annualized_return)
                 .where(JulyJuneReturn.formation_year == formation_year)
                 .where(JulyJuneReturn.annualized_return.isnot(None))
+                .where(JulyJuneReturn.data_tier == self.data_tier)
             )
             returns = {r.symbol: r.annualized_return for r in return_result.fetchall()}
         else:
@@ -1044,13 +1022,11 @@ class RollingWindowAnalyzer:
         sector_premiums = {}
         
         for sector, companies in sector_data.items():
-            # Add returns (including delisting returns)
+            # Add returns
             companies_with_returns = []
             for c in companies:
                 symbol = c["symbol"]
-                if symbol in year_delistings:
-                    ret = year_delistings[symbol]
-                elif symbol in returns and returns[symbol] is not None:
+                if symbol in returns and returns[symbol] is not None:
                     ret = returns[symbol]
                 else:
                     continue
@@ -1096,7 +1072,7 @@ class RollingWindowAnalyzer:
             "sector_breakdown": sector_premiums,
             "methodology": {
                 "return_type": "July-June (Fama-French convention)" if self.use_july_june else "Calendar year",
-                "survivorship_correction": "Delisting returns integrated"
+                "survivorship_correction": "Handled in upstream return computation (cash-after-exit assumption)"
             }
         }
 
@@ -1120,25 +1096,11 @@ class RollingWindowAnalyzer:
         Returns:
             Dict with EW and VW premium statistics
         """
-        from app.db.models import DelistingReturn
-        
         ew_premiums = []
         vw_premiums = []
         
         for year in range(start_year, end_year + 1):
             formation_year = year - 1
-            
-            # Pre-fetch delisting returns
-            start_date, end_date = bounds_for_return_year(year, use_july_june=self.use_july_june)
-            delist_result = await self.session.execute(
-                select(DelistingReturn.symbol, DelistingReturn.delist_return)
-                .where(
-                    DelistingReturn.delist_date.isnot(None),
-                    DelistingReturn.delist_date >= start_date,
-                    DelistingReturn.delist_date <= end_date,
-                )
-            )
-            year_delistings = {r.symbol: r.delist_return for r in delist_result.fetchall()}
             
             # Get R&D data with revenue (as market cap proxy)
             rd_result = await self.session.execute(
@@ -1170,6 +1132,7 @@ class RollingWindowAnalyzer:
                 return_result = await self.session.execute(
                     select(JulyJuneReturn.symbol, JulyJuneReturn.annualized_return)
                     .where(JulyJuneReturn.formation_year == formation_year)
+                    .where(JulyJuneReturn.data_tier == self.data_tier)
                 )
                 returns = {r.symbol: r.annualized_return for r in return_result.fetchall()}
             else:
@@ -1182,9 +1145,7 @@ class RollingWindowAnalyzer:
             # Add returns (including delisting)
             for c in companies:
                 symbol = c["symbol"]
-                if symbol in year_delistings:
-                    c["return"] = year_delistings[symbol]
-                elif symbol in returns and returns[symbol] is not None:
+                if symbol in returns and returns[symbol] is not None:
                     c["return"] = returns[symbol]
                 else:
                     c["return"] = None
@@ -1265,7 +1226,7 @@ class RollingWindowAnalyzer:
             "methodology": {
                 "return_type": "July-June (Fama-French convention)" if self.use_july_june else "Calendar year",
                 "market_cap_proxy": "Revenue × 10",
-                "survivorship_correction": "Delisting returns integrated"
+                "survivorship_correction": "Handled in upstream return computation (cash-after-exit assumption)"
             }
         }
 
@@ -1290,8 +1251,6 @@ class RollingWindowAnalyzer:
         Returns:
             Dict with premium under each cap scenario
         """
-        from app.db.models import DelistingReturn
-        
         if rd_caps is None:
             rd_caps = [50.0, 100.0, 200.0, 500.0]
         
@@ -1302,18 +1261,6 @@ class RollingWindowAnalyzer:
             
             for year in range(start_year, end_year + 1):
                 formation_year = year - 1
-                
-                # Pre-fetch delisting returns
-                start_date, end_date = bounds_for_return_year(year, use_july_june=self.use_july_june)
-                delist_result = await self.session.execute(
-                    select(DelistingReturn.symbol, DelistingReturn.delist_return)
-                    .where(
-                        DelistingReturn.delist_date.isnot(None),
-                        DelistingReturn.delist_date >= start_date,
-                        DelistingReturn.delist_date <= end_date,
-                    )
-                )
-                year_delistings = {r.symbol: r.delist_return for r in delist_result.fetchall()}
                 
                 # Get R&D data
                 rd_result = await self.session.execute(
@@ -1346,6 +1293,7 @@ class RollingWindowAnalyzer:
                     return_result = await self.session.execute(
                         select(JulyJuneReturn.symbol, JulyJuneReturn.annualized_return)
                         .where(JulyJuneReturn.formation_year == formation_year)
+                        .where(JulyJuneReturn.data_tier == self.data_tier)
                     )
                     returns = {r.symbol: r.annualized_return for r in return_result.fetchall()}
                 else:
@@ -1358,9 +1306,7 @@ class RollingWindowAnalyzer:
                 # Add returns (including delisting)
                 for c in companies:
                     symbol = c["symbol"]
-                    if symbol in year_delistings:
-                        c["return"] = year_delistings[symbol]
-                    elif symbol in returns and returns[symbol] is not None:
+                    if symbol in returns and returns[symbol] is not None:
                         c["return"] = returns[symbol]
                     else:
                         c["return"] = None
@@ -1418,7 +1364,7 @@ class RollingWindowAnalyzer:
             ),
             "methodology": {
                 "return_type": "July-June (Fama-French convention)" if self.use_july_june else "Calendar year",
-                "survivorship_correction": "Delisting returns integrated",
+                "survivorship_correction": "Handled in upstream return computation (cash-after-exit assumption)",
                 "note": "Each scenario recomputes quintiles with the specified R&D cap"
             }
         }

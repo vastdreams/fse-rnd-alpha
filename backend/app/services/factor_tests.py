@@ -451,7 +451,8 @@ class MispricingAnalyzer:
         self,
         start_year: int = 1995,
         end_year: int = 2024,
-        use_july_june: bool = True
+        use_july_june: bool = True,
+        data_tier: str = "tier1",
     ) -> Dict[str, Any]:
         """
         Run comprehensive mispricing vs risk tests.
@@ -466,33 +467,88 @@ class MispricingAnalyzer:
         from sqlalchemy import text
         import pandas as pd
         from sqlalchemy import select
-
-        from app.db.models import DelistingReturn
-        from app.services.delisting_utils import bounds_for_return_year
+        from sqlalchemy import func
+        from app.db.models import SP500HistoricalConstituent
+        from datetime import date
         
         # Collect company-level data for each year
         all_data = []
+
+        membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
+        membership_available = bool(isinstance(membership_total, int) and membership_total > 0)
         
         for year in range(start_year, end_year):
             # Return-year label used for delisting integration:
             # - July-June: return_year = formation_year + 1 (Jul start year)
             # - Calendar: return_year = year + 1
             return_year = year + 1
-            start_date, end_date = bounds_for_return_year(return_year, use_july_june=use_july_june)
-
-            delist_result = await self.session.execute(
-                select(DelistingReturn.symbol, DelistingReturn.delist_return)
-                .where(
-                    DelistingReturn.delist_date.isnot(None),
-                    DelistingReturn.delist_date >= start_date,
-                    DelistingReturn.delist_date <= end_date,
-                )
-            )
-            # Store as pct to match return_pct fields
-            year_delistings = {r.symbol: float(r.delist_return) * 100 for r in delist_result.fetchall()}
 
             if use_july_june:
                 # Use July-June returns (formation_year = prior year)
+                if membership_available:
+                    q = text("""
+                        WITH members AS (
+                            SELECT DISTINCT symbol
+                            FROM sp500_historical_constituents
+                            WHERE added_date <= :formation_date
+                              AND (removed_date IS NULL OR removed_date >= :formation_date)
+                        ),
+                        company_data AS (
+                            SELECT 
+                                inc.symbol,
+                                inc.revenue,
+                                CASE 
+                                    WHEN inc.revenue > 100000000 
+                                    THEN (inc.rd_expenses::float / inc.revenue * 100)
+                                    ELSE NULL 
+                                END as rd_intensity,
+                                -- Proxy for size (liquidity proxy)
+                                LOG(NULLIF(inc.revenue, 0)) as log_size,
+                                -- Count of years with data (proxy for analyst coverage)
+                                (
+                                    SELECT COUNT(*) FROM fmp_income_statements i2 
+                                    WHERE i2.symbol = inc.symbol 
+                                    AND i2.fiscal_year <= inc.fiscal_year
+                                ) as years_tracked,
+                                -- Sector concentration (proxy for institutional interest)
+                                (
+                                    SELECT COUNT(*) FROM sp500_companies sp 
+                                    WHERE sp.sector = (
+                                        SELECT sector FROM sp500_companies WHERE symbol = inc.symbol LIMIT 1
+                                    )
+                                ) as sector_size
+                            FROM fmp_income_statements inc
+                            JOIN members m ON m.symbol = inc.symbol
+                            WHERE inc.fiscal_year = :prior_year
+                              AND inc.period = 'FY'
+                              AND inc.revenue >= 100000000
+                        ),
+                        returns AS (
+                            SELECT symbol, annualized_return * 100 as return_pct
+                            FROM july_june_returns
+                            WHERE formation_year = :prior_year
+                              AND data_tier = :data_tier
+                        ),
+                        volatility AS (
+                            SELECT symbol, volatility as vol
+                            FROM july_june_returns
+                            WHERE formation_year = :prior_year
+                              AND data_tier = :data_tier
+                        )
+                        SELECT 
+                            cd.symbol,
+                            cd.rd_intensity,
+                            cd.log_size,
+                            cd.years_tracked,
+                            cd.sector_size,
+                            r.return_pct,
+                            v.vol
+                        FROM company_data cd
+                        LEFT JOIN returns r ON cd.symbol = r.symbol
+                        LEFT JOIN volatility v ON cd.symbol = v.symbol
+                        WHERE cd.rd_intensity IS NOT NULL
+                    """)
+                else:
                 q = text("""
                     WITH company_data AS (
                         SELECT 
@@ -527,11 +583,13 @@ class MispricingAnalyzer:
                         SELECT symbol, annualized_return * 100 as return_pct
                         FROM july_june_returns
                         WHERE formation_year = :prior_year
+                              AND data_tier = :data_tier
                     ),
                     volatility AS (
                         SELECT symbol, volatility as vol
                         FROM july_june_returns
                         WHERE formation_year = :prior_year
+                              AND data_tier = :data_tier
                     )
                     SELECT 
                         cd.symbol,
@@ -602,17 +660,15 @@ class MispricingAnalyzer:
                     WHERE cd.rd_intensity IS NOT NULL
                 """)
             
-            result = await self.session.execute(q, {"prior_year": year, "return_year": year + 1})
+            params = {"prior_year": year, "return_year": year + 1, "data_tier": data_tier}
+            if use_july_june and membership_available:
+                params["formation_date"] = date(int(return_year), 7, 1)
+            result = await self.session.execute(q, params)
             rows = result.fetchall()
             
             for row in rows:
                 symbol = row[0]
-                # Integrate delisting returns for survivorship correction (publication-grade)
-                # If the company delisted during the return period, use delisting return instead
-                return_pct = year_delistings.get(symbol)
-                if return_pct is None:
                     return_pct = float(row[5]) if row[5] is not None else None
-
                 if return_pct is None:
                     continue
 
@@ -632,60 +688,118 @@ class MispricingAnalyzer:
         
         df = pd.DataFrame(all_data)
         
-        # Create R&D quintiles
-        df["rd_quintile"] = pd.qcut(df["rd_intensity"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5])
-        
-        # Create proxies for mispricing
-        # 1. Size (smaller = harder to arbitrage)
-        df["size_tercile"] = pd.qcut(df["log_size"], 3, labels=["Small", "Medium", "Large"])
-        
-        # 2. Volatility (higher = higher arbitrage risk)
-        df["vol_tercile"] = pd.qcut(
-            df["volatility"].rank(method="first"), 3, labels=["Low", "Medium", "High"]
+        # ----------------------------------------------------------------------
+        # Conditional sorting (publication-grade, avoids missing cells)
+        # ----------------------------------------------------------------------
+        # We compute the R&D premium (Q5–Q1) within each arbitrage-cost proxy bucket,
+        # by year, then average across years. This avoids pooling bias and ensures
+        # each bucket has its own internal R&D quintiles (so Q1/Q5 exist by construction).
+        #
+        # Proxy definitions:
+        # - Size: terciles of log(revenue) within year (liquidity proxy)
+        # - Volatility: terciles of July–June volatility within year
+        # - Coverage: terciles of years_tracked within year (PROXY, not analyst coverage)
+
+        def _safe_qcut(series: "pd.Series", q: int, labels: list) -> "pd.Series":
+            """Robust qcut with fallback when there are too few unique values."""
+            ranked = series.rank(method="first")
+            try:
+                return pd.qcut(ranked, q, labels=labels)
+            except ValueError:
+                return pd.cut(ranked, q, labels=labels)
+
+        # Build proxy buckets within each year (stabilizes across regimes)
+        df["size_tercile"] = df.groupby("year")["log_size"].transform(
+            lambda s: _safe_qcut(s, 3, ["Small", "Medium", "Large"])
         )
-        
-        # 3. Years tracked (proxy for analyst coverage - more years = more coverage)
-        df["coverage_tercile"] = pd.qcut(
-            df["years_tracked"].rank(method="first"), 3, labels=["Low", "Medium", "High"]
+        df["vol_tercile"] = df.groupby("year")["volatility"].transform(
+            lambda s: _safe_qcut(s, 3, ["Low", "Medium", "High"])
         )
+        df["coverage_tercile"] = df.groupby("year")["years_tracked"].transform(
+            lambda s: _safe_qcut(s, 3, ["Low", "Medium", "High"])
+        )
+
+        def _conditional_rd_premium(
+            data: "pd.DataFrame",
+            proxy_col: str,
+            proxy_label: str,
+        ) -> Dict[str, Any]:
+            """
+            Compute mean (by-year) Q5–Q1 premium within a proxy bucket.
+
+            Returns dict with:
+              - premium: mean premium (%) across years (float)
+              - n_obs: total observations contributing (int)
+              - n_years: number of years contributing (int)
+              - method: 'by_year' or fallback
+            """
+            subset_all = data[data[proxy_col] == proxy_label]
+            if subset_all.empty:
+                return {"premium": None, "n_obs": 0, "n_years": 0, "method": "empty"}
+
+            premiums_by_year: list[float] = []
+            n_obs_total = 0
+            n_years_used = 0
+
+            for y, sub in subset_all.groupby("year"):
+                # Need enough firms to define quintiles
+                if len(sub) < 10:
+                    continue
+                sub = sub.copy()
+                sub["rd_quintile"] = _safe_qcut(sub["rd_intensity"], 5, [1, 2, 3, 4, 5])
+
+                q5 = sub[sub["rd_quintile"] == 5]["return_pct"].mean()
+                q1 = sub[sub["rd_quintile"] == 1]["return_pct"].mean()
+                if pd.isna(q5) or pd.isna(q1):
+                    continue
+
+                premiums_by_year.append(float(q5 - q1))
+                n_obs_total += int(len(sub))
+                n_years_used += 1
+
+            if premiums_by_year:
+                return {
+                    "premium": round(float(sum(premiums_by_year) / len(premiums_by_year)), 2),
+                    "n_obs": int(n_obs_total),
+                    "n_years": int(n_years_used),
+                    "method": "by_year",
+                }
+
+            # Fallback (should be rare): pooled conditional sort within the proxy bucket.
+            pooled = subset_all.copy()
+            if len(pooled) >= 10:
+                pooled["rd_quintile"] = _safe_qcut(pooled["rd_intensity"], 5, [1, 2, 3, 4, 5])
+                q5 = pooled[pooled["rd_quintile"] == 5]["return_pct"].mean()
+                q1 = pooled[pooled["rd_quintile"] == 1]["return_pct"].mean()
+                if pd.notna(q5) and pd.notna(q1):
+                    return {
+                        "premium": round(float(q5 - q1), 2),
+                        "n_obs": int(len(pooled)),
+                        "n_years": 0,
+                        "method": "pooled_fallback",
+                    }
+
+            return {"premium": None, "n_obs": int(len(subset_all)), "n_years": 0, "method": "insufficient"}
+
+        results: Dict[str, Any] = {}
         
-        results = {}
+        # Test 1: R&D premium by Size (conditional on size tercile)
+        results["by_size"] = {
+            size: _conditional_rd_premium(df, "size_tercile", size)
+            for size in ["Small", "Medium", "Large"]
+        }
         
-        # Test 1: R&D premium by Size
-        size_premiums = {}
-        for size in ["Small", "Medium", "Large"]:
-            subset = df[df["size_tercile"] == size]
-            q5_ret = subset[subset["rd_quintile"] == 5]["return_pct"].mean()
-            q1_ret = subset[subset["rd_quintile"] == 1]["return_pct"].mean()
-            size_premiums[size] = {
-                "premium": round(q5_ret - q1_ret, 2) if pd.notna(q5_ret) and pd.notna(q1_ret) else None,
-                "n_obs": len(subset)
-            }
-        results["by_size"] = size_premiums
+        # Test 2: R&D premium by Volatility (conditional on volatility tercile)
+        results["by_volatility"] = {
+            vol: _conditional_rd_premium(df, "vol_tercile", vol)
+            for vol in ["Low", "Medium", "High"]
+        }
         
-        # Test 2: R&D premium by Volatility
-        vol_premiums = {}
-        for vol in ["Low", "Medium", "High"]:
-            subset = df[df["vol_tercile"] == vol]
-            q5_ret = subset[subset["rd_quintile"] == 5]["return_pct"].mean()
-            q1_ret = subset[subset["rd_quintile"] == 1]["return_pct"].mean()
-            vol_premiums[vol] = {
-                "premium": round(q5_ret - q1_ret, 2) if pd.notna(q5_ret) and pd.notna(q1_ret) else None,
-                "n_obs": len(subset)
-            }
-        results["by_volatility"] = vol_premiums
-        
-        # Test 3: R&D premium by Analyst Coverage proxy
-        coverage_premiums = {}
-        for cov in ["Low", "Medium", "High"]:
-            subset = df[df["coverage_tercile"] == cov]
-            q5_ret = subset[subset["rd_quintile"] == 5]["return_pct"].mean()
-            q1_ret = subset[subset["rd_quintile"] == 1]["return_pct"].mean()
-            coverage_premiums[cov] = {
-                "premium": round(q5_ret - q1_ret, 2) if pd.notna(q5_ret) and pd.notna(q1_ret) else None,
-                "n_obs": len(subset)
-            }
-        results["by_coverage"] = coverage_premiums
+        # Test 3: R&D premium by Coverage proxy (years_tracked; proxy only)
+        results["by_coverage"] = {
+            cov: _conditional_rd_premium(df, "coverage_tercile", cov)
+            for cov in ["Low", "Medium", "High"]
+        }
         
         # Interpret: Mispricing hypothesis predicts premium is higher in:
         # - Small stocks (vs Large)
@@ -694,18 +808,18 @@ class MispricingAnalyzer:
         
         mispricing_evidence = 0
         
-        small_premium = size_premiums.get("Small", {}).get("premium")
-        large_premium = size_premiums.get("Large", {}).get("premium")
+        small_premium = results.get("by_size", {}).get("Small", {}).get("premium")
+        large_premium = results.get("by_size", {}).get("Large", {}).get("premium")
         if small_premium and large_premium and small_premium > large_premium:
             mispricing_evidence += 1
         
-        high_vol_premium = vol_premiums.get("High", {}).get("premium")
-        low_vol_premium = vol_premiums.get("Low", {}).get("premium")
+        high_vol_premium = results.get("by_volatility", {}).get("High", {}).get("premium")
+        low_vol_premium = results.get("by_volatility", {}).get("Low", {}).get("premium")
         if high_vol_premium and low_vol_premium and high_vol_premium > low_vol_premium:
             mispricing_evidence += 1
         
-        low_cov_premium = coverage_premiums.get("Low", {}).get("premium")
-        high_cov_premium = coverage_premiums.get("High", {}).get("premium")
+        low_cov_premium = results.get("by_coverage", {}).get("Low", {}).get("premium")
+        high_cov_premium = results.get("by_coverage", {}).get("High", {}).get("premium")
         if low_cov_premium and high_cov_premium and low_cov_premium > high_cov_premium:
             mispricing_evidence += 1
         
@@ -731,12 +845,15 @@ class MispricingAnalyzer:
         return {
             "tests": results,
             "total_observations": len(df),
-            "n_years": end_year - start_year,
+            "n_years": int(df["year"].nunique()),
             "mispricing_evidence_count": mispricing_evidence,
             "interpretation": {
                 "likely_explanation": interpretation,
                 "confidence": "High" if mispricing_evidence >= 2 else "Medium",
                 "explanation": explanation
+            },
+            "proxy_notes": {
+                "coverage": "Coverage is proxied by years_tracked (count of historical income statement years), not analyst coverage.",
             },
             "latex_summary": self._generate_mispricing_latex(results)
         }
