@@ -100,7 +100,7 @@
 
 \noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July-June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5-Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama-French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
-\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs (\BacktestPeriodLabel{} backtest, N=\BacktestNYears), retaining \PremiumCaptureRatePct\% of the gross premium.
+\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The annual test does not reach conventional significance due to high variance, but monthly factor spanning tests confirm a statistically significant premium: FF5 $\alpha = 4.37\%$ ($t = 3.01$, $p < 0.01$). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs (\BacktestPeriodLabel{} backtest, N=\BacktestNYears), retaining \PremiumCaptureRatePct\% of the gross premium.
 
 \noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via split-adjusted close + dividends) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. The backtest spans \BacktestPeriodLabel{} (\BacktestNYears{} July-June periods), including stress tests (post-dot-com 2001-2002, 2008 financial crisis). Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
@@ -469,7 +469,7 @@ Table~\ref{tab:annual_hml_summary} reports the primary inference object: the ann
     \item \textbf{p-value (\AnnualPValue):} Under the null of zero mean premium, the probability of observing a premium at least as extreme is \AnnualPValue{}.
     \item \textbf{Win rate (\AnnualWinRatePct\%):} The premium was positive in \AnnualPositiveYears{} of \AnnualNYears{} years, indicating consistency rather than being driven by a few extreme years.
 \end{itemize}
-\textbf{Interpretation.} The point estimate (\AnnualMeanPremium\% annually) is economically meaningful---comparable in magnitude to many established factor premiums---though not statistically significant at the 5\% level ($p = \AnnualPValue$). With a 24-year sample and high year-to-year variance, wide confidence intervals are expected. The premium is positive in \AnnualWinRatePct\% of years.
+\textbf{Interpretation.} The point estimate (\AnnualMeanPremium\% annually) is economically meaningful---comparable in magnitude to many established factor premiums---though not statistically significant at the 5\% level ($p = \AnnualPValue$) using the annual time-series test. With \AnnualNYears{} annual observations and high year-to-year variance (particularly from the 1999--2001 dot-com period), wide confidence intervals are expected. However, the monthly factor spanning tests (Table~\ref{tab:spanning_tests}) provide stronger statistical evidence: the FF5 alpha is 4.37\% annually ($t = 3.01$, $p < 0.01$), indicating the premium is statistically distinct from standard factors when tested with 360 monthly observations.
 \end{tcolorbox}
 
 Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-year variation around a positive average.
@@ -486,11 +486,11 @@ Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-
     major grid style={line width=.2pt,draw=gray!30},
     minor grid style={line width=.1pt,draw=gray!15},
     minor tick num=1,
-    ymin=-30, ymax=45,
+    ymin=-50, ymax=80,
     x tick label style={/pgf/number format/1000 sep=},
 ]
 \addplot+[mark=*,mark size=1.2pt,thick] table [x=year_start,y=hml_premium,col sep=comma] {data/annual_hml_premium.csv};
-\addplot[black!60,dashed] coordinates {(2001,0) (2024,0)};
+\addplot[black!60,dashed] coordinates {(1995,0) (2024,0)};
 \end{axis}
 \end{tikzpicture}
 \caption{Annual HML premium (Q5-Q1) by July-June return period (dashed line at zero).}
@@ -506,7 +506,7 @@ Table~\ref{tab:annual_hml_detail} provides the complete year-by-year breakdown o
 \begin{tcolorbox}[title=Interpreting Year-by-Year Results, colback=gray!5, colframe=gray!50]
 \textbf{Key observations from the year-by-year table:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Variability is normal:} Even a ``real'' premium will have negative years. The question is whether the long-run average is positive and statistically significant.
+    \item \textbf{Variability is normal:} Even a ``real'' premium will have negative years. The question is whether the long-run average is positive and economically meaningful (which may require higher-frequency data for statistical confirmation).
     \item \textbf{Extreme years:} Look for years with very large positive or negative premiums. Are they clustered around specific events (e.g., tech bubble, financial crisis)?
     \item \textbf{Both quintiles can be negative:} In bear markets, both Q5 and Q1 may have negative absolute returns. The premium measures relative performance, not absolute performance.
 \end{itemize}
@@ -705,7 +705,7 @@ Because vendor datasets can differ in delisting return coverage, we include a si
 
 \input{tables/table_delisting_sensitivity.tex}
 
-\textbf{Interpretation:} The premium remains positive and significant across all delisting sensitivity scenarios, suggesting the core finding is not an artifact of delisting-data uncertainty. The sensitivity analysis shows the premium is robust to conservative assumptions about terminal/exit returns.
+\textbf{Interpretation:} The premium remains positive across all delisting sensitivity scenarios, suggesting the core finding is not an artifact of delisting-data uncertainty. The sensitivity analysis shows the premium is directionally robust to conservative assumptions about terminal/exit returns.
 
 \subsection{Arbitrage-Cost Proxies (Descriptive)}
 
@@ -744,7 +744,7 @@ Size and volatility are imperfect proxies for trading frictions. Motivated by ev
 Across Sections~\ref{sec:results}-\ref{sec:robustness}, the evidence is consistent with a positive return premium associated with high R\&D intensity:
 
 \begin{itemize}[leftmargin=*]
-    \item The annual non-overlapping premium averages \AnnualMeanPremium\% with statistical significance ($t = \AnnualTStat$, $p = \AnnualPValue$).
+    \item The annual non-overlapping premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$); while not significant at 5\% in the annual time-series test due to high year-to-year variance, the FF5 monthly spanning alpha (4.37\%, $p < 0.01$) provides statistically significant evidence of a distinct premium.
     \item The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
     \item Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors.
     \item The premium exists within size categories (double-sort analysis), suggesting it is not purely a size effect.
@@ -911,11 +911,11 @@ The repository also contains:
 \section{Conclusion}
 \label{sec:conclusion}
 
-In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually) is economically meaningful though not statistically significant at conventional levels with 24 observations. The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
+In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually over \AnnualNYears{} years) is economically meaningful. While the annual time-series test does not reach conventional significance ($p = \AnnualPValue$) due to high year-to-year variance, the monthly factor spanning tests provide strong statistical evidence: the FF5 alpha is 4.37\% annually ($t = 3.01$, $p < 0.01$, 360 observations). The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
 
 The primary findings are:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$). While not statistically significant at the 5\% level with 24 observations, the point estimate is economically meaningful---comparable to many established factor premiums.
+    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% over \AnnualNYears{} years ($t = \AnnualTStat$, $p = \AnnualPValue$). While the annual time-series test does not reach conventional significance due to high variance (particularly from the dot-com era), the FF5 monthly spanning test is highly significant: $\alpha = 4.37\%$ annually ($t = 3.01$, $p < 0.01$). The point estimate is economically meaningful---comparable to many established factor premiums.
     
     \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not dominated by a few extreme years, though year-to-year variation is substantial as expected for any equity factor.
     
@@ -926,7 +926,7 @@ The primary findings are:
     \item \textbf{Implementability:} After transaction costs, the strategy retains \PremiumCaptureRatePct\% of the gross premium, delivering \NetPremiumAfterCostsPct\% annual net premium vs SPY (S\&P 500) over the \BacktestPeriodLabel{} backtest period (\BacktestNYears{} years including the post-dot-com and 2008 crisis periods).
 \end{enumerate}
 
-While the mechanism remains debated (mispricing vs.\ risk compensation), the RD20 strategy exhibits meaningful benchmark-relative performance over a 24-year period including multiple market regimes. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms. Forward-looking reliability, as with all historical factors, remains an open question.
+While the mechanism remains debated (mispricing vs.\ risk compensation), the RD20 strategy exhibits meaningful benchmark-relative performance over \BacktestNYears{} years (\BacktestPeriodLabel) including multiple market regimes. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms. Forward-looking reliability, as with all historical factors, remains an open question.
 
 \textbf{Looking forward:} As economies become increasingly knowledge-based and intangible assets grow relative to physical capital, understanding the relationship between R\&D investment and stock returns becomes more important. This study provides a rigorous, transparent baseline for that understanding.
 
