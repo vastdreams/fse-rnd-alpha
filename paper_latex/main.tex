@@ -469,7 +469,7 @@ Table~\ref{tab:annual_hml_summary} reports the primary inference object: the ann
     \item \textbf{p-value (\AnnualPValue):} Under the null of zero mean premium, the probability of observing a premium at least as extreme is \AnnualPValue{}.
     \item \textbf{Win rate (\AnnualWinRatePct\%):} The premium was positive in \AnnualPositiveYears{} of \AnnualNYears{} years, indicating consistency rather than being driven by a few extreme years.
 \end{itemize}
-\textbf{Interpretation.} The evidence supports H1 (existence of a positive characteristic premium).
+\textbf{Interpretation.} The point estimate (\AnnualMeanPremium\% annually) is economically meaningful---comparable in magnitude to many established factor premiums---though not statistically significant at the 5\% level ($p = \AnnualPValue$). With a 24-year sample and high year-to-year variance, wide confidence intervals are expected. The premium is positive in \AnnualWinRatePct\% of years.
 \end{tcolorbox}
 
 Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-year variation around a positive average.
@@ -911,13 +911,13 @@ The repository also contains:
 \section{Conclusion}
 \label{sec:conclusion}
 
-In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium that remains statistically significant under conservative inference and appears largely capturable under a calibrated transaction-cost model.
+In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually) is economically meaningful though not statistically significant at conventional levels with 24 observations. The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
 
 The primary findings are:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$). High-R\&D stocks outperformed low-R\&D stocks by this margin on average over the sample period.
+    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$). While not statistically significant at the 5\% level with 24 observations, the point estimate is economically meaningful---comparable to many established factor premiums.
     
-    \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not driven by a few extreme years.
+    \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not dominated by a few extreme years, though year-to-year variation is substantial as expected for any equity factor.
     
     \item \textbf{Distinctiveness:} Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors (market, size, value, profitability, investment, momentum).
     
@@ -926,7 +926,7 @@ The primary findings are:
     \item \textbf{Implementability:} After transaction costs, the strategy retains \PremiumCaptureRatePct\% of the gross premium, delivering \NetPremiumAfterCostsPct\% annual net premium vs SPY (S\&P 500) over the \BacktestPeriodLabel{} backtest period (\BacktestNYears{} years including the post-dot-com and 2008 crisis periods).
 \end{enumerate}
 
-While the mechanism remains debated (mispricing vs.\ risk compensation), the evidence supports the view that intangible investment characteristics are economically meaningful for long-horizon portfolio construction. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms.
+While the mechanism remains debated (mispricing vs.\ risk compensation), the RD20 strategy exhibits meaningful benchmark-relative performance over a 24-year period including multiple market regimes. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms. Forward-looking reliability, as with all historical factors, remains an open question.
 
 \textbf{Looking forward:} As economies become increasingly knowledge-based and intangible assets grow relative to physical capital, understanding the relationship between R\&D investment and stock returns becomes more important. This study provides a rigorous, transparent baseline for that understanding.
 

@@ -421,6 +421,8 @@ export function Whitepaper() {
   // Investable (ETFlike) backtest metrics (20-stock equal-weight, annual reconstitution)
   const invPortfolioNet = investableBacktest?.portfolio_performance_net
   const invBenchmarkNet = investableBacktest?.benchmark_performance_net
+  // Prefer excess vs SPY (investable benchmark) over excess vs EW cohort
+  const invExcessVsSPY = typeof investableBacktest?.excess_vs_sp500 === "number" ? investableBacktest.excess_vs_sp500 : undefined
   const invExcessNet = typeof investableBacktest?.excess_return_net === "number" ? investableBacktest.excess_return_net : undefined
   const invNHoldings = typeof investableBacktest?.meta?.n_holdings === "number" ? investableBacktest.meta.n_holdings : 20
   const invTurnoverAvg = typeof investableBacktest?.turnover?.avg_turnover_pct === "number" ? investableBacktest.turnover.avg_turnover_pct : undefined
@@ -605,13 +607,13 @@ export function Whitepaper() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <MetricCard
             value={
-              typeof invExcessNet === "number"
-                ? `+${invExcessNet.toFixed(1)}%`
+              typeof invExcessVsSPY === "number"
+                ? `+${invExcessVsSPY.toFixed(1)}%`
                 : typeof netPremium === "number"
                   ? `+${netPremium.toFixed(1)}%`
                   : "…"
             }
-            label="Net excess /yr (ETF)"
+            label="Net excess vs SPY /yr"
             accent="emerald"
           />
           <MetricCard value={typeof invPortfolioNet?.sharpe_ratio === "number" ? invPortfolioNet.sharpe_ratio.toFixed(2) : "…"} label="Sharpe (net)" accent="blue" />
@@ -1784,8 +1786,8 @@ export function Whitepaper() {
                 : "…"}
           </div>
           <div style={{ fontSize: 12, color: "#065f46", marginTop: 8 }}>
-            {typeof invPortfolioNet?.annualized_return === "number" && typeof invBenchmarkNet?.annualized_return === "number"
-              ? `ETF basket (net): ${invPortfolioNet.annualized_return.toFixed(2)}% vs EW cohort (net): ${invBenchmarkNet.annualized_return.toFixed(2)}% (${invStartYear}-${invEndYear}).`
+            {typeof invPortfolioNet?.annualized_return === "number" && typeof invExcessVsSPY === "number"
+              ? `RD20 strategy: ${invPortfolioNet.annualized_return.toFixed(2)}% vs SPY: ${(invPortfolioNet.annualized_return - invExcessVsSPY).toFixed(2)}% (${backtestPeriodLabel}).`
               : typeof netPremium === "number"
                 ? `RD20 strategy spread vs SPY (net of costs): +${netPremium.toFixed(2)}% pp/yr (${backtestPeriodLabel}).`
                 : "RD20 strategy spread vs SPY: … (net of costs)."}
