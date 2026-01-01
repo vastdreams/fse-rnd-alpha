@@ -2,15 +2,15 @@
 \centering
 \caption{Factor Spanning Tests for R\&D Premium}
 \label{tab:spanning_tests}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-Model & Alpha (\%) & t-stat & R$^2$ & \\
+Model & Alpha (\%/yr) & SE & 95\% CI & t-stat & R$^2$ \\
 \midrule
-FF3 & 4.67 & 3.19 & 0.658 & *** \\
-FF3\_MOM & 5.04 & 3.22 & 0.674 & *** \\
-FF5 & 8.80 & 4.60 & 0.739 & *** \\
-FF5\_MOM & 8.78 & 3.86 & 0.739 & *** \\
+FF3 & 3.73 & 1.27 & [1.24, 6.23] & 2.94*** & 0.499 \\
+FF3\_MOM & 4.02 & 1.24 & [1.59, 6.46] & 3.23*** & 0.504 \\
+FF5 & 6.75 & 1.31 & [4.18, 9.33] & 5.14*** & 0.607 \\
+FF5\_MOM & 6.77 & 1.32 & [4.19, 9.35] & 5.14*** & 0.607 \\
 \bottomrule
-\multicolumn{5}{l}{\footnotesize *** p < 0.01, ** p < 0.05, * p < 0.10. Alpha is annual percent.} \\
+\multicolumn{6}{l}{\footnotesize Newey--West HAC standard errors. Stars denote significance: *** p < 0.01, ** p < 0.05, * p < 0.10.} \\
 \end{tabular}
 \end{table}
