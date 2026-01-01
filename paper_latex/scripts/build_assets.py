@@ -510,7 +510,7 @@ Item & Value \\\\
 Universe & S\\&P 500 point-in-time constituents \\\\
 Return convention & {return_convention} \\\\
 Data tier & {data_tier} \\\\
-Total companies (snapshot) & {total_companies or '--'} \\\\
+Unique tickers in cohort$^{{*}}$ & {total_companies or '--'} \\\\
 Eligible with 5-year window coverage & {eligible_5yr or '--'} \\\\
 Eligible with 10-year window coverage & {eligible_10yr or '--'} \\\\
 Eligible with 20-year window coverage & {eligible_20yr or '--'} \\\\
@@ -518,6 +518,8 @@ Average R\\&D intensity (\\%) & {_fmt_pct(avg_rd_intensity,2)} \\\\
 Average data quality score (0--100) & {_fmt_pct(avg_quality_score,1)} \\\\
 \\bottomrule
 \\end{{tabular}}
+\\\\[2pt]
+\\footnotesize{{$^{{*}}$Union of all S\\&P 500 companies with data in the snapshot; actual constituents per formation year vary as the index changes ($\\approx$500/year).}}
 \\end{{table}}
 """
 
@@ -900,8 +902,10 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
             lines.extend(_emit_group("Size", tests["by_size"]))
         if isinstance(tests.get("by_volatility"), dict):
             lines.extend(_emit_group("Volatility", tests["by_volatility"]))
-        if isinstance(tests.get("by_coverage"), dict):
-            lines.extend(_emit_group("Coverage", tests["by_coverage"]))
+        # Coverage proxy excluded from paper: uses years_tracked (not true analyst coverage)
+        # and one tercile ("High") lacks sufficient within-quintile variation for R&D premium.
+        # if isinstance(tests.get("by_coverage"), dict):
+        #     lines.extend(_emit_group("Coverage", tests["by_coverage"]))
 
         table_mis = "\n".join(
             [

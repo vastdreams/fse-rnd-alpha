@@ -324,7 +324,7 @@ We are explicit about which approach applies to each exhibit to avoid the common
 
 This manuscript uses Tier-1 fundamentals and prices, together with standard factor series for spanning tests. Tier-1 data comes from Financial Modeling Prep (FMP), which provides accessible coverage but may have gaps relative to academic-grade sources like CRSP/Compustat.
 
-Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot.
+Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot. The ``unique tickers'' count represents all companies that appear in the S\&P 500 at any point during the sample period and have data in the snapshot; actual constituents per formation year approximate 500 as the index changes over time.
 
 \input{tables/table_sample.tex}
 
@@ -349,7 +349,7 @@ We construct portfolios using a standard academic approach that prioritizes tran
     
     \item \textbf{Inclusion:} Firms with R\&D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators. Zero-R\&D firms are legitimate members of Q1---they simply don't invest in R\&D.
     
-    \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. We report delisting sensitivity as a separate robustness check.
+    \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
 \end{itemize}
 
 \begin{tcolorbox}[title=Understanding Quintiles, colback=gray!5, colframe=gray!50]
@@ -667,10 +667,10 @@ Because vendor datasets can differ in delisting return coverage, we include a si
 
 \subsection{Arbitrage-Cost Proxies (Descriptive)}
 
-We report descriptive premiums across proxies for arbitrage costs (size, volatility, and coverage). These patterns can be suggestive for distinguishing mispricing from risk-based explanations, but they are not definitive.
+We report descriptive premiums across proxies for arbitrage costs (size and volatility). These patterns can be suggestive for distinguishing mispricing from risk-based explanations, but they are not definitive.
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Mispricing interpretation:} Premiums should be larger where arbitrage is more difficult (small size, high volatility, low analyst coverage). If sophisticated arbitrageurs cannot trade away the mispricing, it persists.
+    \item \textbf{Mispricing interpretation:} Premiums should be larger where arbitrage is more difficult (small size, high volatility). If sophisticated arbitrageurs cannot trade away the mispricing, it persists.
     \item \textbf{Risk interpretation:} Premiums should be similar across groups or larger where risk is lower (if it's pure risk compensation).
 \end{itemize}
 
@@ -1025,7 +1025,7 @@ We mitigate these issues by (i) implementing explicit delisting sensitivity anal
 
 \subsection{Factor Data}
 
-Factor returns for spanning tests (MKT, SMB, HML, RMW, CMA, MOM) are sourced from Kenneth French's data library, the academic standard for factor research. These factors are updated monthly and widely used in peer-reviewed research.
+Factor returns for spanning tests (MKT, SMB, HML, RMW, CMA, MOM) are sourced from Kenneth French's data library, the academic standard for factor research. Monthly factor returns are compounded from July of year $t$ to June of year $t+1$ to match the July--June premium periods used in this study.
 
 \subsection{Snapshot Integrity}
 
