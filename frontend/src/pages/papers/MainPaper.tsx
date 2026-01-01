@@ -520,13 +520,13 @@ export function MainPaper() {
     const annualHml = snapshotPayload?.annual_hml_premium
     if (annualHml && "annual_premiums" in annualHml && Array.isArray(annualHml.annual_premiums) && annualHml.annual_premiums.length > 0) {
       const years = annualHml.annual_premiums
-        .map((p: { year_start?: number }) => p.year_start)
+        .map((p) => p.formation_year)
         .filter((y): y is number => typeof y === "number")
       if (years.length > 0) {
         const min = Math.min(...years)
         const max = Math.max(...years)
-        // Add 1 to max because year_start is formation year, return period ends in following June
-        return `Jul ${min}-Jun ${max + 1}`
+        // formation_year is T, returns are Jul(T+1) to Jun(T+2)
+        return `Jul ${min + 1}-Jun ${max + 2}`
       }
     }
     // Fallback: factor_premiums
