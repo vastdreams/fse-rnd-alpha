@@ -1316,6 +1316,93 @@ Period & Market context & N & Q1 (\\%) & Q5 (\\%) & HML (\\%) & Win (\\%) \\\\
     (TABLES_DIR / "table_regime_breakdown.tex").write_text(table, encoding="utf-8")
 
 
+def write_universe_integrity_table(payload: dict[str, Any]) -> None:
+    """
+    Generate Universe Integrity table from membership_diagnostics.
+    
+    WHY:
+      JPM reviewers want proof that point-in-time membership is enforced.
+      This table shows per-year constituent counts, source breakdown, and summary stats.
+    """
+    md = payload.get("membership_diagnostics", {})
+    if not isinstance(md, dict):
+        placeholder = "\n".join([
+            "% Auto-generated placeholder. Do not edit by hand.",
+            "\\begin{table}[htbp]",
+            "\\centering",
+            "\\caption{Universe integrity diagnostics (unavailable)}",
+            "\\label{tab:universe_integrity}",
+            "\\begin{tabular}{lp{10cm}}",
+            "\\toprule",
+            "Status & Details \\\\",
+            "\\midrule",
+            "Unavailable & membership\\_diagnostics not present in snapshot. \\\\",
+            "\\bottomrule",
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ])
+        (TABLES_DIR / "table_universe_integrity.tex").write_text(placeholder, encoding="utf-8")
+        return
+    
+    summary = md.get("summary", {})
+    per_year = md.get("per_year", {})
+    
+    # Extract summary stats
+    avg_const = summary.get("avg_constituents_per_year", 0)
+    min_const = summary.get("min_constituents_per_year", 0)
+    max_const = summary.get("max_constituents_per_year", 0)
+    union_tickers = summary.get("unique_tickers_union", 0)
+    n_additions = summary.get("n_additions_spans", 0)
+    n_removals = summary.get("n_removals_spans", 0)
+    sources = summary.get("membership_source_totals", {})
+    
+    # Build source breakdown string
+    source_items = []
+    for src, cnt in sources.items():
+        src_display = src.replace("_", "\\_")
+        source_items.append(f"{src_display}: {cnt}")
+    source_str = "; ".join(source_items) if source_items else "N/A"
+    
+    # Build per-year summary (show selected years to avoid huge table)
+    years_to_show = ["2001", "2005", "2010", "2015", "2020", "2024"]
+    year_rows = []
+    for y in years_to_show:
+        yd = per_year.get(y, {})
+        if yd:
+            n = yd.get("n_constituents", 0)
+            year_rows.append(f"Jul {y} & {n}")
+    
+    year_samples = " \\\\\n".join(year_rows) if year_rows else "N/A"
+    
+    table = f"""% Auto-generated. Do not edit by hand.
+\\begin{{table}}[htbp]
+\\centering
+\\caption{{Universe integrity: point-in-time S\\&P 500 membership}}
+\\label{{tab:universe_integrity}}
+\\begin{{tabular}}{{ll}}
+\\toprule
+Diagnostic & Value \\\\
+\\midrule
+Avg.~constituents per formation year & {avg_const:.1f} \\\\
+Min / Max constituents & {min_const} / {max_const} \\\\
+Union of unique tickers & {union_tickers} \\\\
+Addition spans tracked & {n_additions} \\\\
+Removal spans tracked & {n_removals} \\\\
+Membership sources & {source_str} \\\\
+\\midrule
+\\multicolumn{{2}}{{l}}{{\\textbf{{Sample formation years:}}}} \\\\
+{year_samples} \\\\
+\\bottomrule
+\\multicolumn{{2}}{{l}}{{\\footnotesize Note: Counts reflect stocks in S\\&P 500 at each July 1 formation date.}} \\\\
+\\multicolumn{{2}}{{l}}{{\\footnotesize Source is Wikipedia S\\&P 500 list (official ``Date added'' from S\\&P).}} \\\\
+\\end{{tabular}}
+\\end{{table}}
+"""
+    
+    (TABLES_DIR / "table_universe_integrity.tex").write_text(table, encoding="utf-8")
+
+
 def main() -> None:
     _ensure_dirs()
     if not SNAPSHOT_PATH.exists():
@@ -1333,6 +1420,7 @@ def main() -> None:
     write_tables(meta, payload)
     write_annual_hml_detail_table(payload)
     write_regime_breakdown_table(payload)
+    write_universe_integrity_table(payload)
 
     print("✅ Generated assets:")
     print(f"- {DATA_DIR / 'metrics.tex'}")

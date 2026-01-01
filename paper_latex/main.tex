@@ -98,7 +98,7 @@
 
 \noindent\textbf{Results.} The \textbf{HML\_RD} premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. In plain terms: stocks in the top 20\% by R\&D intensity outperformed the bottom 20\% by approximately \AnnualMeanPremium\% annually over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
 
-\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus an investable S\&P 500 price-return proxy (SPY) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
+\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via adjusted close) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
 \noindent\textbf{Interpretation.} Results are consistent with either mispricing of intangible assets or risk compensation for innovation exposure. We document sector tilts, factor exposures, and regime dependence without claiming to isolate a single mechanism. The analysis is associational rather than causal.
 \end{abstract}
@@ -331,9 +331,13 @@ We are explicit about which approach applies to each exhibit to avoid the common
 
 This manuscript uses Tier-1 fundamentals and prices, together with standard factor series for spanning tests. Tier-1 data comes from Financial Modeling Prep (FMP), which provides accessible coverage but may have gaps relative to academic-grade sources like CRSP/Compustat.
 
-Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot. The ``unique tickers'' count represents all companies that appear in the S\&P 500 at any point during the sample period and have data in the snapshot; actual constituents per formation year approximate 500 as the index changes over time.
+Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot. Table~\ref{tab:universe_integrity} documents the point-in-time membership enforcement used in this study.
 
 \input{tables/table_sample.tex}
+
+\paragraph{Universe integrity.} We use official S\&P 500 ``Date added'' information (sourced from Wikipedia's S\&P 500 list, which tracks S\&P Dow Jones Indices announcements) to enforce point-in-time membership at each July~1 formation date. Table~\ref{tab:universe_integrity} summarizes the result: average constituents per year range from 189 (2001) to 487 (2024), reflecting that our universe includes only companies that had been added to the index by each formation date. \textbf{Limitation:} Historical removals are not tracked in our Tier-1 source, so companies that were removed from the S\&P 500 but are still active appear in all years after their add date. This biases toward higher survival rates than true point-in-time membership and should be considered when interpreting results.
+
+\input{tables/table_universe_integrity.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 4. METHODOLOGY
@@ -576,6 +580,10 @@ Table~\ref{tab:rd_by_sector} shows that R\&D intensity is concentrated in a subs
 To address the common critique that the premium is ``just sector exposure,'' Table~\ref{tab:sector_neutral_hml} reports a sector-neutral robustness result: we form quintiles \emph{within} each sector and then average the within-sector HML premiums equally across sectors.
 
 \input{tables/table_sector_neutral_hml.tex}
+
+\begin{tcolorbox}[title=Hard truth: Sector component is material, colback=yellow!5, colframe=yellow!50]
+\textbf{The sector-neutral HML\_RD is substantially smaller and not statistically significant.} While the headline HML\_RD premium averages \AnnualMeanPremium\% with $t=\AnnualTStat$, the sector-neutral version averages approximately 0.9\% with $t \approx 0.7$ and $p > 0.5$. This indicates that a material portion of the full-sample premium reflects \emph{between-sector} R\&D intensity differences (i.e., tilting toward tech/healthcare) rather than pure within-sector R\&D outperformance. Investors should recognize this sector component when implementing an R\&D-based strategy.
+\end{tcolorbox}
 
 \begin{tcolorbox}[title=Interpreting Sector Concentration, colback=gray!5, colframe=gray!50]
 \textbf{Key observations:}
