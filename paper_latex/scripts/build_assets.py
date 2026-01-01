@@ -1247,7 +1247,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
         if isinstance(a_buckets.get(b), dict):
             lines.append(_row("Amihud", b, a_buckets[b]))
     if isinstance(a_buckets.get("Illiquid_minus_Liquid"), dict):
-        lines.append(_row("Amihud", "Illiquid − Liquid", a_buckets["Illiquid_minus_Liquid"]))
+        lines.append(_row("Amihud", "Illiquid $-$ Liquid", a_buckets["Illiquid_minus_Liquid"]))
 
     lines.append("\\addlinespace")
 
@@ -1257,7 +1257,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
         if isinstance(d_buckets.get(b), dict):
             lines.append(_row("Dollar volume", b, d_buckets[b]))
     if isinstance(d_buckets.get("Illiquid_minus_Liquid"), dict):
-        lines.append(_row("Dollar volume", "Illiquid − Liquid", d_buckets["Illiquid_minus_Liquid"]))
+        lines.append(_row("Dollar volume", "Illiquid $-$ Liquid", d_buckets["Illiquid_minus_Liquid"]))
 
     start_y = _safe_int(meta.get("start_formation_year"))
     end_y = _safe_int(meta.get("end_formation_year"))
@@ -1270,7 +1270,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
             "% Auto-generated. Do not edit by hand.",
             "\\begin{table}[htbp]",
             "\\centering",
-            f\"\\caption{{Illiquidity moderation of the R\\&D premium (descriptive) {caption_suffix}}}\",
+            f"\\caption{{Illiquidity moderation of the R\\&D premium (descriptive) {caption_suffix}}}",
             "\\label{tab:liquidity_moderation}",
             "\\begin{tabular}{llrrrr}",
             "\\toprule",
