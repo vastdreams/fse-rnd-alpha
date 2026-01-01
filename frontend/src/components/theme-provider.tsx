@@ -27,11 +27,12 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Default to light mode unless explicitly set to dark
+    // Always default to light mode unless user explicitly chose dark
+    // Ignore system preferences - only respect explicit user choice
     const stored = localStorage.getItem(storageKey) as Theme
     if (stored === "dark") return "dark"
-    if (stored === "light") return "light"
-    return defaultTheme
+    // For any other value (including "system", "light", null), use light
+    return "light"
   })
 
   useEffect(() => {
@@ -39,17 +40,10 @@ export function ThemeProvider({
 
     root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-
-      root.classList.add(systemTheme)
-      return
-    }
-
-    root.classList.add(theme)
+    // Always apply the explicit theme choice - never follow system preference
+    // "system" is treated as "light" for this site
+    const effectiveTheme = theme === "dark" ? "dark" : "light"
+    root.classList.add(effectiveTheme)
   }, [theme])
 
   const value = {
