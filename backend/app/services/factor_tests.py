@@ -1063,7 +1063,7 @@ class MispricingAnalyzer:
             
             for row in rows:
                 symbol = row[0]
-                    return_pct = float(row[5]) if row[5] is not None else None
+                return_pct = float(row[5]) if row[5] is not None else None
                 if return_pct is None:
                     continue
 
