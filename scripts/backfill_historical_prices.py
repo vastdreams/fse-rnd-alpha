@@ -17,7 +17,7 @@ import logging
 import sys
 from datetime import datetime, date
 from pathlib import Path
-from typing import List, Dict, Any, Set, Optional
+from typing import List, Dict, Any, Set, Optional, Union
 import aiohttp
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -156,9 +156,15 @@ async def upsert_prices_bulk(session: AsyncSession, prices: List[Dict], symbol: 
     values = []
     for p in prices:
         try:
-            price_date = p.get("date")
-            if not price_date:
+            price_date_raw = p.get("date")
+            if not price_date_raw:
                 continue
+            
+            # Convert string date to date object if needed
+            if isinstance(price_date_raw, str):
+                price_date = datetime.strptime(price_date_raw, "%Y-%m-%d").date()
+            else:
+                price_date = price_date_raw
             
             values.append({
                 "symbol": symbol,
@@ -194,6 +200,18 @@ async def upsert_prices_bulk(session: AsyncSession, prices: List[Dict], symbol: 
     return len(values)
 
 
+def _parse_date(date_raw: Any) -> Optional[date]:
+    """Parse date from string or date object."""
+    if not date_raw:
+        return None
+    if isinstance(date_raw, str):
+        try:
+            return datetime.strptime(date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return date_raw
+
+
 async def upsert_dividends_bulk(session: AsyncSession, dividends: List[Dict], symbol: str) -> int:
     """Bulk upsert dividend records for a symbol."""
     if not dividends:
@@ -202,7 +220,7 @@ async def upsert_dividends_bulk(session: AsyncSession, dividends: List[Dict], sy
     values = []
     for d in dividends:
         try:
-            div_date = d.get("date")
+            div_date = _parse_date(d.get("date"))
             if not div_date:
                 continue
             
@@ -211,9 +229,9 @@ async def upsert_dividends_bulk(session: AsyncSession, dividends: List[Dict], sy
                 "date": div_date,
                 "dividend": d.get("dividend"),
                 "adj_dividend": d.get("adjDividend"),
-                "record_date": d.get("recordDate"),
-                "payment_date": d.get("paymentDate"),
-                "declaration_date": d.get("declarationDate"),
+                "record_date": _parse_date(d.get("recordDate")),
+                "payment_date": _parse_date(d.get("paymentDate")),
+                "declaration_date": _parse_date(d.get("declarationDate")),
             })
         except Exception:
             continue
