@@ -19,7 +19,7 @@ import numpy as np
 from sqlalchemy import select, func, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import PublicationSnapshot, ResearchCohort, FactorPremium, FMPIncomeStatement
+from app.db.models import PublicationSnapshot, ResearchCohort, FactorPremium, FMPIncomeStatement, JulyJuneReturn
 from app.services.cohort_classifier import CohortClassifier
 from app.services.statistics import StatisticalAnalyzer
 from app.services.rolling_window import RollingWindowAnalyzer
@@ -507,9 +507,14 @@ async def build_snapshot_payload(
     try:
         from app.services.portfolio_optimizer import PortfolioOptimizer
 
-        # Default to the platform’s “modern” backtest window, but pin end_year to available
-        # annual series if present (keeps the exhibit internally consistent with the snapshot).
-        end_year = 2023
+        # Align the investable backtest window to the annual HML_RD sample for consistency.
+        # This avoids the "two different samples" confusion and includes stress tests (2001-2002 dot-com, 2008 crisis).
+        start_year = 2001  # Match HML_RD sample start (Jul2001-Jun2002)
+
+        # Determine end_year from:
+        # 1) The annual HML_RD sample's last complete year
+        # 2) Bounded by SPY July-June return availability
+        end_year = 2024  # Default target (Jul2024-Jun2025)
         if isinstance(payload.get("factor_premiums"), list):
             years = [
                 int(p.get("year"))
@@ -519,7 +524,14 @@ async def build_snapshot_payload(
             if years:
                 end_year = max(years)
 
-        start_year = 2010 if end_year >= 2010 else max(1995, end_year - 13)
+        # Cap end_year to SPY availability to avoid missing benchmark data
+        spy_max_formation_year = await session.scalar(
+            select(func.max(JulyJuneReturn.formation_year))
+            .where(JulyJuneReturn.symbol == "SPY", JulyJuneReturn.data_tier == data_tier)
+        )
+        if spy_max_formation_year is not None:
+            spy_end_year = int(spy_max_formation_year) + 1  # formation_year 2023 → backtest year 2024
+            end_year = min(end_year, spy_end_year)
 
         optimizer = PortfolioOptimizer(session, use_july_june=use_july_june)
         payload["investable_backtest"] = _json_safe(
@@ -597,6 +609,23 @@ async def build_snapshot_payload(
                         }
                     )
 
+            # Extract backtest period from investable_backtest for canonical labels
+            inv_period = inv.get("period", "")  # e.g., "2001-2024"
+            backtest_start_year = None
+            backtest_end_year = None
+            backtest_n_periods = None
+            backtest_period_label = None
+            if isinstance(inv_period, str) and "-" in inv_period:
+                parts = inv_period.split("-")
+                try:
+                    backtest_start_year = int(parts[0])
+                    backtest_end_year = int(parts[1])
+                    backtest_n_periods = backtest_end_year - backtest_start_year + 1
+                    # Generate Jul-Jun label (e.g., "Jul2001-Jun2025")
+                    backtest_period_label = f"Jul{backtest_start_year}-Jun{backtest_end_year + 1}"
+                except (ValueError, IndexError):
+                    pass
+
             payload["transaction_costs"] = {
                 # Backward-compatible fields used by LaTeX asset generation
                 "annual_trading_cost_pct": round(float(annual_trading_cost_pct), 3) if annual_trading_cost_pct is not None else None,
@@ -605,6 +634,12 @@ async def build_snapshot_payload(
                 "premium_after_costs_pct": capture_rate_pct,
                 "premium_capture_rate_pct": capture_rate_pct,
                 "cost_sensitivity": cost_sensitivity,
+                # Canonical period labels for frontends + LaTeX (prevent hardcoding)
+                "period_years": inv_period,  # e.g., "2001-2024"
+                "period_label": backtest_period_label,  # e.g., "Jul2001-Jun2025"
+                "backtest_start_year": backtest_start_year,
+                "backtest_end_year": backtest_end_year,
+                "n_periods": backtest_n_periods,
                 # Transparency / definitions
                 "definition": {
                     "strategy": f"Top-{n_holdings} R&D strategy (annual reconstitution)",

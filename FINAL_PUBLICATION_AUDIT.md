@@ -278,3 +278,44 @@ The R&D Alpha paper and platform are ready for submission to the Journal of Port
 *Audit completed: January 1, 2026*
 *Auditor: AI Assistant*
 *Final commit: f03dbcb*
+
+---
+
+## 📊 SECTION 9: BACKTEST EXTENSION AUDIT (January 2, 2026)
+
+### 9.1 Baseline Values (BEFORE extending backtest to 2001)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Snapshot ID | `61b6272a-ff14-44e0-87c4-9bdeb04b24b0` | JPM Submission Snapshot v6 |
+| Snapshot Label | JPM Submission Snapshot v6 (TR + true PIT) | |
+| Investable Backtest Period | **2010-2023** | 14 July-June periods |
+| Gross Premium vs SPY | **9.84%** | Strategy CAGR - SPY CAGR |
+| Net Premium vs SPY | **9.82%** | After 0.025% trading costs |
+| Annual Trading Cost | **0.025%** | Based on ~14% avg turnover |
+| Premium Capture Rate | **99.8%** | Net/Gross |
+| HML_RD Period | Jul2001-Jun2025 | N=24 (annual sample) |
+| HML_RD Premium | 3.84% | Characteristic premium (Q5-Q1) |
+
+### 9.2 Issue Being Addressed
+- **Problem**: Investable backtest (2010-2023, 14yr) is a shorter window than the HML_RD sample (2001-2025, 24yr)
+- **Concern**: 2010 start looks like cherry-picking the post-crisis bull market
+- **Missing**: Stress tests for dot-com bust (2001-2002) and 2008 financial crisis
+
+### 9.3 Target State (AFTER extension)
+| Metric | Expected |
+|--------|----------|
+| Investable Backtest Period | **2001-2024** |
+| Return Coverage | **Jul2001-Jun2025** (24 July-June periods) |
+| Net Premium vs SPY | TBD (will likely be lower, but more credible) |
+
+### 9.4 Changes Log
+| Date | Change | Status |
+|------|--------|--------|
+| Jan 2, 2026 | Baseline captured | ✅ |
+| Jan 2, 2026 | SPY data coverage verification | Pending |
+| Jan 2, 2026 | Backend start_year changed to 2001 | Pending |
+| Jan 2, 2026 | Snapshot rebuilt with new window | Pending |
+| Jan 2, 2026 | LaTeX assets regenerated | Pending |
+| Jan 2, 2026 | Frontend labels updated | Pending |
+| Jan 2, 2026 | Deployment verified | Pending |
