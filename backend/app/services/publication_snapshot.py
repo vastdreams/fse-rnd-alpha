@@ -11,15 +11,31 @@ Rationale:
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional, List, Tuple
 
 import numpy as np
-from sqlalchemy import select, func, desc, update
+from sqlalchemy import select, func, desc, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import PublicationSnapshot, ResearchCohort, FactorPremium, FMPIncomeStatement, JulyJuneReturn
+
+# Path to the auto-detected window configuration
+WINDOW_CONFIG_PATH = Path(__file__).parent.parent.parent.parent / "data" / "backtest_window_config.json"
+
+
+def load_backtest_window_config() -> Optional[Dict[str, Any]]:
+    """Load the auto-detected backtest window configuration."""
+    if not WINDOW_CONFIG_PATH.exists():
+        return None
+    try:
+        with open(WINDOW_CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        return None
 from app.services.cohort_classifier import CohortClassifier
 from app.services.statistics import StatisticalAnalyzer
 from app.services.rolling_window import RollingWindowAnalyzer
@@ -136,6 +152,42 @@ async def build_snapshot_payload(
         }
     except Exception as e:
         payload["methodology_parameters"] = {"error": str(e)}
+
+    # Backtest window configuration (auto-detected or default)
+    try:
+        window_config = load_backtest_window_config()
+        if window_config:
+            payload["backtest_window"] = {
+                "earliest_formation_year": window_config.get("earliest_formation_year"),
+                "latest_formation_year": window_config.get("latest_formation_year"),
+                "backtest_start_year": window_config.get("backtest_start_year"),
+                "backtest_end_year": window_config.get("backtest_end_year"),
+                "backtest_period_label": window_config.get("backtest_period_label"),
+                "n_formation_years": window_config.get("n_formation_years"),
+                "detection_date": window_config.get("detection_date"),
+                "source": "auto_detected",
+            }
+        else:
+            # Default fallback based on available data
+            yr_result = await session.execute(
+                select(func.min(JulyJuneReturn.formation_year), func.max(JulyJuneReturn.formation_year))
+                .where(JulyJuneReturn.data_tier == data_tier)
+            )
+            min_fy, max_fy = yr_result.fetchone()
+            if min_fy is not None and max_fy is not None:
+                payload["backtest_window"] = {
+                    "earliest_formation_year": int(min_fy),
+                    "latest_formation_year": int(max_fy),
+                    "backtest_start_year": int(min_fy) + 1,
+                    "backtest_end_year": int(max_fy) + 2,
+                    "backtest_period_label": f"Jul{int(min_fy)+1}-Jun{int(max_fy)+2}",
+                    "n_formation_years": int(max_fy) - int(min_fy) + 1,
+                    "source": "computed_from_data",
+                }
+            else:
+                payload["backtest_window"] = {"source": "unavailable"}
+    except Exception as e:
+        payload["backtest_window"] = {"error": str(e)}
 
     # Cohort summary (counts/coverage)
     try:

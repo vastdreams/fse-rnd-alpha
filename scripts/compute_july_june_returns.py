@@ -53,55 +53,118 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _compute_symbol_returns(
+    symbol: str,
+    start_formation_year: int,
+    end_formation_year: int,
+    price_mode: str,
+    session: AsyncSession,
+) -> tuple[str, dict, dict]:
+    """
+    Compute July-June returns for a single symbol (all years).
+    Returns (symbol, year_results, audit_stats).
+    """
+    from app.services.return_calculator import JulyJuneReturnCalculator
+    
+    calculator = JulyJuneReturnCalculator(session, data_tier="tier1", price_mode=price_mode)
+    year_results = {}
+    audit = {"adj_close_days": 0, "close_fallback_days": 0, "dividend_days": 0, "records": 0}
+    
+    for year in range(start_formation_year, end_formation_year + 1):
+        ret = await calculator.compute_july_june_return(symbol, year)
+        if ret:
+            year_results[year] = ret
+            audit["adj_close_days"] += int(getattr(ret, "adj_close_days", 0))
+            audit["close_fallback_days"] += int(getattr(ret, "close_fallback_days", 0))
+            audit["dividend_days"] += int(getattr(ret, "dividend_days", 0))
+            audit["records"] += 1
+    
+    return symbol, year_results, audit
+
+
 async def _run_tier1(
     start_formation_year: int,
     end_formation_year: int,
     *,
     price_mode: str,
     symbols: list[str] | None,
+    parallel_workers: int = 10,
 ) -> int:
     """
     Compute and store July–June returns using FMP daily prices (Tier-1).
+    
+    Optimized for large ticker sets with parallel processing.
     """
+    from sqlalchemy import select, func
+    from app.db.models import FMPDailyPrice
     from app.services.return_calculator import JulyJuneReturnCalculator
     
-    engine = create_async_engine(settings.async_database_url, echo=False)
+    engine = create_async_engine(settings.async_database_url, echo=False, pool_size=parallel_workers + 2)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     try:
+        # Get all symbols with daily price data if not specified
+        if symbols is None:
+            async with async_session() as session:
+                result = await session.execute(select(func.distinct(FMPDailyPrice.symbol)))
+                symbols = [r[0] for r in result.fetchall() if r[0]]
+        
+        logger.info(f"Computing July-June returns for {len(symbols)} symbols, years {start_formation_year}-{end_formation_year}")
+        logger.info(f"Using {parallel_workers} parallel workers")
+        
+        # Process symbols in batches with bounded parallelism
+        semaphore = asyncio.Semaphore(parallel_workers)
+        all_results = {}
+        total_audit = {"adj_close_days": 0, "close_fallback_days": 0, "dividend_days": 0, "records": 0}
+        processed = 0
+        
+        async def process_symbol(sym: str):
+            nonlocal processed
+            async with semaphore:
+                async with async_session() as session:
+                    symbol, year_results, audit = await _compute_symbol_returns(
+                        sym, start_formation_year, end_formation_year, price_mode, session
+                    )
+                    return symbol, year_results, audit
+        
+        # Process in chunks to manage memory and provide progress updates
+        chunk_size = 100
+        for chunk_start in range(0, len(symbols), chunk_size):
+            chunk = symbols[chunk_start:chunk_start + chunk_size]
+            tasks = [process_symbol(sym) for sym in chunk]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning(f"Error processing symbol: {res}")
+                    continue
+                symbol, year_results, audit = res
+                if year_results:
+                    all_results[symbol] = year_results
+                total_audit["adj_close_days"] += audit["adj_close_days"]
+                total_audit["close_fallback_days"] += audit["close_fallback_days"]
+                total_audit["dividend_days"] += audit["dividend_days"]
+                total_audit["records"] += audit["records"]
+            
+            processed += len(chunk)
+            logger.info(f"Progress: {processed}/{len(symbols)} symbols ({total_audit['records']} records)")
+        
+        # Log audit summary
+        denom = total_audit["adj_close_days"] + total_audit["close_fallback_days"]
+        fallback_share = (total_audit["close_fallback_days"] / denom) if denom > 0 else 0.0
+        logger.info(
+            "Tier-1 return definition audit: "
+            f"price_mode={price_mode}, records={total_audit['records']}, "
+            f"adj_close_days={total_audit['adj_close_days']}, "
+            f"close_fallback_days={total_audit['close_fallback_days']}, "
+            f"fallback_share={round(fallback_share, 6)}, "
+            f"dividend_days={total_audit['dividend_days']}"
+        )
+        
+        # Save all results
         async with async_session() as session:
             calculator = JulyJuneReturnCalculator(session, data_tier="tier1", price_mode=price_mode)
-            results = await calculator.compute_all_july_june_returns(
-                start_formation_year=start_formation_year,
-                end_formation_year=end_formation_year,
-                symbols=symbols,
-            )
-            # Return-definition audit (publication readiness): how often do we fall back to close?
-            total_adj_days = 0
-            total_fallback_days = 0
-            total_dividend_days = 0
-            total_records = 0
-            for _, by_year in results.items():
-                for _, r in by_year.items():
-                    total_records += 1
-                    total_adj_days += int(getattr(r, "adj_close_days", 0))
-                    total_fallback_days += int(getattr(r, "close_fallback_days", 0))
-                    total_dividend_days += int(getattr(r, "dividend_days", 0))
-
-            denom = total_adj_days + total_fallback_days
-            fallback_share = (total_fallback_days / denom) if denom > 0 else 0.0
-            logger.info(
-                "Tier-1 return definition audit",
-                extra={
-                    "price_mode": price_mode,
-                    "records": total_records,
-                    "adj_close_days": total_adj_days,
-                    "close_fallback_days": total_fallback_days,
-                    "close_fallback_share": round(fallback_share, 6),
-                    "dividend_days": total_dividend_days,
-                },
-            )
-            saved = await calculator.save_july_june_returns(results)
+            saved = await calculator.save_july_june_returns(all_results)
             await session.commit()
             return saved
     finally:
@@ -135,14 +198,20 @@ def main() -> None:
     parser.add_argument(
         "--start-formation-year",
         type=int,
-        default=1994,
-        help="First formation year (FY year) to compute (default: 1994).",
+        default=1990,
+        help="First formation year (FY year) to compute (default: 1990 for full history).",
     )
     parser.add_argument(
         "--end-formation-year",
         type=int,
         default=2023,
         help="Last formation year (FY year) to compute (default: 2023).",
+    )
+    parser.add_argument(
+        "--parallel-workers",
+        type=int,
+        default=10,
+        help="Number of parallel workers for Tier-1 computation (default: 10).",
     )
     parser.add_argument(
         "--data-tier",
@@ -192,6 +261,7 @@ def main() -> None:
                 args.end_formation_year,
                 price_mode=args.price_mode,
                 symbols=symbols,
+                parallel_workers=args.parallel_workers,
             )
         )
         print(f"Saved {saved} Tier-1 (FMP) July–June return records to `july_june_returns`.")
