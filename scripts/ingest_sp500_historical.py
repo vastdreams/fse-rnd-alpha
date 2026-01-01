@@ -263,24 +263,25 @@ async def ingest_historical_sp500(use_fmp: bool = True):
     data_source = "unknown"
     
     try:
-        # Try FMP API first
+        # Try FMP API first for historical changes
+        fmp_historical = []
+        fmp_current = []
         if use_fmp:
             logger.info("Fetching historical S&P 500 constituents from FMP API...")
             try:
-                historical, current = await fetch_fmp_historical_constituents()
-                
-                if historical or current:
-                    logger.info(f"FMP returned {len(historical)} historical changes, {len(current)} current constituents")
-                    spans = build_membership_spans(historical, current)
-                    data_source = "fmp_historical"
-                else:
-                    logger.warning("FMP returned no data, falling back to CSV")
+                fmp_historical, fmp_current = await fetch_fmp_historical_constituents()
+                logger.info(f"FMP returned {len(fmp_historical)} historical changes, {len(fmp_current)} current constituents")
             except Exception as e:
-                logger.warning(f"FMP API failed: {e}, falling back to CSV")
+                logger.warning(f"FMP API failed: {e}")
         
-        # Fallback to CSV
-        if not spans:
-            logger.info("Using Wikipedia CSV fallback...")
+        # If FMP has actual historical changes (adds/removes), use that
+        if fmp_historical:
+            spans = build_membership_spans(fmp_historical, fmp_current)
+            data_source = "fmp_historical"
+        else:
+            # Use Wikipedia CSV which has proper "Date added" information
+            # This is more accurate than treating everyone as added at inception
+            logger.info("No FMP historical changes available. Using Wikipedia CSV with official 'Date added'...")
             spans = load_sp500_from_csv()
             data_source = "wikipedia_sp500_list"
         
@@ -300,17 +301,17 @@ async def ingest_historical_sp500(use_fmp: bool = True):
                 if not symbol:
                     continue
                 
-                record = SP500HistoricalConstituent(
-                    symbol=symbol,
+                        record = SP500HistoricalConstituent(
+                            symbol=symbol,
                     added_date=span["added_date"],
                     removed_date=span.get("removed_date"),
                     removal_reason=span.get("removal_reason"),
                     company_name=span.get("company_name"),
                     sector=span.get("sector"),
                     membership_source=data_source,
-                )
-                session.add(record)
-                records_created += 1
+                        )
+                        session.add(record)
+                        records_created += 1
                 
                 if span.get("removed_date"):
                     with_removal += 1
