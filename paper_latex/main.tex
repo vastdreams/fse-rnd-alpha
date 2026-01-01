@@ -116,7 +116,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-R\&D spending is an investment in intangible capital with uncertain payoffs and multi-year horizons. Unlike physical assets such as machinery or buildings, the outputs of R\&D---patents, trade secrets, human capital, and organizational knowledge---are difficult to observe, value, and collateralize. Under U.S.\ GAAP, R\&D expenditures are expensed as incurred (SFAS~2 / ASC~730) \citep{fasb_sfas2_1974}. As a result, innovation-intensive firms can appear less profitable in contemporaneous financial statements even when R\&D creates economically valuable assets.
+R\&D spending is an investment in intangible capital with uncertain payoffs and multi-year horizons. Unlike physical assets such as machinery or buildings, the outputs of R\&D (patents, trade secrets, human capital, and organizational knowledge) are difficult to observe, value, and collateralize. Under U.S.\ GAAP, R\&D expenditures are expensed as incurred (SFAS~2 / ASC~730) \citep{fasb_sfas2_1974}. As a result, innovation-intensive firms can appear less profitable in contemporaneous financial statements even when R\&D creates economically valuable assets.
 
 This accounting treatment is important because it creates a potential disconnect between reported earnings and true economic value. When R\&D is expensed immediately (rather than capitalized like physical assets), a firm investing heavily in innovation reports lower earnings today even if that investment will generate substantial future cash flows. This asymmetry between accounting treatment and economic reality forms the foundation for the R\&D premium hypothesis.
 
@@ -320,7 +320,7 @@ We present (i) annual non-overlapping HML premiums for primary inference and (ii
 
 \textbf{Two complementary views.}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Annual non-overlapping:} Each annual observation is non-overlapping (reduces mechanical overlap)---the return from July 2010 to June 2011 shares no data with the return from July 2011 to June 2012. This supports cleaner inference than overlapping windows, but time-series dependence can still exist (regimes, volatility clustering), so we use Newey--West standard errors \citep{newey_west_1987} as a further robustness check.
+    \item \textbf{Annual non-overlapping:} Each annual observation is non-overlapping (reduces mechanical overlap); the return from July 2010 to June 2011 shares no data with the return from July 2011 to June 2012. This supports cleaner inference than overlapping windows, but time-series dependence can still exist (regimes, volatility clustering), so we use Newey--West standard errors \citep{newey_west_1987} as a further robustness check.
     
     \item \textbf{Rolling windows:} A 5-year window starting in 2010 (2010--2014) shares 4 years of data with a window starting in 2011 (2011--2015). This overlap creates autocorrelation that inflates apparent significance. Rolling windows are useful for visualizing trends and regime dependence but should \textbf{not} be used for primary statistical inference.
 \end{itemize}
@@ -358,7 +358,7 @@ We construct portfolios using a standard academic approach that prioritizes tran
     
     \item \textbf{Weights:} Equal-weight within each portfolio. Equal-weighted returns are computed each year and compounded. This gives smaller firms equal influence with larger firms, which can increase the premium (if the signal is stronger in smaller firms) but also increases volatility relative to value-weighting.
     
-    \item \textbf{Inclusion:} Firms with R\&D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators. Zero-R\&D firms are legitimate members of Q1---they simply don't invest in R\&D.
+    \item \textbf{Inclusion:} Firms with R\&D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators. Zero-R\&D firms are legitimate members of Q1; they simply do not invest in R\&D.
     
     \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
 \end{itemize}
@@ -660,7 +660,7 @@ Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 a
 
 To assess whether the premium is explained by standard factor exposures, we report spanning tests against common models \citep{fama_french_1993,fama_french_2015,carhart_1997}. The key object is the regression intercept (alpha) of the R\&D premium after controlling for benchmark factors.
 
-A positive and statistically significant alpha indicates that the R\&D premium is not fully explained by exposure to the benchmark factors---it represents a distinct return source. The spanning test regression is:
+A positive and statistically significant alpha indicates that the R\&D premium is not fully explained by exposure to the benchmark factors; it represents a distinct return source. The spanning test regression is:
 \begin{equation}
 R^{HML-RD}_t = \alpha + \beta_1 MKT_t + \beta_2 SMB_t + \beta_3 HML_t + \cdots + \epsilon_t
 \end{equation}
@@ -670,7 +670,7 @@ where $R^{HML-RD}_t$ is the R\&D high-minus-low premium and the right-hand-side 
 
 \input{tables/table_spanning_tests_full.tex}
 
-\textbf{Interpretation:} Positive alphas across factor models (FF3, FF5, and momentum variants) suggest that the R\&D premium is not simply a relabeling of standard factors---it contains distinct information. However, factor spanning tests cannot rule out omitted risk factors that we haven't measured.
+\textbf{Interpretation:} Positive alphas across factor models (FF3, FF5, and momentum variants) suggest that the R\&D premium is not simply a relabeling of standard factors; it contains distinct information. However, factor spanning tests cannot rule out omitted risk factors that we haven't measured.
 
 \subsection{Double-Sort: Size $\times$ R\&D}
 
@@ -980,7 +980,7 @@ F = \frac{\text{Between-group variance}}{\text{Within-group variance}} = \frac{S
 \end{equation}
 where $SS_B$ is the sum of squares between groups, $SS_W$ is the sum of squares within groups, $k$ is the number of groups (5 for quintiles), and $N$ is the total number of observations.
 
-\textbf{Interpretation:} A large F-statistic (with small p-value) indicates that quintile means differ significantly---R\&D intensity is associated with return differences. However, ANOVA does not indicate which quintiles differ; it only tests for any difference.
+\textbf{Interpretation:} A large F-statistic (with small p-value) indicates that quintile means differ significantly: R\&D intensity is associated with return differences. However, ANOVA does not indicate which quintiles differ; it only tests for any difference.
 
 \subsection{Effect Size: Cohen's d}
 
