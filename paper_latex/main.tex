@@ -295,7 +295,7 @@ To mitigate look-ahead bias due to filing lags, we use July--June returns follow
 
 \textbf{Why this timing matters:} Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60--90 days (by late February/March). By waiting until July to form portfolios, we ensure all accounting data is publicly available. Using calendar-year returns (January--December) would mean trading on data that wasn't yet public, inflating apparent performance. This is not a minor technical detail: look-ahead bias can create spurious premiums that disappear in real-time implementation.
 
-The total shareholder return for each security includes dividends:
+The total shareholder return (TSR) is conceptually defined as:
 \begin{equation}
 \text{TSR}_{i,t} = \frac{P_{i,t+1} + D_{i,t+1} - P_{i,t}}{P_{i,t}} \times 100\%
 \end{equation}
@@ -418,7 +418,7 @@ where $\bar{r}$ is the sample mean premium and $SE(\bar{r})$ is the (Newey--West
 
 Beyond statistical significance, we report effect sizes using Cohen's d:
 \begin{equation}
-d = \frac{\mu_{Q5} - \mu_{Q1}}{\sigma_{pooled}}
+d = \frac{\bar{r}_{Q5} - \bar{r}_{Q1}}{s_{pooled}}
 \end{equation}
 This measures the premium in standard deviation units, providing a scale-invariant measure of practical significance. Cohen's conventions: $d = 0.2$ is ``small,'' $d = 0.5$ is ``medium,'' $d = 0.8$ is ``large.''
 
@@ -986,9 +986,9 @@ where $SS_B$ is the sum of squares between groups, $SS_W$ is the sum of squares 
 
 Cohen's d measures the standardized difference between two group means:
 \begin{equation}
-d = \frac{\bar{X}_1 - \bar{X}_2}{s_{pooled}}
+d = \frac{\bar{r}_{Q5} - \bar{r}_{Q1}}{s_{pooled}}
 \end{equation}
-where $s_{pooled} = \sqrt{\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}}$ is the pooled standard deviation.
+where $s_{pooled} = \sqrt{\frac{(n_{Q5}-1)s_{Q5}^2 + (n_{Q1}-1)s_{Q1}^2}{n_{Q5}+n_{Q1}-2}}$ is the pooled standard deviation.
 
 \textbf{Conventions:}
 \begin{center}
