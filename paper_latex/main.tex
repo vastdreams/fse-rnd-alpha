@@ -483,6 +483,7 @@ Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-
     minor grid style={line width=.1pt,draw=gray!15},
     minor tick num=1,
     ymin=-30, ymax=45,
+    x tick label style={/pgf/number format/1000 sep=},
 ]
 \addplot+[mark=*,mark size=1.2pt,thick] table [x=year_start,y=hml_premium,col sep=comma] {data/annual_hml_premium.csv};
 \addplot[black!60,dashed] coordinates {(2001,0) (2024,0)};
@@ -608,6 +609,7 @@ To address the common critique that the premium is ``just sector exposure,'' Tab
     ylabel={Average R\&D intensity (\%)},
     grid=both,
     major grid style={line width=.2pt,draw=gray!30},
+    x tick label style={/pgf/number format/1000 sep=},
 ]
 \addplot+[mark=none,thick] table [x=year,y=avg_rd_intensity,col sep=comma] {data/rd_trends.csv};
 \end{axis}
@@ -639,6 +641,7 @@ Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 a
     grid=both,
     major grid style={line width=.2pt,draw=gray!30},
     legend style={at={(0.02,0.98)},anchor=north west},
+    x tick label style={/pgf/number format/1000 sep=},
 ]
 \addplot+[mark=none,thick,color=teal!70!black] table [x=year_start,y=q5_index,col sep=comma] {data/annual_quintile_growth.csv};
 \addlegendentry{Q5}
@@ -816,6 +819,7 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
     grid=both,
     major grid style={line width=.2pt,draw=gray!30},
     legend style={at={(0.02,0.98)},anchor=north west},
+    x tick label style={/pgf/number format/1000 sep=},
 ]
 \addplot+[mark=none,thick] table [x=year,y=portfolio_index,col sep=comma] {data/investable_growth.csv};
 \addlegendentry{R\&D strategy (net)}
