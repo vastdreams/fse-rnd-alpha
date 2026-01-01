@@ -3,11 +3,11 @@
 \centering
 \caption{Sample construction and data tier (snapshot built: 2026-01-01)}
 \label{tab:sample}
-\begin{tabular}{ll}
+\begin{tabular}{p{0.41\textwidth}p{0.52\textwidth}}
 \toprule
 Item & Value \\
 \midrule
-Universe & S\&P 500 point-in-time constituents \\
+Universe & Current S\&P 500 (add-date gated; Tier-1) \\
 Return convention & July--June \\
 Data tier & tier1 \\
 Unique tickers in cohort$^{*}$ & 503 \\
@@ -19,5 +19,5 @@ Average data quality score (0--100) & 49.2 \\
 \bottomrule
 \end{tabular}
 \\[2pt]
-\footnotesize{$^{*}$Union of all S\&P 500 companies with data in the snapshot; actual constituents per formation year vary as the index changes ($\approx$500/year).}
+\footnotesize{$^{*}$Union of companies with data in the snapshot. In Tier-1, index eligibility is enforced using addition dates for the current S\&P 500 list; historical removals and historical constituents not in the current list are not tracked (see Table~\ref{tab:universe_integrity}).}
 \end{table}

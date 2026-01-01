@@ -503,11 +503,11 @@ def write_tables(meta: dict[str, Any], payload: dict[str, Any]) -> None:
 \\centering
 \\caption{{Sample construction and data tier (snapshot built: {built_at})}}
 \\label{{tab:sample}}
-\\begin{{tabular}}{{ll}}
+\\begin{{tabular}}{{p{{0.41\\textwidth}}p{{0.52\\textwidth}}}}
 \\toprule
 Item & Value \\\\
 \\midrule
-Universe & S\\&P 500 point-in-time constituents \\\\
+Universe & Current S\\&P 500 (add-date gated; Tier-1) \\\\
 Return convention & {return_convention} \\\\
 Data tier & {data_tier} \\\\
 Unique tickers in cohort$^{{*}}$ & {total_companies or '--'} \\\\
@@ -519,7 +519,7 @@ Average data quality score (0--100) & {_fmt_pct(avg_quality_score,1)} \\\\
 \\bottomrule
 \\end{{tabular}}
 \\\\[2pt]
-\\footnotesize{{$^{{*}}$Union of all S\\&P 500 companies with data in the snapshot; actual constituents per formation year vary as the index changes ($\\approx$500/year).}}
+\\footnotesize{{$^{{*}}$Union of companies with data in the snapshot. In Tier-1, index eligibility is enforced using addition dates for the current S\\&P 500 list; historical removals and historical constituents not in the current list are not tracked (see Table~\\ref{{tab:universe_integrity}}).}}
 \\end{{table}}
 """
 
@@ -1378,9 +1378,9 @@ def write_universe_integrity_table(payload: dict[str, Any]) -> None:
     table = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Universe integrity: point-in-time S\\&P 500 membership}}
+\\caption{{Universe integrity: index eligibility gating (Tier-1)}}
 \\label{{tab:universe_integrity}}
-\\begin{{tabular}}{{ll}}
+\\begin{{tabular}}{{p{{0.41\\textwidth}}p{{0.52\\textwidth}}}}
 \\toprule
 Diagnostic & Value \\\\
 \\midrule
@@ -1394,8 +1394,9 @@ Membership sources & {source_str} \\\\
 \\multicolumn{{2}}{{l}}{{\\textbf{{Sample formation years:}}}} \\\\
 {year_samples} \\\\
 \\bottomrule
-\\multicolumn{{2}}{{l}}{{\\footnotesize Note: Counts reflect stocks in S\\&P 500 at each July 1 formation date.}} \\\\
-\\multicolumn{{2}}{{l}}{{\\footnotesize Source is Wikipedia S\\&P 500 list (official ``Date added'' from S\\&P).}} \\\\
+\\multicolumn{{2}}{{p{{0.93\\textwidth}}}}{{\\footnotesize Note: Counts reflect the eligible subset of the current S\\&P 500 list at each July 1 formation date (based on ``Date added'').}} \\\\
+\\multicolumn{{2}}{{p{{0.93\\textwidth}}}}{{\\footnotesize Limitation: removals and historical constituents not in the current list are not tracked in Tier-1.}} \\\\
+\\multicolumn{{2}}{{p{{0.93\\textwidth}}}}{{\\footnotesize Source: Wikipedia S\\&P 500 constituents list; ``Date added'' compiled from S\\&P Dow Jones announcements.}} \\\\
 \\end{{tabular}}
 \\end{{table}}
 """

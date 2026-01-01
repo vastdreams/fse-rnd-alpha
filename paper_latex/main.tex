@@ -94,7 +94,7 @@
 \begin{abstract}
 \noindent\textbf{Objective.} We test whether high research and development (R\&D) intensity predicts higher subsequent equity returns in a large-cap U.S.\ universe using methodology designed for portfolio implementability.
 
-\noindent\textbf{Method.} Each year, we sort point-in-time S\&P 500 constituents into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5--Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. Where historical constituent spans are available, we enforce point-in-time membership at formation dates; exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
+\noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5--Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
 \noindent\textbf{Results.} The \textbf{HML\_RD} premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. In plain terms: stocks in the top 20\% by R\&D intensity outperformed the bottom 20\% by approximately \AnnualMeanPremium\% annually over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
 
@@ -331,11 +331,11 @@ We are explicit about which approach applies to each exhibit to avoid the common
 
 This manuscript uses Tier-1 fundamentals and prices, together with standard factor series for spanning tests. Tier-1 data comes from Financial Modeling Prep (FMP), which provides accessible coverage but may have gaps relative to academic-grade sources like CRSP/Compustat.
 
-Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot. Table~\ref{tab:universe_integrity} documents the point-in-time membership enforcement used in this study.
+Table~\ref{tab:sample} reports sample construction and coverage statistics for the snapshot. Table~\ref{tab:universe_integrity} documents the index-membership gating used in this study.
 
 \input{tables/table_sample.tex}
 
-\paragraph{Universe integrity.} We use official S\&P 500 ``Date added'' information (sourced from Wikipedia's S\&P 500 list, which tracks S\&P Dow Jones Indices announcements) to enforce point-in-time membership at each July~1 formation date. Table~\ref{tab:universe_integrity} summarizes the result: average constituents per year range from 189 (2001) to 487 (2024), reflecting that our universe includes only companies that had been added to the index by each formation date. \textbf{Limitation:} Historical removals are not tracked in our Tier-1 source, so companies that were removed from the S\&P 500 but are still active appear in all years after their add date. This biases toward higher survival rates than true point-in-time membership and should be considered when interpreting results.
+\paragraph{Universe integrity.} In Tier-1, we use each ticker's reported S\&P 500 ``Date added'' from the Wikipedia S\&P 500 constituents list (which compiles S\&P Dow Jones Indices announcements) to gate eligibility at each July~1 formation date. This prevents pre-addition backfilling (including a stock in the S\&P 500 before it actually entered). Table~\ref{tab:universe_integrity} summarizes the result: the eligible constituent count rises from 189 (Jul~2001) to 487 (Jul~2024), reflecting that the Tier-1 membership ledger covers current constituents and their addition dates. \textbf{Limitations:} Historical removals are not tracked, and constituents that were in the S\&P 500 historically but are not in the current list are not represented in Tier-1. This is disclosed explicitly and should be considered when interpreting results.
 
 \input{tables/table_universe_integrity.tex}
 
@@ -350,7 +350,7 @@ Table~\ref{tab:sample} reports sample construction and coverage statistics for t
 We construct portfolios using a standard academic approach that prioritizes transparency and replicability. Each step is designed to minimize biases while remaining implementable by practitioners.
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Universe:} S\&P 500 point-in-time constituents. Where historical membership spans are available, we include only stocks that were actually in the index at each formation date, reducing survivorship bias from excluding removed/failed companies. This is critical: a backtest using today's S\&P 500 membership would exclude companies that were members in the past but have since delisted, merged, or failed.
+    \item \textbf{Universe:} Current S\&P 500 constituents with point-in-time eligibility gating via index addition dates (Tier-1). Stocks are included only after their reported addition date. \textbf{Limitations:} Historical removals and historical constituents that are no longer in the current list are not tracked in Tier-1 (see Table~\ref{tab:universe_integrity}).
     
     \item \textbf{Signal:} Prior fiscal-year R\&D intensity (R\&D expense / revenue). Using the prior year ensures data was publicly available before portfolio formation.
     
@@ -775,7 +775,7 @@ We translate the signal into an implementable rules-based strategy with annual r
     \item \textbf{Selection:} Select the top \textbf{20} stocks by R\&D intensity.
     \item \textbf{Weighting:} Equal-weight all selected stocks (5\% each).
     \item \textbf{Holding period:} Hold from July through June (12 months).
-    \item \textbf{Rebalancing:} Repeat annually. Sell stocks that leave Q5; buy stocks that enter Q5.
+    \item \textbf{Rebalancing:} Repeat annually. Sell stocks that leave the top-20 set; buy stocks that enter the top-20 set.
 \end{enumerate}
 
 This simple, transparent strategy requires only annual data updates and one reconstitution event per year.
@@ -818,7 +818,7 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
 \addplot+[mark=none,thick] table [x=year,y=benchmark_index,col sep=comma] {data/investable_growth.csv};
 \addlegendentry{Cohort (EW, net)}
 \addplot+[mark=none,thick] table [x=year,y=sp500_index,col sep=comma] {data/investable_growth.csv};
-\addlegendentry{SPY (S\&P 500 price proxy)}
+\addlegendentry{SPY (S\&P 500 total-return proxy via \texttt{adj\_close})}
 \end{axis}
 \end{tikzpicture}
 \caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 total-return proxy (via \texttt{adj\_close}).}
