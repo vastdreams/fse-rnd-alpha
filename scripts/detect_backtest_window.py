@@ -41,9 +41,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Coverage thresholds
-MIN_MEMBERS_ABSOLUTE = 450
-MIN_MEMBERS_RELATIVE = 0.80  # 80% of that year's membership union
-MIN_SIGNAL_COVERAGE = 300
+# Note: R&D is only reported by certain sectors (~40% of S&P 500), so signal threshold is lower
+MIN_MEMBERS_ABSOLUTE = 300  # Lowered due to survivorship in current-constituents-only data
+MIN_MEMBERS_RELATIVE = 0.60  # 60% of that year's membership union
+MIN_SIGNAL_COVERAGE = 150  # R&D is only reported by ~40% of S&P 500
 MIN_RETURN_COVERAGE = 300
 
 # Search range
