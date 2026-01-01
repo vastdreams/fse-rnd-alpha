@@ -516,8 +516,21 @@ export function MainPaper() {
   }, [factorPremiumSeries])
 
   const sampleYearRange = useMemo(() => {
+    // Primary: derive from annual_hml_premium (always available if snapshot loaded)
+    const annualPremiums = snapshotPayload?.annual_hml_premium?.annual_premiums
+    if (Array.isArray(annualPremiums) && annualPremiums.length > 0) {
+      const years = annualPremiums
+        .map((p: { year_start?: number }) => p.year_start)
+        .filter((y): y is number => typeof y === "number")
+      if (years.length > 0) {
+        const min = Math.min(...years)
+        const max = Math.max(...years)
+        // Add 1 to max because year_start is formation year, return period ends in following June
+        return `Jul ${min}-Jun ${max + 1}`
+      }
+    }
+    // Fallback: factor_premiums
     const currentYear = new Date().getFullYear()
-    // Exclude current year since data is incomplete
     const years = (factorPremiumSeries || [])
       .map((r) => r.year)
       .filter((y): y is number => typeof y === "number" && y < currentYear)
@@ -526,7 +539,7 @@ export function MainPaper() {
     const max = Math.max(...years)
     if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined
     return `${min}-${max}`
-  }, [factorPremiumSeries])
+  }, [snapshotPayload?.annual_hml_premium?.annual_premiums, factorPremiumSeries])
 
   const snapshotBuiltAtLabel = useMemo(() => {
     const builtAt = snapshot?.meta?.built_at

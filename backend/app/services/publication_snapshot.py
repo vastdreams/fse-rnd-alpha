@@ -216,7 +216,7 @@ async def build_snapshot_payload(
         from datetime import date as _date
         from collections import Counter
         from app.db.models import SP500HistoricalConstituent, JulyJuneReturn
-        from sqlalchemy import func, select
+        # NOTE: Using global 'select' and 'func' imports to avoid Python 3.11+ scoping issues
 
         membership_rows = await session.execute(
             select(
