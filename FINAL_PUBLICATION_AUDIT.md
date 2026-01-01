@@ -170,12 +170,49 @@
 **None** ✅
 
 ### Medium Issues
-**None** ✅
+1. **FIXED: Mispricing text mentioned "low coverage" but table excluded coverage** → Removed "low coverage" from line 682
 
 ### Minor Issues (Acceptable)
 1. **og-image.svg hardcoded values** - Acceptable for social preview (matches API)
 2. **index.html "~5% alpha"** - Approximate OK for SEO meta description
 3. **PDF 183KB** - Normal size for academic paper
+4. **Rolling window premiums decline with horizon** - Documented in paper as "signal staleness"
+
+---
+
+---
+
+## 🔄 SECTION 6B: RECURSIVE AUDIT (Deep Check)
+
+### Checks Performed
+| # | Check | Result |
+|---|-------|--------|
+| 1 | TODO/FIXME/XXX in LaTeX | ✅ None |
+| 2 | Uncited references | ✅ All cited |
+| 3 | All \input files exist | ✅ All 13 exist |
+| 4 | Figure references valid | ✅ N/A (no includegraphics) |
+| 5 | Data CSV files present | ✅ 11 files |
+| 6 | CSV data matches API | ✅ First/last year match |
+| 7 | "Independent" claims | ✅ Proper context (warnings only) |
+| 8 | Transaction cost math | ✅ 5.33/5.37 = 99.2% capture |
+| 9 | Broken \ref/\label | ✅ All labels in included tables |
+| 10 | Empty/minimal tables | ✅ All tables >8 lines |
+| 11 | Mispricing table vs text | ⚠️ FIXED - removed "low coverage" |
+| 12 | Abstract claims | ✅ All use macros |
+| 13 | Placeholder text (XX/YY/??) | ✅ None |
+| 14 | Overclaims (causes/proves) | ✅ None |
+| 15 | Conclusion hedging | ✅ Proper ("associated with", "appears") |
+| 16 | Frontend static claims | ✅ None |
+| 17 | Frontend hardcoded numbers | ✅ None |
+| 18 | Rolling window explanation | ✅ Documented (signal staleness) |
+| 19 | Causal language | ✅ None (associational only) |
+
+### Additional Verifications
+- ✅ All 21 labels match 22 refs (labels in included tables)
+- ✅ Transaction cost formula: turnover × round-trip cost = 40% × 0.183% = 0.073%
+- ✅ Premium capture: 5.33/5.37 × 100 = 99.25% ≈ 99.2%
+- ✅ Rolling window decline explained in paper
+- ✅ "Non-overlapping" used 25+ times, "independent" used only in warnings
 
 ---
 
@@ -192,6 +229,7 @@
 | Jan 1, 2026 | Documentation.tsx | Removed "503 companies" | 1ff96f6 |
 | Jan 1, 2026 | portfolio.py | Updated confidence note | 1ff96f6 |
 | Jan 1, 2026 | vite.config.ts | Disabled sourcemaps for faster builds | 1ff96f6 |
+| Jan 1, 2026 | main.tex | Removed "low coverage" from mispricing text | 7302b10 |
 
 ---
 
@@ -236,4 +274,4 @@ The R&D Alpha paper and platform are ready for submission to the Journal of Port
 
 *Audit completed: January 1, 2026*
 *Auditor: AI Assistant*
-*Final commit: 1ff96f6*
+*Final commit: 7302b10*
