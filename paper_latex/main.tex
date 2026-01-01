@@ -74,7 +74,7 @@
 % ORCID icon
 \usepackage{orcidlink}
 
-% --- Snapshot-pinned numeric macros (auto-generated; do not edit) ---
+% -- Snapshot-pinned numeric macros (auto-generated; do not edit) --
 \input{data/metrics.tex}
 
 \title{\textbf{R\&D Alpha: Investment Intensity and Long-Term Stock Returns}}
@@ -98,9 +98,9 @@
 \begin{abstract}
 \noindent\textbf{Objective.} We test whether high research and development (R\&D) intensity predicts higher subsequent equity returns in a large-cap U.S.\ universe using methodology designed for portfolio implementability.
 
-\noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5--Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
+\noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July-June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5-Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama-French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
-\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey--West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs, retaining \PremiumCaptureRatePct\% of the gross premium.
+\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs, retaining \PremiumCaptureRatePct\% of the gross premium.
 
 \noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via adjusted close) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
@@ -148,7 +148,7 @@ Throughout this paper we keep two return objects distinct (a common source of re
     \item \textbf{Quintile:} One of five equal-count groups formed by sorting stocks on R\&D intensity. Q1 contains the lowest 20\%; Q5 contains the highest 20\%.
     \item \textbf{Not the same object:} HML\_RD is a within-universe characteristic premium; RD20 is benchmark-relative and depends on benchmark definition.
     \item \textbf{Absolute return:} The average return of a single portfolio (for example, Q5 alone). Absolute returns can be high even when the premium is small if both Q5 and Q1 perform similarly.
-    \item \textbf{Non-overlapping:} Annual observations with no shared return months between adjacent years (reduces mechanical overlap). We still use Newey--West inference to allow for mild time-series dependence.
+    \item \textbf{Non-overlapping:} Annual observations with no shared return months between adjacent years (reduces mechanical overlap). We still use Newey-West inference to allow for mild time-series dependence.
     \item \textbf{Rolling window:} Multi-year periods that overlap with adjacent windows. Useful for visualization but autocorrelated, so not suitable for primary inference.
 \end{itemize}
 \end{tcolorbox}
@@ -160,7 +160,7 @@ The central portfolio question is straightforward: \emph{does an R\&D-intensity 
 We follow three design principles that distinguish this analysis from prior work:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Bias-aware timing:} The default return convention is July--June to mitigate look-ahead from filing lags \citep{fama_french_1993}. Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60--90 days. By waiting until July to form portfolios, we ensure all accounting data is publicly available. Studies using calendar-year returns may inadvertently trade on private information.
+    \item \textbf{Bias-aware timing:} The default return convention is July-June to mitigate look-ahead from filing lags \citep{fama_french_1993}. Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60-90 days. By waiting until July to form portfolios, we ensure all accounting data is publicly available. Studies using calendar-year returns may inadvertently trade on private information.
     
     \item \textbf{Clear separation of inference vs.\ description:} Statistical inference is anchored on a non-overlapping annual premium series; overlapping rolling windows are used only for descriptive context. Annual non-overlapping observations reduce mechanical overlap and support cleaner inference. Rolling windows are autocorrelated (overlapping periods share data) but useful for visualizing trends and regime dependence. We distinguish these explicitly to avoid treating autocorrelated rolling-window statistics as independent evidence.
     
@@ -170,7 +170,7 @@ We follow three design principles that distinguish this analysis from prior work
 \begin{tcolorbox}[title=What We Do vs.\ What We Do Not Claim, colback=blue!3, colframe=blue!40, breakable]
 \textbf{What we do:}
 \begin{itemize}[leftmargin=*]
-    \item Form annual R\&D-intensity quintiles and evaluate subsequent returns under a July--June convention.
+    \item Form annual R\&D-intensity quintiles and evaluate subsequent returns under a July-June convention.
     \item Report primary inference on the annual non-overlapping premium series; use rolling windows for descriptive stability and regimes.
     \item Show sector composition and robustness diagnostics (factor spanning, stratifications) when available in the snapshot.
     \item Translate results into a rules-based, long-only implementation with explicit trading-friction assumptions.
@@ -186,7 +186,7 @@ We follow three design principles that distinguish this analysis from prior work
 \end{itemize}
 \end{tcolorbox}
 
-The paper proceeds as follows. Section~\ref{sec:literature} frames related evidence and hypotheses. Section~\ref{sec:data} describes data and sample construction. Section~\ref{sec:methodology} specifies portfolio formation, return definitions, and inference. Section~\ref{sec:results} presents the primary annual premium evidence and descriptive time-variation, Section~\ref{sec:sector} documents sector structure, and Section~\ref{sec:robustness} reports robustness and factor diagnostics. Sections~\ref{sec:discussion}--\ref{sec:conclusion} discuss interpretation, implementation, limitations, replicability, and conclusion.
+The paper proceeds as follows. Section~\ref{sec:literature} frames related evidence and hypotheses. Section~\ref{sec:data} describes data and sample construction. Section~\ref{sec:methodology} specifies portfolio formation, return definitions, and inference. Section~\ref{sec:results} presents the primary annual premium evidence and descriptive time-variation, Section~\ref{sec:sector} documents sector structure, and Section~\ref{sec:robustness} reports robustness and factor diagnostics. Sections~\ref{sec:discussion}-\ref{sec:conclusion} discuss interpretation, implementation, limitations, replicability, and conclusion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2. LITERATURE REVIEW AND HYPOTHESES
@@ -283,7 +283,7 @@ We define R\&D intensity as R\&D expense divided by revenue, expressed as a perc
 
 This ratio captures how much a firm invests in research and development relative to its scale. Revenue is used as the denominator because it is a stable, comparable measure of firm size that is less affected by capital structure or accounting choices than alternatives such as total assets or market capitalization.
 
-\textbf{Typical values:} Technology and Healthcare firms often have R\&D intensity of 10--30\%, while Financials and Utilities are typically below 1\%. Biotechnology firms can exceed 100\% (spending more on R\&D than they generate in revenue, funded by capital raises). This wide dispersion is what creates meaningful quintile separation.
+\textbf{Typical values:} Technology and Healthcare firms often have R\&D intensity of 10-30\%, while Financials and Utilities are typically below 1\%. Biotechnology firms can exceed 100\% (spending more on R\&D than they generate in revenue, funded by capital raises). This wide dispersion is what creates meaningful quintile separation.
 
 \textbf{Zero-R\&D firms:} Firms that report zero R\&D expense are retained in the sample and typically fall into Q1 (lowest quintile). These are legitimate low-R\&D firms, not missing data.
 
@@ -295,9 +295,9 @@ Consistent R\&D reporting in the U.S.\ began with \textbf{FASB Statement No.\ 2}
 
 \subsection{Return Timing (Look-Ahead Mitigation)}
 
-To mitigate look-ahead bias due to filing lags, we use July--June returns following the Fama--French convention \citep{fama_french_1993}. Fiscal-year accounting information for year $T$ is mapped to returns from July $T\!+\!1$ through June $T\!+\!2$, ensuring that the accounting information is public before portfolio formation.
+To mitigate look-ahead bias due to filing lags, we use July-June returns following the Fama-French convention \citep{fama_french_1993}. Fiscal-year accounting information for year $T$ is mapped to returns from July $T\!+\!1$ through June $T\!+\!2$, ensuring that the accounting information is public before portfolio formation.
 
-\textbf{Timing rationale.} Most U.S.\ firms have December fiscal year ends and file 10-K reports within 60--90 days (by late February/March). A July formation date ensures all accounting data is publicly available before portfolio construction. Calendar-year returns would trade on data not yet public, inflating apparent performance; look-ahead bias materially affects backtest validity.
+\textbf{Timing rationale.} Most U.S.\ firms have December fiscal year ends and file 10-K reports within 60-90 days (by late February/March). A July formation date ensures all accounting data is publicly available before portfolio construction. Calendar-year returns would trade on data not yet public, inflating apparent performance; look-ahead bias materially affects backtest validity.
 
 The total shareholder return (TSR) is conceptually defined as:
 \begin{equation}
@@ -311,9 +311,9 @@ where $P$ is price and $D$ is dividends paid during the period. Tier-1 uses the 
 \textbf{Timeline for FY2022 R\&D data:}
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Dec 2022:} Fiscal year ends for most firms
-    \item \textbf{Feb--Mar 2023:} 10-K filings with FY2022 R\&D data become public
+    \item \textbf{Feb-Mar 2023:} 10-K filings with FY2022 R\&D data become public
     \item \textbf{July 2023:} We form portfolios using FY2022 R\&D intensity
-    \item \textbf{July 2023 -- June 2024:} We measure subsequent 12-month returns
+    \item \textbf{July 2023 - June 2024:} We measure subsequent 12-month returns
 \end{enumerate}
 The 6+ month lag between fiscal year end and portfolio formation ensures no information leakage. This conservative timing is standard in academic finance but often overlooked in practitioner backtests.
 \end{tcolorbox}
@@ -324,9 +324,9 @@ We present (i) annual non-overlapping HML premiums for primary inference and (ii
 
 \textbf{Two complementary views.}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Annual non-overlapping:} Each annual observation is non-overlapping (reduces mechanical overlap); the return from July 2010 to June 2011 shares no data with the return from July 2011 to June 2012. This supports cleaner inference than overlapping windows, but time-series dependence can still exist (regimes, volatility clustering), so we use Newey--West standard errors \citep{newey_west_1987} as a further robustness check.
+    \item \textbf{Annual non-overlapping:} Each annual observation is non-overlapping (reduces mechanical overlap); the return from July 2010 to June 2011 shares no data with the return from July 2011 to June 2012. This supports cleaner inference than overlapping windows, but time-series dependence can still exist (regimes, volatility clustering), so we use Newey-West standard errors \citep{newey_west_1987} as a further robustness check.
     
-    \item \textbf{Rolling windows:} A 5-year window starting in 2010 (2010--2014) shares 4 years of data with a window starting in 2011 (2011--2015). This overlap creates autocorrelation that inflates apparent significance. Rolling windows are useful for visualizing trends and regime dependence but should \textbf{not} be used for primary statistical inference.
+    \item \textbf{Rolling windows:} A 5-year window starting in 2010 (2010-2014) shares 4 years of data with a window starting in 2011 (2011-2015). This overlap creates autocorrelation that inflates apparent significance. Rolling windows are useful for visualizing trends and regime dependence but should \textbf{not} be used for primary statistical inference.
 \end{itemize}
 
 We label each exhibit accordingly.
@@ -364,11 +364,11 @@ We construct portfolios using a standard academic approach that prioritizes tran
     
     \item \textbf{Inclusion:} Firms with R\&D reported as zero are retained (typically in Q1). A minimum-revenue filter is applied to avoid extreme ratios from very small denominators. Zero-R\&D firms are legitimate members of Q1; they simply do not invest in R\&D.
     
-    \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
+    \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July-June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
 \end{itemize}
 
 \begin{tcolorbox}[title=Exit Handling in Tier-1 Data, colback=yellow!5, colframe=yellow!40, coltitle=black, breakable]
-\textbf{Baseline (A): cash-after-exit.} If a firm exits during a July--June window and the price series ends, we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter.\newline
+\textbf{Baseline (A): cash-after-exit.} If a firm exits during a July-June window and the price series ends, we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter.\newline
 \textbf{Sensitivity (B): penalty scenarios.} Because Tier-1 vendor datasets do not provide authoritative CRSP-style delisting settlement returns, we do \emph{not} claim to substitute for CRSP dlret. Instead, we report sensitivity of the annual HML results to conservative delisting-return penalties.\newline
 \textbf{Summary.} Exit handling is explicit and bias-aware, but delisting-settlement uncertainty remains a limitation without CRSP-grade data.
 \end{tcolorbox}
@@ -378,7 +378,7 @@ Each year, stocks are sorted by R\&D intensity and divided into 5 equal-count gr
 \begin{center}
 \begin{tabular}{ccccc}
 \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} \\
-Lowest 20\% & 20--40\% & 40--60\% & 60--80\% & Highest 20\% \\
+Lowest 20\% & 20-40\% & 40-60\% & 60-80\% & Highest 20\% \\
 \end{tabular}
 \end{center}
 The \textbf{HML\_RD premium} (High-Minus-Low R\&D) is Q5 return minus Q1 return:
@@ -396,9 +396,9 @@ Table~\ref{tab:methodology_params} records the exact snapshot-pinned formation a
 
 \subsection{Statistical Methods}
 
-\subsubsection{Newey--West Standard Errors}
+\subsubsection{Newey-West Standard Errors}
 
-For inference on time-series regressions and mean estimates, we use Newey--West HAC standard errors \citep{newey_west_1987}:
+For inference on time-series regressions and mean estimates, we use Newey-West HAC standard errors \citep{newey_west_1987}:
 
 \begin{equation}
 \hat{\sigma}^2_{NW} = \hat{\sigma}^2_0 + 2\sum_{j=1}^{L} \left(1 - \frac{j}{L+1}\right) \hat{\sigma}^2_j
@@ -406,7 +406,7 @@ For inference on time-series regressions and mean estimates, we use Newey--West 
 
 where $\hat{\sigma}^2_j$ is the $j$-th order autocovariance and $L$ is the lag truncation parameter. This adjustment accounts for potential serial correlation in the premium series, providing conservative (larger) standard errors than naive OLS.
 
-To avoid anchoring inference on a single lag choice in a short annual sample, we report lag=1 as the baseline and include a robustness panel for lags 0--3 (Table~\ref{tab:nw_lag_robustness}).
+To avoid anchoring inference on a single lag choice in a short annual sample, we report lag=1 as the baseline and include a robustness panel for lags 0-3 (Table~\ref{tab:nw_lag_robustness}).
 
 \input{tables/table_nw_lag_robustness.tex}
 
@@ -416,7 +416,7 @@ The t-statistic tests whether the mean premium differs significantly from zero:
 \begin{equation}
 t = \frac{\bar{r} - 0}{SE(\bar{r})}
 \end{equation}
-where $\bar{r}$ is the sample mean premium and $SE(\bar{r})$ is the (Newey--West adjusted) standard error. The p-value indicates the probability of observing such a result if the true premium were zero. A p-value below 0.05 is conventionally considered ``statistically significant.''
+where $\bar{r}$ is the sample mean premium and $SE(\bar{r})$ is the (Newey-West adjusted) standard error. The p-value indicates the probability of observing such a result if the true premium were zero. A p-value below 0.05 is conventionally considered ``statistically significant.''
 
 \subsubsection{Cohen's d (Effect Size)}
 
@@ -461,7 +461,7 @@ Table~\ref{tab:annual_hml_summary} reports the primary inference object: the ann
 \textbf{Key metrics explained:}
 \begin{itemize}[leftmargin=*]
     \item \textbf{Mean premium (\AnnualMeanPremium\%):} On average, Q5 (high R\&D) stocks returned \AnnualMeanPremium\% more per year than Q1 (low R\&D) stocks.
-    \item \textbf{Newey--West t-stat (\AnnualTStat):} The premium is $\AnnualTStat$ standard errors away from zero, using conservative standard errors that account for potential autocorrelation.
+    \item \textbf{Newey-West t-stat (\AnnualTStat):} The premium is $\AnnualTStat$ standard errors away from zero, using conservative standard errors that account for potential autocorrelation.
     \item \textbf{p-value (\AnnualPValue):} Under the null of zero mean premium, the probability of observing a premium at least as extreme is \AnnualPValue{}.
     \item \textbf{Win rate (\AnnualWinRatePct\%):} The premium was positive in \AnnualPositiveYears{} of \AnnualNYears{} years, indicating consistency rather than being driven by a few extreme years.
 \end{itemize}
@@ -488,7 +488,7 @@ Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-
 \addplot[black!60,dashed] coordinates {(2001,0) (2024,0)};
 \end{axis}
 \end{tikzpicture}
-\caption{Annual HML premium (Q5--Q1) by July--June return period (dashed line at zero).}
+\caption{Annual HML premium (Q5-Q1) by July-June return period (dashed line at zero).}
 \label{fig:annual_hml}
 \end{figure}
 
@@ -536,7 +536,7 @@ Figure~\ref{fig:quintile_means_5yr} shows the relationship between R\&D intensit
 
 \subsection{Rolling-Window Summaries (Descriptive)}
 
-Table~\ref{tab:rolling_windows} reports descriptive 5/10/20-year rolling-window summaries and the Q5--Q1 spread for context.
+Table~\ref{tab:rolling_windows} reports descriptive 5/10/20-year rolling-window summaries and the Q5-Q1 spread for context.
 
 \input{tables/table_rolling_windows.tex}
 
@@ -551,9 +551,9 @@ Table~\ref{tab:regime_breakdown} breaks down the premium by historical market re
 \begin{tcolorbox}[title=Understanding Regime Variation, colback=gray!5, colframe=gray!50]
 \textbf{Key questions for each regime:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Post-dot-com (2001--2002):} How did the premium behave in the aftermath of the tech bubble collapse?
-    \item \textbf{Financial crisis (2008--2009):} How did high-R\&D firms perform during the credit crunch?
-    \item \textbf{Recent era (2017--2024):} Is the recent premium inflated by a sector bubble?
+    \item \textbf{Post-dot-com (2001-2002):} How did the premium behave in the aftermath of the tech bubble collapse?
+    \item \textbf{Financial crisis (2008-2009):} How did high-R\&D firms perform during the credit crunch?
+    \item \textbf{Recent era (2017-2024):} Is the recent premium inflated by a sector bubble?
 \end{itemize}
 Stable premiums across regimes support H2 (stability). Regime-specific premiums suggest the signal may be time-varying or sector-driven.
 \end{tcolorbox}
@@ -561,7 +561,7 @@ Stable premiums across regimes support H2 (stability). Regime-specific premiums 
 \subsection{Key Takeaways from Results}
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Primary evidence is annual:} The mean annual premium is \AnnualMeanPremium\% with Newey--West inference ($t = \AnnualTStat$, $p = \AnnualPValue$).
+    \item \textbf{Primary evidence is annual:} The mean annual premium is \AnnualMeanPremium\% with Newey-West inference ($t = \AnnualTStat$, $p = \AnnualPValue$).
     \item \textbf{Consistency matters:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate), indicating the result is not driven by a few extreme years.
     \item \textbf{Time variation exists:} Rolling windows and regime analysis show the premium varies across periods but remains positive on average.
     \item \textbf{Horizon decay reflects methodology, not strategy failure:} Lower premiums in 20-year rolling windows reflect signal staleness from not rebalancing, not a failure of the underlying relationship.
@@ -646,7 +646,7 @@ Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 a
 \addlegendentry{Q1}
 \end{axis}
 \end{tikzpicture}
-\caption{Cumulative growth of \$1 invested in Q5 vs.\ Q1 (annual July--June series).}
+\caption{Cumulative growth of \$1 invested in Q5 vs.\ Q1 (annual July-June series).}
 \label{fig:annual_quintile_growth}
 \end{figure}
 
@@ -728,7 +728,7 @@ We report descriptive premiums across proxies for arbitrage costs (size and vola
 
 \subsection{Summary of Evidence}
 
-Across Sections~\ref{sec:results}--\ref{sec:robustness}, the evidence is consistent with a positive return premium associated with high R\&D intensity:
+Across Sections~\ref{sec:results}-\ref{sec:robustness}, the evidence is consistent with a positive return premium associated with high R\&D intensity:
 
 \begin{itemize}[leftmargin=*]
     \item The annual non-overlapping premium averages \AnnualMeanPremium\% with statistical significance ($t = \AnnualTStat$, $p = \AnnualPValue$).
@@ -832,7 +832,7 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
 \begin{tcolorbox}[title=Backtest Limitations, colback=red!5, colframe=red!40]
 \begin{itemize}[leftmargin=*]
     \item \textbf{Hindsight bias:} Backtests show what would have happened, not what will happen. Markets evolve, and past performance does not guarantee future results.
-    \item \textbf{Data mining:} Any characteristic sorted with enough data will appear to ``work'' in some backtest. We mitigate this by using well-established methodology (Fama--French timing) and reporting robustness across specifications.
+    \item \textbf{Data mining:} Any characteristic sorted with enough data will appear to ``work'' in some backtest. We mitigate this by using well-established methodology (Fama-French timing) and reporting robustness across specifications.
     \item \textbf{Capacity constraints:} Equal-weighted S\&P 500 strategies have high capacity, but very large portfolios may face liquidity constraints.
     \item \textbf{Taxes:} Annual rebalancing generates taxable gains. Tax-aware implementation would modify the strategy.
 \end{itemize}
@@ -984,12 +984,12 @@ The author is the founder of FSE Research \& Investments Pty Ltd, which funded t
 
 This appendix provides detailed definitions and interpretations for the statistical methods used throughout the paper.
 
-\subsection{Newey--West HAC Standard Errors}
+\subsection{Newey-West HAC Standard Errors}
 
-The Newey--West estimator \citep{newey_west_1987} provides heteroskedasticity and autocorrelation consistent (HAC) standard errors for time-series regression coefficients. This is essential when testing hypotheses on the R\&D premium because:
+The Newey-West estimator \citep{newey_west_1987} provides heteroskedasticity and autocorrelation consistent (HAC) standard errors for time-series regression coefficients. This is essential when testing hypotheses on the R\&D premium because:
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Heteroskedasticity:} The variance of returns may differ across time periods (e.g., higher in 2008--2009 than in 2013--2014).
+    \item \textbf{Heteroskedasticity:} The variance of returns may differ across time periods (e.g., higher in 2008-2009 than in 2013-2014).
     \item \textbf{Autocorrelation:} Even in ``non-overlapping'' annual series, there may be mild autocorrelation from persistent market conditions or slow-moving factors.
 \end{itemize}
 
@@ -999,7 +999,7 @@ The HAC variance estimator is:
 \end{equation}
 where $\hat{\Omega}_j = \frac{1}{T} \sum_{t=j+1}^{T} \hat{u}_t \hat{u}_{t-j} x_t x_{t-j}^T$ is the $j$-th order autocovariance, and $w_j = 1 - \frac{j}{L+1}$ is the Bartlett kernel weight. The lag truncation parameter $L$ is typically set using the rule $L = \lfloor 4(T/100)^{2/9} \rfloor$ or specified by the researcher.
 
-\textbf{Interpretation:} Newey--West standard errors are generally larger (more conservative) than naive OLS standard errors. A significant t-statistic under Newey--West is therefore more reliable evidence against the null hypothesis.
+\textbf{Interpretation:} Newey-West standard errors are generally larger (more conservative) than naive OLS standard errors. A significant t-statistic under Newey-West is therefore more reliable evidence against the null hypothesis.
 
 \subsection{ANOVA and F-Statistics}
 
@@ -1061,7 +1061,7 @@ Maximum drawdown measures the largest peak-to-trough decline in cumulative retur
 \end{equation}
 where $V_t$ is the portfolio value at time $t$.
 
-\textbf{Interpretation:} Maximum drawdown captures ``worst-case'' loss experience that may not be reflected in volatility. A strategy with moderate volatility but large drawdowns may be psychologically difficult to hold through adversity. For long-only equity strategies, 30--50\% drawdowns are common during bear markets.
+\textbf{Interpretation:} Maximum drawdown captures ``worst-case'' loss experience that may not be reflected in volatility. A strategy with moderate volatility but large drawdowns may be psychologically difficult to hold through adversity. For long-only equity strategies, 30-50\% drawdowns are common during bear markets.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % APPENDIX B: DATA SOURCES AND QUALITY
@@ -1091,7 +1091,7 @@ We mitigate these issues by (i) implementing explicit delisting sensitivity anal
 
 \subsection{Factor Data}
 
-Factor returns for spanning tests (MKT, SMB, HML, RMW, CMA, MOM) are sourced from Kenneth French's data library, the academic standard for factor research. Monthly factor returns are compounded from July of year $t$ to June of year $t+1$ to match the July--June premium periods used in this study.
+Factor returns for spanning tests (MKT, SMB, HML, RMW, CMA, MOM) are sourced from Kenneth French's data library, the academic standard for factor research. Monthly factor returns are compounded from July of year $t$ to June of year $t+1$ to match the July-June premium periods used in this study.
 
 \subsection{Snapshot Integrity}
 
@@ -1136,15 +1136,15 @@ Empirically, results are qualitatively similar across denominators for large-cap
 
 \subsection{Alternative Timing Conventions}
 
-We use July--June returns following Fama--French. Alternatives include:
+We use July-June returns following Fama-French. Alternatives include:
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Calendar year (January--December):} Simpler but introduces look-ahead bias for December fiscal-year-end firms.
+    \item \textbf{Calendar year (January-December):} Simpler but introduces look-ahead bias for December fiscal-year-end firms.
     \item \textbf{Rolling 12-month:} Form portfolios each month using most recent annual data. Higher frequency but data staleness varies by firm.
     \item \textbf{Fiscal-year-aligned:} Form portfolios 4 months after each firm's fiscal year end. Firm-specific timing reduces look-ahead but complicates aggregation.
 \end{itemize}
 
-The July--June convention balances look-ahead mitigation with practical implementability.
+The July-June convention balances look-ahead mitigation with practical implementability.
 
 \subsection{Alternative Weighting Schemes}
 
@@ -1171,11 +1171,11 @@ Equal-weighting provides a simple, transparent baseline. Value-weighting is reco
     \item[Delisting return] Return assigned when a stock leaves the index (merger, bankruptcy, etc.).
     \item[Equal-weighted] Portfolio weighting where each stock has equal dollar allocation.
     \item[Eta-squared ($\eta^2$)] Proportion of variance explained by group membership.
-    \item[FF3/FF5] Fama--French three-factor or five-factor asset pricing models.
+    \item[FF3/FF5] Fama-French three-factor or five-factor asset pricing models.
     \item[HAC] Heteroskedasticity and autocorrelation consistent (standard errors).
     \item[HML] High-minus-low; the return spread between high and low portfolios.
     \item[Look-ahead bias] Using information that was not available at the time of a historical decision.
-    \item[Newey--West] Procedure for computing HAC standard errors.
+    \item[Newey-West] Procedure for computing HAC standard errors.
     \item[Non-overlapping] Observations that do not share data with adjacent observations.
     \item[Point-in-time] Using historical data as it existed at each historical date.
     \item[Quintile] One of five equal-count groups formed by sorting on a characteristic.
