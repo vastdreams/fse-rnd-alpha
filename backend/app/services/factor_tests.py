@@ -944,7 +944,7 @@ class MispricingAnalyzer:
                         WHERE cd.rd_intensity IS NOT NULL
                     """)
                 else:
-                q = text("""
+                    q = text("""
                     WITH company_data AS (
                         SELECT 
                             inc.symbol,
