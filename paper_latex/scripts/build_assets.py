@@ -275,6 +275,41 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
         ]
     )
 
+    # Fama-MacBeth monthly macros (PRIMARY STATISTICAL INFERENCE)
+    fm = payload.get("fama_macbeth_monthly") if isinstance(payload.get("fama_macbeth_monthly"), dict) else {}
+    fm_rd = fm.get("rd_intensity") if isinstance(fm.get("rd_intensity"), dict) else {}
+    fm_size = fm.get("log_market_cap") if isinstance(fm.get("log_market_cap"), dict) else {}
+    fm_bm = fm.get("book_to_market") if isinstance(fm.get("book_to_market"), dict) else {}
+    fm_alpha = fm.get("intercept") if isinstance(fm.get("intercept"), dict) else {}
+
+    fm_n_months = _safe_int(fm.get("n_months"))
+    fm_avg_firms = _safe_int(fm.get("avg_n_firms_per_month"))
+    fm_avg_rsq = _safe_float(fm.get("avg_r_squared"))
+    fm_month_range = fm.get("month_range") if isinstance(fm.get("month_range"), str) else None
+
+    fm_rd_coef = _safe_float(fm_rd.get("coefficient"))
+    fm_rd_tstat = _safe_float(fm_rd.get("t_stat_hac"))
+    fm_rd_pval = _safe_float(fm_rd.get("p_value_hac"))
+    fm_rd_sig = fm_rd.get("significant_005", False)
+    fm_rd_sig_001 = fm_rd.get("significant_001", False)
+
+    fm_macros = "\n".join([
+        "",
+        "% Fama-MacBeth monthly cross-sectional regressions (PRIMARY INFERENCE)",
+        f"\\newcommand{{\\FamaMacBethNMonths}}{{{fm_n_months or '--'}}}",
+        f"\\newcommand{{\\FamaMacBethAvgNFirms}}{{{fm_avg_firms or '--'}}}",
+        f"\\newcommand{{\\FamaMacBethAvgRSquared}}{{{_fmt_pct(fm_avg_rsq, 4) if fm_avg_rsq else '--'}}}",
+        f"\\newcommand{{\\FamaMacBethMonthRange}}{{{_latex_escape_text(fm_month_range).replace('-', '--') if fm_month_range else '--'}}}",
+        f"\\newcommand{{\\FamaMacBethRDCoef}}{{{_fmt_pct(fm_rd_coef, 4) if fm_rd_coef is not None else '--'}}}",
+        f"\\newcommand{{\\FamaMacBethRDTStat}}{{{_fmt_pct(fm_rd_tstat, 2) if fm_rd_tstat is not None else '--'}}}",
+        f"\\newcommand{{\\FamaMacBethRDPValue}}{{{_fmt_p_value(fm_rd_pval)}}}",
+        f"\\newcommand{{\\FamaMacBethRDSignificant}}{{{'Yes' if fm_rd_sig else 'No'}}}",
+        f"\\newcommand{{\\FamaMacBethRDSignificantStars}}{{{'***' if fm_rd_sig_001 else ('**' if fm_rd_sig else '')}}}",
+        "",
+    ])
+
+    content = content + fm_macros
+
     (DATA_DIR / "metrics.tex").write_text(content + "\n", encoding="utf-8")
 
 
@@ -1516,6 +1551,105 @@ Membership sources & {source_str} \\\\
     (TABLES_DIR / "table_universe_integrity.tex").write_text(table, encoding="utf-8")
 
 
+def write_fama_macbeth_table(payload: dict[str, Any]) -> None:
+    """
+    Write the Fama-MacBeth monthly cross-sectional regression table.
+
+    WHY:
+      This is the PRIMARY inferential test for statistical significance.
+      The table shows RD intensity predicts returns after controlling for
+      size and book-to-market using monthly cross-sectional regressions.
+    """
+    fm = payload.get("fama_macbeth_monthly") if isinstance(payload.get("fama_macbeth_monthly"), dict) else {}
+
+    if not fm or "error" in fm:
+        # Write placeholder if FM not available
+        placeholder = """% Auto-generated. Do not edit by hand.
+% Fama-MacBeth results not available in snapshot.
+\\begin{table}[htbp]
+\\centering
+\\caption{Fama-MacBeth Cross-Sectional Regressions (Monthly)}
+\\label{tab:fama_macbeth_monthly}
+\\begin{tabular}{lcccc}
+\\toprule
+Variable & Coefficient & t-stat (FM) & t-stat (NW) & \\\\
+\\midrule
+\\multicolumn{5}{c}{\\textit{Data not available}} \\\\
+\\bottomrule
+\\end{tabular}
+\\end{table}
+"""
+        (TABLES_DIR / "table_fama_macbeth.tex").write_text(placeholder, encoding="utf-8")
+        return
+
+    # If the snapshot already has a latex_table, use it
+    if isinstance(fm.get("latex_table"), str) and "tabular" in fm["latex_table"]:
+        table = "% Auto-generated. Do not edit by hand.\n" + fm["latex_table"]
+        (TABLES_DIR / "table_fama_macbeth.tex").write_text(table, encoding="utf-8")
+        return
+
+    # Otherwise build it from fields
+    def sig_stars(p):
+        if p is None:
+            return ""
+        if p < 0.01:
+            return "***"
+        if p < 0.05:
+            return "**"
+        if p < 0.10:
+            return "*"
+        return ""
+
+    def _get_coef(section):
+        if not isinstance(section, dict):
+            return ("--", "--", "--", "")
+        coef = _safe_float(section.get("coefficient"))
+        t_fm = _safe_float(section.get("t_stat_fm"))
+        t_hac = _safe_float(section.get("t_stat_hac"))
+        p_hac = _safe_float(section.get("p_value_hac"))
+        return (
+            f"{coef:.5f}" if coef is not None else "--",
+            f"{t_fm:.2f}" if t_fm is not None else "--",
+            f"{t_hac:.2f}" if t_hac is not None else "--",
+            sig_stars(p_hac),
+        )
+
+    alpha = _get_coef(fm.get("intercept"))
+    rd = _get_coef(fm.get("rd_intensity"))
+    size = _get_coef(fm.get("log_market_cap"))
+    bm = _get_coef(fm.get("book_to_market"))
+
+    n_months = _safe_int(fm.get("n_months")) or "--"
+    avg_firms = _safe_int(fm.get("avg_n_firms_per_month")) or "--"
+    avg_rsq = _safe_float(fm.get("avg_r_squared"))
+    avg_rsq_str = f"{avg_rsq:.4f}" if avg_rsq is not None else "--"
+    nw_lags = _safe_int(fm.get("nw_lags")) or 12
+
+    table = f"""% Auto-generated. Do not edit by hand.
+\\begin{{table}}[htbp]
+\\centering
+\\caption{{Fama-MacBeth Cross-Sectional Regressions (Monthly)}}
+\\label{{tab:fama_macbeth_monthly}}
+\\begin{{tabular}}{{lcccc}}
+\\toprule
+Variable & Coefficient & t-stat (FM) & t-stat (NW) & \\\\
+\\midrule
+Intercept & {alpha[0]} & {alpha[1]} & {alpha[2]} & {alpha[3]} \\\\
+R\\&D Intensity & {rd[0]} & {rd[1]} & {rd[2]} & {rd[3]} \\\\
+Log(Market Cap) & {size[0]} & {size[1]} & {size[2]} & {size[3]} \\\\
+Book-to-Market & {bm[0]} & {bm[1]} & {bm[2]} & {bm[3]} \\\\
+\\midrule
+N (months) & \\multicolumn{{4}}{{c}}{{{n_months}}} \\\\
+Avg firms/month & \\multicolumn{{4}}{{c}}{{{avg_firms}}} \\\\
+Avg R$^2$ & \\multicolumn{{4}}{{c}}{{{avg_rsq_str}}} \\\\
+\\bottomrule
+\\multicolumn{{5}}{{l}}{{\\footnotesize *** p < 0.01, ** p < 0.05, * p < 0.10. NW = Newey-West HAC (lag={nw_lags}).}} \\\\
+\\end{{tabular}}
+\\end{{table}}
+"""
+    (TABLES_DIR / "table_fama_macbeth.tex").write_text(table, encoding="utf-8")
+
+
 def main() -> None:
     _ensure_dirs()
     if not SNAPSHOT_PATH.exists():
@@ -1535,6 +1669,7 @@ def main() -> None:
     write_liquidity_moderation_table(payload)
     write_regime_breakdown_table(payload)
     write_universe_integrity_table(payload)
+    write_fama_macbeth_table(payload)
 
     print("✅ Generated assets:")
     print(f"- {DATA_DIR / 'metrics.tex'}")
@@ -1548,6 +1683,7 @@ def main() -> None:
     print(f"- {TABLES_DIR}/table_annual_hml_detail.tex")
     print(f"- {TABLES_DIR}/table_liquidity_moderation.tex")
     print(f"- {TABLES_DIR}/table_regime_breakdown.tex")
+    print(f"- {TABLES_DIR}/table_fama_macbeth.tex")
 
 
 if __name__ == "__main__":

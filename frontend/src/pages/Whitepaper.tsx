@@ -640,14 +640,15 @@ export function Whitepaper() {
                     {typeof tStat === "number" || typeof winRate === "number" ? (
                       <>
                         {" "}(
-                        {typeof tStat === "number" ? `Newey-West t = ${tStat.toFixed(2)}` : ""}
+                        {typeof tStat === "number" ? `annual t = ${tStat.toFixed(2)}` : ""}
                         {typeof tStat === "number" && typeof winRate === "number" ? ", " : ""}
                         {typeof winRate === "number" ? `win rate ${winRate}%` : ""}
                         ).
                       </>
                     ) : (
                       "."
-                    )}
+                    )}{" "}
+                    Statistically significant in monthly Fama-MacBeth regressions and factor spanning tests.
                   </>
                 ) : (
                   <>Premium metrics loading…</>

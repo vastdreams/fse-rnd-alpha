@@ -1862,7 +1862,7 @@ export function MainPaper() {
                   </li>
                   <li>
                     <strong className="text-foreground">Implication for the premium:</strong> If the R&amp;D premium is just a "tech bet," it would
-                    disappear when we control for sectors. Section 7.5 (Double-Sort) tests this directly.
+                    disappear when we control for sectors. Section 7.6 (Double-Sort) tests this directly.
                   </li>
                   <li>
                     <strong className="text-foreground">Dollar magnitude:</strong> Total R&amp;D spend shows the economic significance. Technology
@@ -2491,7 +2491,151 @@ export function MainPaper() {
 
           <Card className="bg-card">
             <CardHeader>
-              <CardTitle>7.4 Mispricing vs Risk Diagnostics</CardTitle>
+              <CardTitle>7.4 Fama-MacBeth Cross-Sectional Regressions (Primary Inference)</CardTitle>
+              <CardDescription>Monthly cross-sectional tests with controls for size and book-to-market.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="not-prose p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm">
+                <p className="font-semibold text-foreground mb-2">Why Fama-MacBeth is the gold standard</p>
+                <p className="text-muted-foreground mb-2">
+                  The annual HML series has only {annualPremiums.length} observations, yielding low statistical power.
+                  Fama-MacBeth (1973) regressions use <strong>monthly</strong> cross-sectional data with hundreds of stocks per month,
+                  providing far more statistical power to detect significant effects.
+                </p>
+                <ul className="text-muted-foreground list-disc list-inside space-y-1 mb-2">
+                  <li><strong>Stage 1:</strong> Each month, regress stock returns on R&amp;D intensity + controls (size, B/M).</li>
+                  <li><strong>Stage 2:</strong> Average the monthly coefficients and test their significance with Newey-West HAC.</li>
+                </ul>
+                <p className="text-xs italic">
+                  A positive, significant R&amp;D coefficient means R&amp;D intensity predicts returns after controlling for size and value.
+                </p>
+              </div>
+
+              {(() => {
+                const fm = (snapshotResponse?.payload as any)?.fama_macbeth_monthly;
+                if (!fm || fm.error) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Fama-MacBeth results not available in this snapshot.</p>
+                    </div>
+                  );
+                }
+                
+                const rd = fm.rd_intensity || {};
+                const size = fm.log_market_cap || {};
+                const bm = fm.book_to_market || {};
+                const alpha = fm.intercept || {};
+                
+                const sigStars = (p: number | null | undefined) => {
+                  if (p == null) return "";
+                  if (p < 0.01) return "***";
+                  if (p < 0.05) return "**";
+                  if (p < 0.10) return "*";
+                  return "";
+                };
+                
+                return (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-2 px-3 font-semibold text-foreground">Variable</th>
+                            <th className="text-right py-2 px-3 font-semibold text-foreground">Coefficient</th>
+                            <th className="text-right py-2 px-3 font-semibold text-foreground">t-stat (FM)</th>
+                            <th className="text-right py-2 px-3 font-semibold text-foreground">t-stat (NW)</th>
+                            <th className="text-right py-2 px-3 font-semibold text-foreground">p-value</th>
+                            <th className="text-center py-2 px-3 font-semibold text-foreground">Sig.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-border/50">
+                            <td className="py-2 px-3 font-medium text-foreground">Intercept</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{alpha.coefficient?.toFixed(5) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{alpha.t_stat_fm?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{alpha.t_stat_hac?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{alpha.p_value_hac?.toFixed(4) ?? "--"}</td>
+                            <td className="py-2 px-3 text-center font-mono">{sigStars(alpha.p_value_hac)}</td>
+                          </tr>
+                          <tr className="border-b border-border/50 bg-green-50 dark:bg-green-950/20">
+                            <td className="py-2 px-3 font-semibold text-foreground">R&amp;D Intensity</td>
+                            <td className="py-2 px-3 text-right font-mono font-semibold">{rd.coefficient?.toFixed(5) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono">{rd.t_stat_fm?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono font-semibold">{rd.t_stat_hac?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono font-semibold">{rd.p_value_hac?.toFixed(4) ?? "--"}</td>
+                            <td className="py-2 px-3 text-center font-mono font-semibold">{sigStars(rd.p_value_hac)}</td>
+                          </tr>
+                          <tr className="border-b border-border/50">
+                            <td className="py-2 px-3 font-medium text-foreground">Log(Market Cap)</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{size.coefficient?.toFixed(5) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{size.t_stat_fm?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{size.t_stat_hac?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{size.p_value_hac?.toFixed(4) ?? "--"}</td>
+                            <td className="py-2 px-3 text-center font-mono">{sigStars(size.p_value_hac)}</td>
+                          </tr>
+                          <tr className="border-b border-border/50">
+                            <td className="py-2 px-3 font-medium text-foreground">Book-to-Market</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{bm.coefficient?.toFixed(5) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{bm.t_stat_fm?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{bm.t_stat_hac?.toFixed(2) ?? "--"}</td>
+                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">{bm.p_value_hac?.toFixed(4) ?? "--"}</td>
+                            <td className="py-2 px-3 text-center font-mono">{sigStars(bm.p_value_hac)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-3 rounded-lg bg-muted/30 border text-center">
+                        <div className="text-xs text-muted-foreground">Months</div>
+                        <div className="text-lg font-mono font-semibold">{fm.n_months ?? "--"}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/30 border text-center">
+                        <div className="text-xs text-muted-foreground">Avg Firms/Month</div>
+                        <div className="text-lg font-mono font-semibold">{fm.avg_n_firms_per_month ?? "--"}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/30 border text-center">
+                        <div className="text-xs text-muted-foreground">Avg R²</div>
+                        <div className="text-lg font-mono font-semibold">{fm.avg_r_squared ? `${(fm.avg_r_squared * 100).toFixed(2)}%` : "--"}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/30 border text-center">
+                        <div className="text-xs text-muted-foreground">NW Lags</div>
+                        <div className="text-lg font-mono font-semibold">{fm.nw_lags ?? 12}</div>
+                      </div>
+                    </div>
+
+                    {rd.significant_005 && (
+                      <div className="p-4 rounded-lg bg-green-100 dark:bg-green-950/40 border border-green-300 dark:border-green-700">
+                        <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                          ✓ Statistically Significant: R&amp;D intensity predicts returns (p = {rd.p_value_hac?.toFixed(4)}{sigStars(rd.p_value_hac)})
+                        </p>
+                        <p className="text-xs text-green-700 dark:text-green-400 mt-1">
+                          After controlling for size and book-to-market, R&amp;D intensity remains a significant predictor of next-month returns.
+                        </p>
+                      </div>
+                    )}
+
+                    {fm.interpretation && (
+                      <div className="p-4 rounded-lg bg-muted/30 border">
+                        <p className="text-sm text-muted-foreground">
+                          <strong className="text-foreground">Interpretation:</strong> {fm.interpretation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <p className="text-xs text-muted-foreground mt-3">
+                Source: <code>/api/research/publication-snapshot</code> (frozen; fama_macbeth_monthly).
+                *** p &lt; 0.01, ** p &lt; 0.05, * p &lt; 0.10. NW = Newey-West HAC.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card">
+            <CardHeader>
+              <CardTitle>7.5 Mispricing vs Risk Diagnostics</CardTitle>
               <CardDescription>Stratification tests to distinguish mispricing from risk-based explanations.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -2597,7 +2741,7 @@ export function MainPaper() {
 
           <Card className="bg-card">
             <CardHeader>
-              <CardTitle>7.5 Size × R&amp;D Double-Sort</CardTitle>
+              <CardTitle>7.6 Size × R&amp;D Double-Sort</CardTitle>
               <CardDescription>R&amp;D premium within size groups (diagnostic for size confounding).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -2731,7 +2875,7 @@ export function MainPaper() {
 
           <Card className="bg-card">
             <CardHeader>
-              <CardTitle>7.6 Delisting-return sensitivity (primary annual series)</CardTitle>
+              <CardTitle>7.7 Delisting-return sensitivity (primary annual series)</CardTitle>
               <CardDescription>
                 Robustness of the annual premium to alternative delisting-return assumptions (scenario changes are not persisted).
               </CardDescription>
@@ -2867,13 +3011,23 @@ export function MainPaper() {
               <div>
                 <h3 className="text-lg font-semibold text-foreground">8.1 Summary of evidence</h3>
                 <p className="text-muted-foreground">
-                  Across Sections 5-7, the evidence is consistent with a positive return premium associated with high R&D intensity. Our primary inference is
-                  the non-overlapping annual series (Section 5.1). Rolling-window results are presented as descriptive stability checks rather than as a basis
-                  for inference.
+                  Across Sections 5-7, the evidence is consistent with a positive return premium associated with high R&D intensity. Primary statistical inference
+                  uses monthly Fama-MacBeth cross-sectional regressions (Section 7.4) and factor spanning tests (Section 7.3), which provide sufficient observations
+                  for reliable hypothesis testing. The annual non-overlapping series (Section 5.1) provides economic intuition.
                 </p>
                 <ul className="text-muted-foreground list-disc list-inside space-y-2">
                   <li>
-                    <strong className="text-foreground">Annual premium:</strong>{" "}
+                    <strong className="text-foreground">Fama-MacBeth (primary):</strong>{" "}
+                    {(() => {
+                      const fm = (snapshotResponse?.payload as any)?.fama_macbeth_monthly;
+                      if (fm?.rd_intensity?.significant_005) {
+                        return `R&D predicts returns (t = ${fm.rd_intensity.t_stat_hac?.toFixed(2)}, p = ${fm.rd_intensity.p_value_hac?.toFixed(4)}) across ${fm.n_months} months.`;
+                      }
+                      return "reported in Section 7.4.";
+                    })()}
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Annual premium (descriptive):</strong>{" "}
                     {typeof annualHmlData?.mean_premium === "number"
                       ? `mean ${annualHmlData.mean_premium.toFixed(2)}% (Newey-West t = ${annualHmlData.hac_adjusted.t_statistic.toFixed(2)})`
                       : "reported in the annual premium table (Section 5.1)."}
@@ -3068,7 +3222,7 @@ export function MainPaper() {
                   8.5 Mechanisms (mispricing vs risk)
                 </h3>
                 <p className="text-muted-foreground">
-                  This design does not identify mechanisms, but the stratification diagnostics in Section 7.4 provide structured evidence that is more consistent
+                  This design does not identify mechanisms, but the stratification diagnostics in Section 7.5 provide structured evidence that is more consistent
                   with either a mispricing{" "}
                   <InfoTooltip term="mispricing" size={12} />{" "}
                   or risk-based{" "}

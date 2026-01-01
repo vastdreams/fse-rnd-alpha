@@ -256,6 +256,35 @@ async def build_snapshot_payload(
     except Exception as e:
         payload["publication_stats"] = {"error": str(e)}
 
+    # Fama-MacBeth monthly cross-sectional regressions (PRIMARY INFERENCE for significance)
+    # Uses monthly returns and cross-sectional regressions with controls (Size, B/M)
+    try:
+        from app.db.models import JulyJuneReturn
+        # Derive return year bounds from available data (same as annual series)
+        yrs_result = await session.execute(
+            select(func.min(JulyJuneReturn.formation_year), func.max(JulyJuneReturn.formation_year))
+            .where(JulyJuneReturn.data_tier == data_tier)
+        )
+        min_fy, max_fy = yrs_result.fetchone()
+        if min_fy is not None and max_fy is not None:
+            fm_start = int(min_fy) + 1  # Return year starts one after formation year
+            fm_end = int(max_fy) + 1
+            stats = StatisticalAnalyzer(session, use_july_june=use_july_june, data_tier=data_tier)
+            payload["fama_macbeth_monthly"] = _json_safe(
+                await stats.run_fama_macbeth_monthly_with_controls(
+                    start_return_year=fm_start,
+                    end_return_year=fm_end,
+                    nw_lags=12,
+                    winsor_p=0.01,
+                    data_tier=data_tier,
+                )
+            )
+        else:
+            payload["fama_macbeth_monthly"] = {"error": "Could not determine return year bounds"}
+    except Exception as e:
+        logger.exception("Fama-MacBeth monthly failed")
+        payload["fama_macbeth_monthly"] = {"error": str(e)}
+
     # Delisting-return sensitivity (publication robustness; computed on annual non-overlapping series)
     try:
         stats = StatisticalAnalyzer(session, use_july_june=use_july_june, data_tier=data_tier)

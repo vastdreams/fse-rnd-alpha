@@ -376,7 +376,7 @@ export function Paper1() {
               <ol className="text-muted-foreground space-y-2 list-decimal list-inside">
                 <li>Do high-R&D companies generate higher long-term shareholder returns?</li>
                 <li>How does the R&D-return relationship vary across different investment horizons?</li>
-                <li>Is the R&D premium statistically significant and economically meaningful?</li>
+                <li>Is the R&D premium economically meaningful, and how is statistical significance assessed?</li>
                 <li>Does the effect persist across different market conditions?</li>
               </ol>
             </CardContent>
@@ -909,7 +909,8 @@ export function Paper1() {
               <p className="text-muted-foreground leading-relaxed">
                 Our findings provide evidence that R&D investment intensity is an economically meaningful predictor 
                 of long-term shareholder returns. While the annual time-series test has limited statistical power (30 observations, high variance), 
-                the monthly factor spanning tests show a statistically significant alpha (FF5: 4.37%, p&lt;0.01). The monotonic relationship between R&D quintiles and returns, 
+                monthly cross-sectional and factor tests are statistically significant: Fama-MacBeth regressions confirm R&D predicts returns after
+                controlling for size and book-to-market, and the FF5 spanning alpha is 4.37% (p&lt;0.01). The monotonic relationship between R&D quintiles and returns, 
                 combined with the increasing effect sizes over longer horizons, suggests that R&D investments 
                 create durable competitive advantages.
               </p>

@@ -559,7 +559,31 @@ export interface PublicationSnapshotPayload {
   mispricing_tests?: MispricingTestResult | { error: string }
   double_sort_analysis?: DoubleSortResult | { error: string }
   delisting_sensitivity?: DelistingSensitivityResult | { error: string }
+  fama_macbeth_monthly?: FamaMacBethMonthlyResult | { error: string }
   [key: string]: unknown
+}
+
+/** Monthly Fama-MacBeth cross-sectional regression results (PRIMARY INFERENCE) */
+export interface FamaMacBethMonthlyResult {
+  methodology: string
+  frequency: string
+  return_convention: string
+  signal_timing: string
+  winsorization: string
+  nw_lags: number
+  n_months: number
+  month_range: string
+  avg_n_firms_per_month: number
+  avg_r_squared: number
+  total_firm_months: number
+  intercept: CoefficientStats
+  rd_intensity: CoefficientStats
+  log_market_cap: CoefficientStats
+  book_to_market: CoefficientStats
+  rd_predicts_returns: boolean
+  rd_predicts_returns_001: boolean
+  latex_table: string
+  interpretation: string
 }
 
 export interface DelistingSensitivityScenario {

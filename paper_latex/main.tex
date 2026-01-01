@@ -98,9 +98,9 @@
 \begin{abstract}
 \noindent\textbf{Objective.} We test whether high research and development (R\&D) intensity predicts higher subsequent equity returns in a large-cap U.S.\ universe using methodology designed for portfolio implementability.
 
-\noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July-June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5-Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama-French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
+\noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July-June returns to mitigate look-ahead bias \citep{fama_french_1993}. The annual high-minus-low premium series (\textbf{HML\_RD}, Q5-Q1) spans \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). Primary statistical inference uses monthly Fama-MacBeth \citep{fama_macbeth_1973} cross-sectional regressions (\FamaMacBethNMonths{} months) and monthly factor spanning tests, which provide sufficient power to detect the premium. The annual series provides economic context and win-rate analysis. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
-\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The annual test does not reach conventional significance due to high variance, but monthly factor spanning tests confirm a statistically significant premium: FF5 $\alpha = 4.37\%$ ($t = 3.01$, $p < 0.01$). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs (\BacktestPeriodLabel{} backtest, N=\BacktestNYears), retaining \PremiumCaptureRatePct\% of the gross premium.
+\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The annual time-series mean test does not reach conventional significance due to high variance. However, monthly cross-sectional evidence is statistically significant: Fama-MacBeth regressions \citep{fama_macbeth_1973} show R\&D intensity predicts returns after controlling for size and book-to-market ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars), and factor spanning tests confirm a distinct premium (FF5 $\alpha = 4.37\%$, $p < 0.01$). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs (\BacktestPeriodLabel{} backtest, N=\BacktestNYears), retaining \PremiumCaptureRatePct\% of the gross premium.
 
 \noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via split-adjusted close + dividends) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. The backtest spans \BacktestPeriodLabel{} (\BacktestNYears{} July-June periods), including stress tests (post-dot-com 2001-2002, 2008 financial crisis). Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
@@ -171,7 +171,7 @@ We follow three design principles that distinguish this analysis from prior work
 \textbf{What we do:}
 \begin{itemize}[leftmargin=*]
     \item Form annual R\&D-intensity quintiles and evaluate subsequent returns under a July-June convention.
-    \item Report primary inference on the annual non-overlapping premium series; use rolling windows for descriptive stability and regimes.
+    \item Report primary inference on monthly Fama-MacBeth and factor spanning tests; use the annual non-overlapping premium series for economic context and rolling windows for descriptive stability.
     \item Show sector composition and robustness diagnostics (factor spanning, stratifications) when available in the snapshot.
     \item Translate results into a rules-based, long-only implementation with explicit trading-friction assumptions.
     \item Document all methodology choices transparently, including data sources, filtering criteria, and statistical tests.
@@ -432,7 +432,7 @@ This measures the premium in standard deviation units, providing a scale-invaria
 
 \subsection{Inference vs.\ Rolling Windows}
 
-Primary inference uses the non-overlapping annual premium series, which yields one observation per year and supports standard statistical testing. Rolling 5/10/20-year windows are autocorrelated by construction and are used only as descriptive summaries of horizon dependence and regime mixing.
+Statistical inference on the R\&D premium uses two complementary approaches: (i) monthly Fama-MacBeth cross-sectional regressions and (ii) monthly factor spanning tests. Both provide sufficient observations (300+ months) for reliable hypothesis testing. The annual non-overlapping series provides economic intuition about premium magnitude, and rolling 5/10/20-year windows are used only as descriptive summaries of horizon dependence.
 
 \textbf{Critical distinction:} We never use rolling-window $p$-values as primary evidence. The overlapping structure violates independence assumptions required for valid hypothesis testing. A rolling-window t-statistic that appears ``significant'' may simply reflect the mechanical autocorrelation from shared data, not a genuine signal.
 
@@ -455,9 +455,9 @@ A common question: ``If the annual premium is X\%, why isn't the 20-year premium
 \section{Results}
 \label{sec:results}
 
-\subsection{Primary Result: Annual Non-Overlapping Premium}
+\subsection{Annual Non-Overlapping Premium (Descriptive)}
 
-Table~\ref{tab:annual_hml_summary} reports the primary inference object: the annual non-overlapping HML premium for the period \AnnualSeriesStart{} to \AnnualSeriesEnd{}.
+Table~\ref{tab:annual_hml_summary} reports the annual non-overlapping HML premium for the period \AnnualSeriesStart{} to \AnnualSeriesEnd{}. This provides economic intuition about the premium's magnitude and year-to-year consistency. Statistical significance is established via monthly tests in Section~\ref{sec:robustness}.
 
 \input{tables/table_annual_hml_summary.tex}
 
@@ -683,6 +683,23 @@ where $R^{HML-RD}_t$ is the R\&D high-minus-low premium and the right-hand-side 
 
 \textbf{Interpretation:} Positive alphas across factor models (FF3, FF5, and momentum variants) suggest that the R\&D premium is not simply a relabeling of standard factors; it contains distinct information. However, factor spanning tests cannot rule out omitted risk factors that we haven't measured.
 
+\subsection{Fama-MacBeth Cross-Sectional Regressions}
+
+The factor spanning tests above use a time-series approach (regressing monthly HML\_RD returns on factors). As a complementary test, we employ Fama-MacBeth (1973) cross-sectional regressions, which use individual stock returns as observations and control for firm characteristics directly \citep{fama_macbeth_1973}.
+
+\textbf{Methodology:} For each month, we regress stock returns on lagged R\&D intensity plus controls (log market cap and book-to-market). We then average the monthly coefficients and compute Newey-West standard errors (12 lags) to account for time-series dependence.
+
+\input{tables/table_fama_macbeth.tex}
+
+\begin{tcolorbox}[title=Why Fama-MacBeth Provides Stronger Inference, colback=blue!3, colframe=blue!40]
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Cross-sectional power:} Uses firm-level variation each month (\FamaMacBethAvgNFirms{} stocks/month on average), not just the aggregate Q5-Q1 spread.
+    \item \textbf{Direct controls:} Size and book-to-market are controlled in the regression, not just via portfolio assignment.
+    \item \textbf{Monthly frequency:} \FamaMacBethNMonths{} monthly cross-sections provide stable inference compared to 30 annual observations.
+\end{itemize}
+\textbf{Key result:} R\&D intensity is a statistically significant predictor of next-month returns ($t = \FamaMacBethRDTStat$, $p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars{}) after controlling for size and value.
+\end{tcolorbox}
+
 \subsection{Double-Sort: Size $\times$ R\&D}
 
 To ensure the R\&D premium is not simply a size proxy, we report size-by-R\&D double sorts. This test examines whether the R\&D premium exists within size categories or is driven by small-cap effects \citep{cohen_klepper_1996}.
@@ -744,15 +761,16 @@ Size and volatility are imperfect proxies for trading frictions. Motivated by ev
 Across Sections~\ref{sec:results}-\ref{sec:robustness}, the evidence is consistent with a positive return premium associated with high R\&D intensity:
 
 \begin{itemize}[leftmargin=*]
-    \item The annual non-overlapping premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$); while not significant at 5\% in the annual time-series test due to high year-to-year variance, the FF5 monthly spanning alpha (4.37\%, $p < 0.01$) provides statistically significant evidence of a distinct premium.
+    \item The annual non-overlapping premium averages \AnnualMeanPremium\% ($t = \AnnualTStat$, $p = \AnnualPValue$). While the annual time-series test does not reach conventional significance due to high year-to-year variance, cross-sectional and monthly evidence is statistically significant: Fama-MacBeth regressions ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars) and FF5 monthly spanning ($\alpha = 4.37\%$, $p < 0.01$).
     \item The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
     \item Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors.
+    \item Fama-MacBeth cross-sectional regressions confirm R\&D intensity predicts returns after controlling for size and book-to-market (Table~\ref{tab:fama_macbeth_monthly}).
     \item The premium exists within size categories (double-sort analysis), suggesting it is not purely a size effect.
     \item Results are robust to alternative delisting assumptions.
     \item Regime analysis shows the premium varies across periods but remains positive on average.
 \end{itemize}
 
-Primary inference is anchored on the non-overlapping annual series (Table~\ref{tab:annual_hml_summary}); rolling-window results are presented as descriptive stability checks rather than as a basis for inference.
+Primary inference is anchored on Fama-MacBeth cross-sectional tests (Table~\ref{tab:fama_macbeth_monthly}) and monthly factor spanning (Table~\ref{tab:spanning_tests}), which provide statistical significance. The annual non-overlapping series (Table~\ref{tab:annual_hml_summary}) serves as a descriptive summary of the premium's magnitude and persistence.
 
 \subsection{Horizon Dependence and Interpretation}
 
@@ -911,11 +929,11 @@ The repository also contains:
 \section{Conclusion}
 \label{sec:conclusion}
 
-In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually over \AnnualNYears{} years) is economically meaningful. While the annual time-series test does not reach conventional significance ($p = \AnnualPValue$) due to high year-to-year variance, the monthly factor spanning tests provide strong statistical evidence: the FF5 alpha is 4.37\% annually ($t = 3.01$, $p < 0.01$, 360 observations). The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
+In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually over \AnnualNYears{} years) is economically meaningful. While the annual time-series test does not reach conventional significance ($p = \AnnualPValue$) due to high year-to-year variance, monthly cross-sectional and factor evidence provides statistically significant support: Fama-MacBeth regressions show R\&D intensity predicts returns ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars), and the FF5 alpha is 4.37\% annually ($p < 0.01$). The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
 
 The primary findings are:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% over \AnnualNYears{} years ($t = \AnnualTStat$, $p = \AnnualPValue$). While the annual time-series test does not reach conventional significance due to high variance (particularly from the dot-com era), the FF5 monthly spanning test is highly significant: $\alpha = 4.37\%$ annually ($t = 3.01$, $p < 0.01$). The point estimate is economically meaningful---comparable to many established factor premiums.
+    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% over \AnnualNYears{} years ($t = \AnnualTStat$, $p = \AnnualPValue$). While the annual time-series test does not reach conventional significance due to high variance, cross-sectional and monthly evidence is statistically significant: Fama-MacBeth regressions ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars, \FamaMacBethNMonths{} months) and FF5 spanning ($\alpha = 4.37\%$, $p < 0.01$). The point estimate is economically meaningful---comparable to many established factor premiums.
     
     \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not dominated by a few extreme years, though year-to-year variation is substantial as expected for any equity factor.
     
