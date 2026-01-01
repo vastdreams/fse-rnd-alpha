@@ -30,7 +30,7 @@ This happens because:
 | **p-Value** | 0.0107 | 99% confidence the effect is real |
 | **Win Rate** | 71% | Premium was positive in 17 of 24 years |
 | **Net Premium (after costs)** | +5.33% | What you actually keep after trading |
-| **Sample Period** | 1995-2024 | 30 years of data |
+| **Sample Period (primary annual inference)** | Jul2001–Jun2025 | 24 annual periods (snapshot) |
 
 ### Who Uses This?
 

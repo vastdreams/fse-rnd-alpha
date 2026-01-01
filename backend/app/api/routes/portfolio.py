@@ -371,7 +371,7 @@ async def get_current_forecast(
             "expected_market_return": round(float(avg_market_return) * 100, 2),
             "expected_rd_premium": expected_premium,
             "expected_portfolio_return": round(float(avg_market_return) * 100 + expected_premium, 2),
-            "confidence_level": "Based on 30-year historical analysis",
+            "confidence_level": "Based on snapshot-pinned historical analysis (see paper for sample window)",
             "risk_note": "Past performance does not guarantee future results"
         },
         "top_holdings": [

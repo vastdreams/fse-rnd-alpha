@@ -35,7 +35,7 @@ Both tiers use the same methodology (July-June returns, quintile sorting) but di
 | **Provider** | Financial Modeling Prep (financialmodelingprep.com) |
 | **License** | Commercial API subscription |
 | **Data Types** | Income statements, balance sheets, daily prices, company profiles |
-| **Coverage** | S&P 500 constituents, 1995-2024 |
+| **Coverage (practical ingestion window)** | Typically 1995-present (varies by company); primary annual inference is Jul2001–Jun2025 in the frozen snapshot |
 | **Update Frequency** | Daily for prices, quarterly for financials |
 | **Last Ingestion** | December 2025 |
 

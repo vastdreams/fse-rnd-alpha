@@ -394,7 +394,7 @@ Downloads methodology parameters as JSON.
 {
   "return_convention": "july_june",
   "universe": "sp500_point_in_time",
-  "sample_period": "1995-2024",
+  "sample_period": "Jul2001-Jun2025 (snapshot primary annual inference)",
   "quintile_method": "annual_sorting",
   "inference": "newey_west_hac",
   "delisting_method": "shumway_1997"
