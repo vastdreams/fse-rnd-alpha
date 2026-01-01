@@ -91,10 +91,16 @@ Consider adding these highly-cited R&D papers if they strengthen the argument:
 
 ## 🌐 WEBSITE REFERENCE CHECK
 
-### Files to Check
-- [ ] frontend/src/data/references.json
-- [ ] frontend/src/pages/papers/MainPaper.tsx
-- [ ] Any hardcoded citation text
+### Files Updated
+- [x] frontend/src/data/references.json - Synced with paper (28 refs)
+- [x] frontend/src/pages/papers/MainPaper.tsx - Full reference list + citation section
+- [x] frontend/public/rnd-alpha-paper.pdf - PDF available for download
+
+### Citation Features Added
+- ✅ "How to Cite" section in MainPaper
+- ✅ APA format citation with copy button
+- ✅ BibTeX entry for academic citation
+- ✅ Direct PDF download link
 
 ---
 

@@ -230,6 +230,9 @@
 | Jan 1, 2026 | portfolio.py | Updated confidence note | 1ff96f6 |
 | Jan 1, 2026 | vite.config.ts | Disabled sourcemaps for faster builds | 1ff96f6 |
 | Jan 1, 2026 | main.tex | Removed "low coverage" from mispricing text | 7302b10 |
+| Jan 1, 2026 | MainPaper.tsx | Added "How to Cite" section with APA/BibTeX | f03dbcb |
+| Jan 1, 2026 | references.json | Synced with paper (added 3 missing refs) | f03dbcb |
+| Jan 1, 2026 | public/rnd-alpha-paper.pdf | Added downloadable PDF | f03dbcb |
 
 ---
 
@@ -274,4 +277,4 @@ The R&D Alpha paper and platform are ready for submission to the Journal of Port
 
 *Audit completed: January 1, 2026*
 *Auditor: AI Assistant*
-*Final commit: 7302b10*
+*Final commit: f03dbcb*
