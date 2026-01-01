@@ -100,7 +100,7 @@
 
 \noindent\textbf{Method.} Each year, we sort an S\&P 500 large-cap universe into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5--Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. In Tier-1, index eligibility at each formation date is gated using reported S\&P 500 addition dates for the current constituent list (historical removals are not tracked); exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
-\noindent\textbf{Results.} The \textbf{HML\_RD} premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. Equivalently, the top R\&D-intensity quintile outperformed the bottom quintile by approximately \AnnualMeanPremium\% per year over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
+\noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey--West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs, retaining \PremiumCaptureRatePct\% of the gross premium.
 
 \noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via adjusted close) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
@@ -946,17 +946,17 @@ The live interactive platform is available at \url{https://research.finsoeasy.co
 \section*{How to Cite}
 
 \noindent\textbf{APA format:}\\[0.3em]
-Sehgal, A. (2025). \textit{R\&D Alpha: Investment Intensity and Long-Term Stock Returns} (Working Paper). FSE Research \& Investments Pty Ltd. \url{https://research.finsoeasy.com/rnd-alpha-paper.pdf}
+Sehgal, A. (2026). \textit{R\&D Alpha: Investment Intensity and Long-Term Stock Returns} (Working Paper). FSE Research \& Investments Pty Ltd. \url{https://research.finsoeasy.com/rnd-alpha-paper.pdf}
 
 \vspace{0.8em}
 \noindent\textbf{BibTeX:}
 \begin{verbatim}
-@techreport{sehgal2025rd_alpha,
+@techreport{sehgal2026rd_alpha,
   author  = {Sehgal, Abhishek},
   title   = {{R\&D Alpha: Investment Intensity and 
              Long-Term Stock Returns}},
-  year    = {2025},
-  month   = {December},
+  year    = {2026},
+  month   = {January},
   institution = {FSE Research \& Investments Pty Ltd},
   type    = {Working Paper},
   url     = {https://research.finsoeasy.com/rnd-alpha-paper.pdf},
