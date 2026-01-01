@@ -335,7 +335,9 @@ The R&D Alpha paper and platform are ready for submission to the Journal of Port
 | Jan 2, 2026 | MainPaper.tsx updated with period labels | ✅ |
 | Jan 2, 2026 | Whitepaper.tsx updated with period labels | ✅ |
 | Jan 2, 2026 | InfoTooltip.tsx updated with CAGR spread definition | ✅ |
-| Jan 2, 2026 | Deployment in progress | Pending |
+| Jan 2, 2026 | API type definitions updated (period_label, n_periods) | ✅ |
+| Jan 2, 2026 | Frontend rebuilt and deployed | ✅ |
+| Jan 2, 2026 | API verified: period_label=Jul2001-Jun2025, net_premium=8.0% | ✅ |
 
 ### 9.5 Key Improvements
 1. **Credibility**: Backtest now includes dot-com bust (2001-2002) and 2008 financial crisis
