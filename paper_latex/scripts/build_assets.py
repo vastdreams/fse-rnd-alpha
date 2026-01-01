@@ -1279,7 +1279,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
             *lines,
             "\\bottomrule",
             "\\multicolumn{6}{l}{\\footnotesize Premium is within-bucket Q5$-$Q1 using July--June annualized returns.} \\\\",
-            "\\multicolumn{6}{l}{\\footnotesize Amihud (2002) uses daily |return| / dollar volume; dollar volume bucket uses avg(adj\\_close$\\times$volume).} \\\\",
+            "\\multicolumn{6}{l}{\\footnotesize Amihud (2002) uses daily |return| / dollar volume; dollar volume bucket uses avg(close$\\times$volume).} \\\\",
             "\\end{tabular}",
             "\\end{table}",
             "",

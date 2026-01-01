@@ -1379,9 +1379,9 @@ class LiquidityModerationAnalyzer:
                 SELECT
                     p.symbol,
                     p.date,
-                    p.adj_close,
+                    p.close,
                     p.volume,
-                    LAG(p.adj_close) OVER (PARTITION BY p.symbol ORDER BY p.date) AS prev_adj_close,
+                    LAG(p.close) OVER (PARTITION BY p.symbol ORDER BY p.date) AS prev_close,
                     (
                       EXTRACT(YEAR FROM p.date)::int
                       - CASE WHEN EXTRACT(MONTH FROM p.date)::int < 7 THEN 1 ELSE 0 END
@@ -1396,19 +1396,19 @@ class LiquidityModerationAnalyzer:
                     d.symbol,
                     d.formation_year,
                     COUNT(*) FILTER (
-                        WHERE d.adj_close IS NOT NULL AND d.volume IS NOT NULL AND d.volume > 0
+                        WHERE d.close IS NOT NULL AND d.volume IS NOT NULL AND d.volume > 0
                     ) AS trading_days,
                     AVG(
                         CASE
-                            WHEN d.prev_adj_close IS NULL OR d.prev_adj_close = 0 THEN NULL
-                            WHEN d.adj_close IS NULL OR d.volume IS NULL OR d.volume <= 0 THEN NULL
-                            ELSE ABS((d.adj_close / d.prev_adj_close) - 1.0) / NULLIF((d.adj_close * d.volume)::float, 0)
+                            WHEN d.prev_close IS NULL OR d.prev_close = 0 THEN NULL
+                            WHEN d.close IS NULL OR d.volume IS NULL OR d.volume <= 0 THEN NULL
+                            ELSE ABS((d.close / d.prev_close) - 1.0) / NULLIF((d.close * d.volume)::float, 0)
                         END
                     ) AS amihud_illiq,
                     AVG(
                         CASE
-                            WHEN d.adj_close IS NULL OR d.volume IS NULL OR d.volume <= 0 THEN NULL
-                            ELSE (d.adj_close * d.volume)::float
+                            WHEN d.close IS NULL OR d.volume IS NULL OR d.volume <= 0 THEN NULL
+                            ELSE (d.close * d.volume)::float
                         END
                     ) AS avg_dollar_volume
                 FROM daily d
@@ -1563,11 +1563,11 @@ class LiquidityModerationAnalyzer:
                 "trading_days_min": 150,
             },
             "amihud": {
-                "proxy": "Amihud (2002) ILLIQ = mean(|r_d| / dollar_volume_d)",
+                "proxy": "Amihud (2002) ILLIQ = mean(|r_d| / dollar_volume_d) using daily close and dollar volume",
                 **_summarize(amihud_yearly),
             },
             "dollar_volume": {
-                "proxy": "Average daily dollar volume (adj_close × volume), inverted for 'Illiquid' bucket",
+                "proxy": "Average daily dollar volume (close × volume), inverted for 'Illiquid' bucket",
                 **_summarize(dvol_yearly),
             },
             "note": (
