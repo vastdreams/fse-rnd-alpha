@@ -733,20 +733,22 @@ export function Portfolio() {
       <Card className="border border-red-500/30 bg-gradient-to-br from-red-500/5 to-card">
         <CardContent className="pt-4 pb-3">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-red-600">⚠️ Backtest Survivorship Bias Warning</p>
+              <p className="font-medium text-amber-600">⚠️ Backtest Data Note</p>
               <p>
-                <strong>These returns are inflated</strong> due to survivorship bias. The backtest includes 
-                companies (like HOOD, COIN, MRNA) that were not in the S&P 500 during historical periods 
-                but had extraordinary post-IPO returns. This artificially boosts historical performance.
+                This backtest uses <strong>point-in-time S&amp;P 500 membership</strong> from official add-date 
+                records (companies are only included after their S&amp;P 500 addition date). However, 
+                <strong> historical removals are not tracked</strong> in our Tier-1 source, so some companies 
+                that were later removed from the index may appear in earlier years. Returns are computed 
+                from adjusted close prices (total-return proxy including dividends).
               </p>
               <p>
-                <strong>Realistic expectation:</strong> Treat this backtest as a directional demo. For publication-grade
-                premium estimates, use the frozen snapshot in the{" "}
+                <strong>Publication-grade estimates:</strong> For rigorous premium inference, use the frozen 
+                snapshot in the{" "}
                 <Link to="/papers/main" className="text-blue-500 hover:underline font-medium">Main Paper</Link>
                 {typeof annualMeanPremiumPct === "number"
-                  ? ` (annual Q5–Q1 mean ≈ ${annualMeanPremiumPct.toFixed(2)}%).`
+                  ? ` (annual HML_RD mean ≈ ${annualMeanPremiumPct.toFixed(2)}%).`
                   : "."}
               </p>
               <p className="text-xs">
