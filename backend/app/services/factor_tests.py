@@ -491,20 +491,20 @@ class FactorSpanningAnalyzer:
                             p.symbol,
                             date_trunc('month', p.date)::date AS month,
                             p.date AS last_date,
-                            p.adj_close AS adj_close
+                            COALESCE(p.adj_close, p.close) AS price
                         FROM fmp_daily_prices p
                         JOIN ranked r ON r.symbol = p.symbol
                         WHERE p.date >= :price_start
                           AND p.date <= :price_end
-                          AND p.adj_close IS NOT NULL
-                          AND p.adj_close > 0
+                          AND COALESCE(p.adj_close, p.close) IS NOT NULL
+                          AND COALESCE(p.adj_close, p.close) > 0
                         ORDER BY p.symbol, date_trunc('month', p.date), p.date DESC
                     ),
                     monthly_ret AS (
                         SELECT
                             symbol,
                             month,
-                            (adj_close / LAG(adj_close) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
+                            (price / LAG(price) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
                         FROM month_end
                     ),
                     joined AS (
@@ -566,20 +566,20 @@ class FactorSpanningAnalyzer:
                             p.symbol,
                             date_trunc('month', p.date)::date AS month,
                             p.date AS last_date,
-                            p.adj_close AS adj_close
+                            COALESCE(p.adj_close, p.close) AS price
                         FROM fmp_daily_prices p
                         JOIN ranked r ON r.symbol = p.symbol
                         WHERE p.date >= :price_start
                           AND p.date <= :price_end
-                          AND p.adj_close IS NOT NULL
-                          AND p.adj_close > 0
+                          AND COALESCE(p.adj_close, p.close) IS NOT NULL
+                          AND COALESCE(p.adj_close, p.close) > 0
                         ORDER BY p.symbol, date_trunc('month', p.date), p.date DESC
                     ),
                     monthly_ret AS (
                         SELECT
                             symbol,
                             month,
-                            (adj_close / LAG(adj_close) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
+                            (price / LAG(price) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
                         FROM month_end
                     ),
                     joined AS (
