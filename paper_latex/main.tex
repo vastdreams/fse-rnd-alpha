@@ -367,7 +367,7 @@ We construct portfolios using a standard academic approach that prioritizes tran
     \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July-June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
 \end{itemize}
 
-\begin{tcolorbox}[title=Exit Handling in Tier-1 Data, colback=yellow!5, colframe=yellow!40, coltitle=black, breakable]
+\begin{tcolorbox}[title=Exit Handling in Tier-1 Data, colback=yellow!5, colframe=yellow!40, colbacktitle=yellow!40, coltitle=black, breakable]
 \textbf{Baseline (A): cash-after-exit.} If a firm exits during a July-June window and the price series ends, we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter.\newline
 \textbf{Sensitivity (B): penalty scenarios.} Because Tier-1 vendor datasets do not provide authoritative CRSP-style delisting settlement returns, we do \emph{not} claim to substitute for CRSP dlret. Instead, we report sensitivity of the annual HML results to conservative delisting-return penalties.\newline
 \textbf{Summary.} Exit handling is explicit and bias-aware, but delisting-settlement uncertainty remains a limitation without CRSP-grade data.
@@ -432,7 +432,7 @@ Primary inference uses the non-overlapping annual premium series, which yields o
 
 \textbf{Critical distinction:} We never use rolling-window $p$-values as primary evidence. The overlapping structure violates independence assumptions required for valid hypothesis testing. A rolling-window t-statistic that appears ``significant'' may simply reflect the mechanical autocorrelation from shared data, not a genuine signal.
 
-\begin{tcolorbox}[title=Rolling Windows and Horizon Decay, colback=yellow!5, colframe=yellow!40, coltitle=black, breakable]
+\begin{tcolorbox}[title=Rolling Windows and Horizon Decay, colback=yellow!5, colframe=yellow!40, colbacktitle=yellow!40, coltitle=black, breakable]
 A common question: ``If the annual premium is X\%, why isn't the 20-year premium 20$\times$X\%?''
 
 \textbf{Rolling windows do not rebalance.} A 20-year rolling window sorts stocks into quintiles \textbf{once} at the window start and holds those assignments for 20 years without updating. But firms change over 20 years:
@@ -586,7 +586,7 @@ To address the common critique that the premium is ``just sector exposure,'' Tab
 
 \input{tables/table_sector_neutral_hml.tex}
 
-\begin{tcolorbox}[title=Sector Contribution is Material, colback=yellow!5, colframe=yellow!50, coltitle=black]
+\begin{tcolorbox}[title=Sector Contribution is Material, colback=yellow!5, colframe=yellow!50, colbacktitle=yellow!50, coltitle=black]
 \textbf{The sector-neutral HML\_RD is substantially smaller and not statistically significant.} While the headline HML\_RD premium averages \AnnualMeanPremium\% with $t=\AnnualTStat$, the sector-neutral version averages approximately 0.9\% with $t \approx 0.7$ and $p > 0.5$. This indicates that a material portion of the full-sample premium reflects \emph{between-sector} R\&D intensity differences (i.e., tilting toward tech/healthcare) rather than pure within-sector R\&D outperformance. Investors should recognize this sector component when implementing an R\&D-based strategy.
 \end{tcolorbox}
 
@@ -714,7 +714,7 @@ We report descriptive premiums across proxies for arbitrage costs (size and vola
 
 \input{tables/table_mispricing_tests.tex}
 
-\begin{tcolorbox}[title=Interpreting Mispricing Diagnostics, colback=yellow!5, colframe=yellow!40, coltitle=black]
+\begin{tcolorbox}[title=Interpreting Mispricing Diagnostics, colback=yellow!5, colframe=yellow!40, colbacktitle=yellow!40, coltitle=black]
 \textbf{Pattern interpretation:}
 \begin{itemize}[leftmargin=*]
     \item If the premium is \textbf{larger in hard-to-arbitrage stocks} (small, volatile), this is more consistent with mispricing.
