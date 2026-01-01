@@ -31,8 +31,8 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   net_premium_after_costs: {
     title: "Net Premium After Costs (vs SPY)",
     explanation:
-      "The RD20 strategy spread vs SPY (S&P 500 total-return proxy) after subtracting strategy trading costs. This shows the implementable excess return over the market available to a real investor.",
-    formula: "Net Premium = Strategy Return (net of costs) − SPY Return",
+      "The RD20 strategy CAGR spread vs SPY CAGR (S&P 500 total-return proxy via adj_close) after subtracting strategy trading costs. The backtest period is Jul2001-Jun2025 (24 July-June periods), matching the HML_RD characteristic premium sample and including stress tests (post-dot-com, 2008 crisis). This is NOT the HML_RD factor—it's a benchmark-relative, implementable excess return available to a real investor.",
+    formula: "Net Premium (pp/yr) = Strategy CAGR (net of costs) − SPY CAGR",
   },
   premium_capture_rate: {
     title: "Premium Capture Rate",
@@ -90,10 +90,10 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
     formula: "R&D Intensity = (R&D Expense ÷ Revenue) × 100%",
   },
   hml_premium: {
-    title: "HML Premium (High-Minus-Low)",
+    title: "HML_RD Premium (High-Minus-Low R&D)",
     explanation:
-      "The return spread between the highest quintile (Q5, high R&D) and lowest quintile (Q1, low R&D) portfolios. A positive HML means high-R&D firms outperformed.",
-    formula: "HML = Q5 Return - Q1 Return",
+      "The within-universe return spread between the highest R&D quintile (Q5) and lowest R&D quintile (Q1) portfolios. Computed over non-overlapping July-June periods (Jul2001-Jun2025, N=24). A positive HML_RD means high-R&D firms outperformed low-R&D firms within the same universe for the same period. This is a characteristic premium, not a benchmark-relative strategy return.",
+    formula: "HML_RD = Q5 Return − Q1 Return (within-universe)",
   },
   quintile: {
     title: "Quintile",

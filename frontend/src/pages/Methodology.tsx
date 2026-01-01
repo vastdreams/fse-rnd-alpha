@@ -130,8 +130,8 @@ export function Methodology() {
               </Badge>
               <Button variant="outline" size="sm" asChild>
                 <a href="/rnd-alpha-paper.pdf" target="_blank" rel="noopener noreferrer">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
                 </a>
               </Button>
             </div>

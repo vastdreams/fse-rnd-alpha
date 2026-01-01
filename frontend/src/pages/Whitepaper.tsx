@@ -394,6 +394,10 @@ export function Whitepaper() {
       : typeof rdPremium === "number" && typeof annualTradingCost === "number"
         ? rdPremium - annualTradingCost
         : undefined
+  const backtestPeriodLabel =
+    typeof transactionCostsSafe?.period_label === "string"
+      ? transactionCostsSafe.period_label
+      : "Jul2001-Jun2025"
     
   // Cohort coverage for long-horizon analysis (how many firms have continuous data for each window)
   const eligible5yr = typeof cohort?.eligible_5yr === "number" ? cohort.eligible_5yr : undefined
@@ -1783,8 +1787,8 @@ export function Whitepaper() {
             {typeof invPortfolioNet?.annualized_return === "number" && typeof invBenchmarkNet?.annualized_return === "number"
               ? `ETF basket (net): ${invPortfolioNet.annualized_return.toFixed(2)}% vs EW cohort (net): ${invBenchmarkNet.annualized_return.toFixed(2)}% (${invStartYear}-${invEndYear}).`
               : typeof netPremium === "number"
-                ? `Factor HML after costs: +${netPremium.toFixed(2)}% (Q5−Q1).`
-                : "Factor HML after costs: … (Q5−Q1)."}
+                ? `RD20 strategy spread vs SPY (net of costs): +${netPremium.toFixed(2)}% pp/yr (${backtestPeriodLabel}).`
+                : "RD20 strategy spread vs SPY: … (net of costs)."}
           </div>
         </div>
 

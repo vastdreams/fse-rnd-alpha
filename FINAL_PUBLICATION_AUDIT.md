@@ -309,13 +309,36 @@ The R&D Alpha paper and platform are ready for submission to the Journal of Port
 | Return Coverage | **Jul2001-Jun2025** (24 July-June periods) |
 | Net Premium vs SPY | TBD (will likely be lower, but more credible) |
 
+### 9.3 After State (Backtest Extended to 2001)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Snapshot ID | `af318b11-75c7-40fa-9c4e-ef22de66e420` | JPM Submission Snapshot v7 (RD20 2001-2024) |
+| Investable Backtest Period | **2001-2024** | 24 July-June periods |
+| Gross Premium vs SPY | **8.03%** | Strategy CAGR - SPY CAGR |
+| Net Premium vs SPY | **8.00%** | After 0.027% trading costs |
+| Annual Trading Cost | **0.027%** | Based on ~16% avg turnover |
+| Premium Capture Rate | **99.6%** | Net/Gross |
+| Period Label | **Jul2001-Jun2025** | Now matches HML_RD sample |
+
 ### 9.4 Changes Log
 | Date | Change | Status |
 |------|--------|--------|
 | Jan 2, 2026 | Baseline captured | ✅ |
-| Jan 2, 2026 | SPY data coverage verification | Pending |
-| Jan 2, 2026 | Backend start_year changed to 2001 | Pending |
-| Jan 2, 2026 | Snapshot rebuilt with new window | Pending |
-| Jan 2, 2026 | LaTeX assets regenerated | Pending |
-| Jan 2, 2026 | Frontend labels updated | Pending |
-| Jan 2, 2026 | Deployment verified | Pending |
+| Jan 2, 2026 | SPY data coverage verified (1995-2025) | ✅ |
+| Jan 2, 2026 | SPY July-June returns verified (2000-2023 formation years) | ✅ |
+| Jan 2, 2026 | Backend start_year changed to 2001 | ✅ |
+| Jan 2, 2026 | Period labels added to transaction_costs | ✅ |
+| Jan 2, 2026 | Snapshot rebuilt with new window | ✅ |
+| Jan 2, 2026 | LaTeX assets regenerated (metrics.tex, investable_growth.csv) | ✅ |
+| Jan 2, 2026 | main.tex updated with BacktestPeriodLabel macros | ✅ |
+| Jan 2, 2026 | MainPaper.tsx updated with period labels | ✅ |
+| Jan 2, 2026 | Whitepaper.tsx updated with period labels | ✅ |
+| Jan 2, 2026 | InfoTooltip.tsx updated with CAGR spread definition | ✅ |
+| Jan 2, 2026 | Deployment in progress | Pending |
+
+### 9.5 Key Improvements
+1. **Credibility**: Backtest now includes dot-com bust (2001-2002) and 2008 financial crisis
+2. **Consistency**: RD20 backtest period now matches HML_RD sample (24 years)
+3. **Transparency**: Period labels displayed explicitly in UI and paper
+4. **Expected net premium change**: 9.82% → 8.00% (lower but more credible)

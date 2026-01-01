@@ -15,6 +15,8 @@ abstract: >-
   July-June returns to mitigate look-ahead bias, the frozen publication
   snapshot reports an annual Q5-Q1 (HML_RD) premium of +3.84%/yr
   (Newey-West t = 1.78; win rate 71%) over Jul2001-Jun2025 (N=24 annual periods).
+  The implementable RD20 strategy delivers +8.0% pp/yr net premium vs SPY
+  after transaction costs over the same period (Jul2001-Jun2025).
 keywords:
   - R&D intensity
   - stock returns

@@ -842,11 +842,11 @@ export function MainPaper() {
                 {typeof transactionCosts?.annual_trading_cost_pct === "number" && typeof transactionCosts?.net_rd_premium_pct === "number" ? (
                   <>
                     We translate this finding into an investable strategy: hold the top <strong className="text-foreground">20</strong> stocks by R&amp;D intensity
-                    (equal-weighted) and reconstitute annually in July. Using realized turnover from the backtest and a literature-calibrated transaction-cost model
+                    (equal-weighted) and reconstitute annually in July. The backtest spans <strong className="text-foreground">{transactionCosts.period_label || "Jul2001-Jun2025"}</strong> ({transactionCosts.n_periods || 24} July-June periods), including stress tests (post-dot-com, 2008 crisis). Using realized turnover from the backtest and a literature-calibrated transaction-cost model
                     (Novy-Marx &amp; Velikov, 2016), estimated trading costs are{" "}
                     <strong className="text-foreground">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</strong> annually
                     (large-cap liquidity), yielding a net premium of{" "}
-                    <strong className="text-foreground">{transactionCosts.net_rd_premium_pct.toFixed(2)}%</strong> per year <strong className="text-foreground">vs SPY (S&amp;P 500)</strong> after costs.
+                    <strong className="text-foreground">{transactionCosts.net_rd_premium_pct.toFixed(2)}% pp/yr vs SPY</strong> after costs.
                     This means the strategy delivers substantial excess returns over the broad market when implemented in practice.
                   </>
                 ) : (
@@ -2886,7 +2886,7 @@ export function MainPaper() {
                   <li>
                     <strong className="text-foreground">Net of modeled costs:</strong>{" "}
                     {typeof transactionCosts?.net_rd_premium_pct === "number"
-                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% per year vs SPY (S&P 500); see Section 9`
+                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% pp/yr vs SPY (${transactionCosts.period_label || "Jul2001-Jun2025"}); see Section 9`
                       : "reported in the implementation section (Section 9)."}
                   </li>
                 </ul>
@@ -3282,7 +3282,7 @@ export function MainPaper() {
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            Net premium vs SPY (pp)
+                            Net premium vs SPY (pp/yr, {transactionCosts.period_label || "Jul2001-Jun2025"})
                             <InfoTooltip term="net_premium_after_costs" size={12} />
                           </div>
                           <div className="font-semibold">

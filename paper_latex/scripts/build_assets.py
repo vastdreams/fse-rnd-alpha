@@ -161,6 +161,13 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     gross_premium_pct = _safe_float(tx.get("gross_rd_premium_pct"))
     capture_rate_pct = _safe_float(tx.get("premium_capture_rate_pct"))
 
+    # Backtest period labels (from transaction_costs, for LaTeX macros)
+    backtest_start_year = _safe_int(tx.get("backtest_start_year"))
+    backtest_end_year = _safe_int(tx.get("backtest_end_year"))
+    backtest_n_periods = _safe_int(tx.get("n_periods"))
+    backtest_period_label_raw = tx.get("period_label") if isinstance(tx.get("period_label"), str) else None
+    backtest_period_label = _latex_escape_text(backtest_period_label_raw).replace("-", "--") if backtest_period_label_raw else "--"
+
     built_at = meta.get("built_at")
     built_at_label = None
     if isinstance(built_at, str) and built_at:
@@ -258,6 +265,12 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
             f"\\newcommand{{\\GrossPremiumAfterFormationPct}}{{{_fmt_pct(gross_premium_pct, 2)}}}",
             f"\\newcommand{{\\NetPremiumAfterCostsPct}}{{{_fmt_pct(net_premium_pct, 2)}}}",
             f"\\newcommand{{\\PremiumCaptureRatePct}}{{{_fmt_pct(capture_rate_pct, 1)}}}",
+            "",
+            "% Investable backtest period macros (RD20 strategy vs SPY)",
+            f"\\newcommand{{\\BacktestStartYear}}{{{backtest_start_year or 2001}}}",
+            f"\\newcommand{{\\BacktestEndYear}}{{{backtest_end_year or 2024}}}",
+            f"\\newcommand{{\\BacktestNYears}}{{{backtest_n_periods or 24}}}",
+            f"\\newcommand{{\\BacktestPeriodLabel}}{{{backtest_period_label}}}",
             "",
         ]
     )
