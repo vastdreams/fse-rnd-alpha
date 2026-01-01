@@ -299,9 +299,9 @@ The total shareholder return for each security includes dividends:
 \begin{equation}
 \text{TSR}_{i,t} = \frac{P_{i,t+1} + D_{i,t+1} - P_{i,t}}{P_{i,t}} \times 100\%
 \end{equation}
-where $P$ is price and $D$ is dividends paid during the period. Tier-1 uses closing-price returns as a practical proxy and does not add dividends separately; Tier-2 (when available) uses CRSP-style total returns with authoritative delisting treatment.
+where $P$ is price and $D$ is dividends paid during the period. Tier-1 uses the vendor-provided \texttt{adj\_close} series, which is adjusted for dividends and splits, as a total-return proxy. Tier-2 (when available) uses CRSP-style total returns with authoritative delisting treatment.
 
-\textbf{Tier-1 implementation note (this snapshot):} The Tier-1 daily price endpoint used here provides closing prices but does \emph{not} provide a dividend-adjusted ``adjusted close'' series. Accordingly, Tier-1 returns in this snapshot are computed from closing prices (price returns) and we do not add dividends separately. This limitation is explicitly disclosed and motivates Tier-2 (CRSP/Compustat) robustness work when available.
+\textbf{Tier-1 implementation note (this snapshot):} This snapshot uses the FMP \texttt{adj\_close} field, which incorporates dividend and split adjustments. This approximates total shareholder return without requiring a separate dividend series. The approximation may differ slightly from authoritative CRSP total returns due to vendor-specific adjustment methodologies, but avoids the systematic downward bias of pure price returns.
 
 \begin{tcolorbox}[title=Example Timeline, colback=gray!5, colframe=gray!50]
 \textbf{Timeline for FY2022 R\&D data:}
@@ -433,7 +433,7 @@ A common question: ``If the annual premium is X\%, why isn't the 20-year premium
 
 \textbf{Rolling windows do not rebalance.} A 20-year rolling window sorts stocks into quintiles \textbf{once} at the window start and holds those assignments for 20 years without updating. But firms change over 20 years:
 \begin{itemize}[leftmargin=*]
-    \item A ``high R\&D'' firm in 2000 may reduce R\&D by 2010
+    \item A ``high R\&D'' firm in 2005 may reduce R\&D by 2015
     \item A ``low R\&D'' firm may become innovative through acquisitions
     \item Competitive advantages erode through imitation and patent expiration
 \end{itemize}
@@ -547,9 +547,9 @@ Table~\ref{tab:regime_breakdown} breaks down the premium by historical market re
 \begin{tcolorbox}[title=Understanding Regime Variation, colback=gray!5, colframe=gray!50]
 \textbf{Key questions for each regime:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Dot-com bust (2000--2002):} Did the premium hold when tech stocks crashed?
+    \item \textbf{Post-dot-com (2001--2002):} How did the premium behave in the aftermath of the tech bubble collapse?
     \item \textbf{Financial crisis (2008--2009):} How did high-R\&D firms perform during the credit crunch?
-    \item \textbf{Post-2016 tech rally:} Is the recent premium inflated by a sector bubble?
+    \item \textbf{Recent era (2017--2024):} Is the recent premium inflated by a sector bubble?
 \end{itemize}
 Stable premiums across regimes support H2 (stability). Regime-specific premiums suggest the signal may be time-varying or sector-driven.
 \end{tcolorbox}
@@ -794,7 +794,7 @@ Key findings (snapshot-defined):
 \begin{itemize}[leftmargin=*]
     \item \textbf{Turnover-based cost model:} Trading cost is approximated as (round-trip cost per 100\% turnover) $\times$ (realized turnover from the investable backtest), using S\&P 500 liquidity characteristics \citep{novy_marx_velikov_2016}.
     \item \textbf{Premium capture:} The strategy retains \PremiumCaptureRatePct\% of the gross premium after trading costs.
-    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 price-return proxy).
+    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 total-return proxy via \texttt{adj\_close}).
 \end{itemize}
 
 \subsection{Backtest Performance}
@@ -821,7 +821,7 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
 \addlegendentry{SPY (S\&P 500 price proxy)}
 \end{axis}
 \end{tikzpicture}
-\caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 price-return proxy.}
+\caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 total-return proxy (via \texttt{adj\_close}).}
 \label{fig:investable_growth}
 \end{figure}
 
