@@ -4,6 +4,12 @@
 **ORM**: SQLAlchemy 2.0
 **Async Driver**: asyncpg
 
+> **Note (Jan 2026):** This document includes legacy schema context from earlier iterations of the project.
+> The source of truth for the live platform schema is `backend/app/db/models.py`.
+> In the current Tier-1 publication pipeline, the key market-data tables are:
+> - `fmp_daily_prices` (split-adjusted close), and
+> - `fmp_dividends` (ex-dividend events, used to construct a total-return proxy).
+
 ---
 
 ## Connection Setup

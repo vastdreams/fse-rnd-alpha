@@ -1,9 +1,9 @@
 # Data Provenance Documentation
 
-**Publication**: R&D Intensity and Long-Term Shareholder Returns  
+**Publication**: R\&D Alpha: Investment Intensity and Long-Term Stock Returns  
 **Author**: Abhishek Sehgal  
-**Date**: December 2025  
-**Version**: 1.1.0
+**Date**: January 2026  
+**Version**: 1.0.0
 
 > **See Also**: [DATA_AVAILABILITY.md](DATA_AVAILABILITY.md) for replication instructions and licensing details.
 
@@ -37,12 +37,13 @@ Both tiers use the same methodology (July-June returns, quintile sorting) but di
 | **Data Types** | Income statements, balance sheets, daily prices, company profiles |
 | **Coverage (practical ingestion window)** | Typically 1995-present (varies by company); primary annual inference is Jul2001–Jun2025 in the frozen snapshot |
 | **Update Frequency** | Daily for prices, quarterly for financials |
-| **Last Ingestion** | December 2025 |
+| **Last Ingestion** | January 2026 |
 
 **Fields Used:**
 - `rd_expenses` (R&D Expenses from Income Statement)
 - `revenue` (Total Revenue)
-- `adj_close` (Split and dividend-adjusted daily closing price)
+- `close` (Split-adjusted daily closing price from the stable EOD endpoint)
+- Dividend events (ex-dividend dates) from the stable dividends endpoint; we prefer `adjDividend` (split-adjusted per-share dividend)
 - `sector`, `industry` (Company classification)
 
 **Limitations:**
@@ -73,10 +74,10 @@ Both tiers use the same methodology (July-June returns, quintile sorting) but di
 
 | Field | Value |
 |-------|-------|
-| **Primary Source** | FMP Historical Constituent API |
+| **Primary Source** | Curated constituent dataset (public sources) with S\&P 500 addition dates (Tier-1 proxy) |
 | **Secondary Source** | Optional manual cross-check against index-provider change logs (not a required pipeline input) |
-| **Coverage** | 1994-present (API), manually curated for earlier dates |
-| **Last Update** | December 2025 |
+| **Coverage** | Current constituents with addition dates (Tier-1); historical removals and historical constituents that are no longer current are not fully tracked |
+| **Last Update** | January 2026 |
 
 **Known Issues:**
 - Some historical add dates are estimated from first available financial data
@@ -101,11 +102,13 @@ R&D Intensity (%) = (R&D Expenses / Revenue) × 100
 ### Return Calculation (July-June Convention)
 
 ```
-Total Return = (June End Adj Close / July Start Adj Close) - 1
+Daily TR (no dividend): r_t = P_t / P_{t-1} - 1
+Daily TR (ex-dividend): r_t = (P_t + D_t) / P_{t-1} - 1
+Annual TR (Jul–Jun): Total Return = ∏(1 + r_t) - 1
 ```
 
 **Methodology:**
-- Uses adjusted close prices (includes dividends and splits)
+- Uses split-adjusted closes plus ex-dividend cashflows (dividend events are ingested separately and reinvested in the return stream)
 - July T to June T+1 returns for FY(T-1) R&D data
 - Eliminates look-ahead bias: FY 2019 data → July 2020 portfolio
 

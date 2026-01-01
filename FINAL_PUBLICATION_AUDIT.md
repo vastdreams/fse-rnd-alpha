@@ -130,10 +130,10 @@
 ### 4.2 Return Calculator (return_calculator.py)
 | Check | Status | Evidence |
 |-------|--------|----------|
-| Uses adj_close for TSR | ✅ | Line 23: "Uses adj_close for TOTAL RETURNS" |
-| No double-counting dividends | ✅ | Line 177-178: "do NOT add dividends separately" |
+| Uses close + dividends for TSR proxy | ✅ | Tier-1 uses split-adjusted close plus ex-dividend cashflows (reinvested) |
+| Dividends included exactly once | ✅ | Ex-dividend cashflows are incorporated in the return stream (no separate dividend add on top of an adjusted-close series) |
 | July-June convention | ✅ | Line 21, 289 in main.tex |
-| Publication mode: adj_close_only | ✅ | Line 57, 177 |
+| Publication mode: total_return_dividends | ✅ | Default Tier-1 return construction uses dividends; price-only mode exists for sensitivity |
 
 ### 4.3 Factor Tests (factor_tests.py)
 | Check | Status | Evidence |
@@ -249,7 +249,7 @@
 - [x] Git is up-to-date
 - [x] Server deployment matches
 - [x] HTTPS returns 200
-- [x] Return calculator uses adj_close (TSR)
+- [x] Return calculator uses close + dividends (TSR proxy)
 - [x] Factor alignment documented (July-June compounding)
 - [x] Delisting handling documented (cash-after-exit + sensitivity)
 - [x] Non-overlapping language correct
@@ -264,8 +264,8 @@
 The R&D Alpha paper and platform are ready for submission to the Journal of Portfolio Management.
 
 **Key Strengths:**
-1. All headline numbers (7.55%, 2.78, 0.0107, 71%) are consistent across API, LaTeX, paper, and frontend
-2. No hardcoded values in critical paths - everything flows from publication snapshot
+1. All headline numbers are consistent across API, LaTeX, paper, and frontend because they are snapshot-driven
+2. No hardcoded values in critical paths - everything flows from the frozen publication snapshot
 3. Methodology is clearly documented with appropriate caveats
 4. Infrastructure is stable (Git synced, server deployed, HTTPS working)
 

@@ -396,7 +396,8 @@ rd_intensity = calculate_rd_intensity("AAPL", 2023)
 | `companies` | Company metadata (ticker, name, sector, CIK) |
 | `financials_core` | Annual fundamentals (R&D, revenue, assets) |
 | `financials_ratios` | Computed ratios (R&D intensity, ROE) |
-| `prices` | Daily stock prices (adj_close) |
+| `fmp_daily_prices` | Tier-1 daily prices (split-adjusted close) |
+| `fmp_dividends` | Tier-1 dividend events (ex-div dates; used with `fmp_daily_prices` to construct total-return proxy) |
 | `company_year_core` | Annual company snapshots |
 | `text_factor_rd` | Text-derived R&D signals |
 | `backtest_run` | Backtest execution metadata |

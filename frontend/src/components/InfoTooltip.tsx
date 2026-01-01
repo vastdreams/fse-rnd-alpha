@@ -31,7 +31,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   net_premium_after_costs: {
     title: "Net Premium After Costs (vs SPY)",
     explanation:
-      "The RD20 strategy CAGR spread vs SPY CAGR (S&P 500 total-return proxy via adj_close) after subtracting strategy trading costs. The backtest period is Jul2001-Jun2025 (24 July-June periods), matching the HML_RD characteristic premium sample and including stress tests (post-dot-com, 2008 crisis). This is NOT the HML_RD factor—it's a benchmark-relative, implementable excess return available to a real investor.",
+      "The RD20 strategy CAGR spread vs SPY CAGR (S&P 500 total-return proxy via split-adjusted close + dividends) after subtracting strategy trading costs. The backtest period is Jul2001-Jun2025 (24 July-June periods), matching the HML_RD characteristic premium sample and including stress tests (post-dot-com, 2008 crisis). This is NOT the HML_RD factor—it's a benchmark-relative, implementable excess return available to a real investor.",
     formula: "Net Premium (pp/yr) = Strategy CAGR (net of costs) − SPY CAGR",
   },
   premium_capture_rate: {
@@ -312,7 +312,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   data_sources: {
     title: "Data Sources for DIY",
     explanation:
-      "R&D expense and revenue ultimately come from 10-K filings (SEC EDGAR). For point-in-time S&P 500 membership, use an index-provider constituent history (best practice). This platform uses a Tier-1 vendor feed to standardize fundamentals/prices and constituent spans; the frozen publication snapshot is shipped for exact replication even without redistributing raw vendor data.",
+      "R&D expense and revenue ultimately come from 10-K filings (SEC EDGAR). This platform uses a Tier-1 vendor feed (FMP) to standardize fundamentals and daily prices; total returns are constructed from split-adjusted closes plus dividend events (reinvested). Universe eligibility uses addition-date gating from a curated constituent dataset (Tier-1) with documented limitations; see the Universe Integrity table in the paper. The frozen snapshot is shipped for exact replication even without redistributing raw vendor data.",
   },
   position_sizing: {
     title: "Position Sizing",

@@ -20,9 +20,10 @@ NON-RESPONSIBILITIES:
 NOTES FOR FUTURE AI:
   - Fama-French convention: July T to June T+1 for FY(T-1) data
   - formation_year refers to the fiscal year data used, not the return period
-  - Uses adj_close for TOTAL RETURNS (includes dividends and splits)
-  - Falls back to close if adj_close not available
-  - PUBLICATION FIX (Dec 2025): Switched from close to adj_close for academic standards
+  - Tier-1 daily prices are ingested from the FMP *stable* EOD endpoint, which provides split-adjusted
+    close prices but does NOT provide vendor `adjClose` (dividend-adjusted close) on our current plan.
+  - For publication-grade total returns, we ingest dividend events separately (FMP stable dividends endpoint)
+    and combine them with split-adjusted closes to construct a total-return proxy (reinvested dividends).
 """
 
 import logging
@@ -34,7 +35,13 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 
-from app.db.models import FMPDailyPrice, JulyJuneReturn, FMPAnnualReturn, SP500HistoricalConstituent
+from app.db.models import (
+    FMPDailyPrice,
+    FMPDividend,
+    JulyJuneReturn,
+    FMPAnnualReturn,
+    SP500HistoricalConstituent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +60,13 @@ MIN_TRADING_DAYS = 200  # ~80% of a year
 # We still want to include it to reduce survivorship bias, treating cash as earning 0% thereafter.
 MIN_TRADING_DAYS_REMOVED_IN_WINDOW = 20
 
-# How we construct prices for return computation.
-# - adj_close_only: only use provider-adjusted close (split+dividend adjusted per vendor); never fall back
-# - adj_close_fallback_close: use adj_close when available, otherwise fall back to close (less defensible for TSR claims)
+# How we construct returns for Tier-1.
+# - total_return_dividends: split-adjusted close + ex-dividend cashflows (reinvested) → total-return proxy
+# - price_only: split-adjusted close only (no dividends) → price-return sensitivity mode
+PRICE_MODE_TOTAL_RETURN_DIVIDENDS = "total_return_dividends"
+PRICE_MODE_PRICE_ONLY = "price_only"
+
+# Backwards-compatible aliases used by older CLI/scripts/docs.
 PRICE_MODE_ADJ_CLOSE_ONLY = "adj_close_only"
 PRICE_MODE_ADJ_CLOSE_FALLBACK_CLOSE = "adj_close_fallback_close"
 
@@ -78,6 +89,7 @@ class JulyJuneReturnResult:
     price_mode: str
     adj_close_days: int
     close_fallback_days: int
+    dividend_days: int
 
 
 # ==============================================================================
@@ -103,7 +115,7 @@ class JulyJuneReturnCalculator:
         session: AsyncSession,
         *,
         data_tier: str = "tier1",
-        price_mode: str = PRICE_MODE_ADJ_CLOSE_ONLY,
+        price_mode: str = PRICE_MODE_TOTAL_RETURN_DIVIDENDS,
     ):
         self.session = session
         self.data_tier = data_tier
@@ -169,63 +181,77 @@ class JulyJuneReturnCalculator:
             MIN_TRADING_DAYS_REMOVED_IN_WINDOW if is_removed_in_window else MIN_TRADING_DAYS
         )
         
-        # Get all daily prices in the period
-        # CRITICAL FIX: Use adj_close for TOTAL RETURNS (includes dividends and splits)
-        # Falls back to close if adj_close not available
-        #
-        # Publication policy (Tier-1):
-        # - Default: adj_close_only (most defensible). This treats vendor adj_close as a TSR proxy,
-        #   and we do NOT add dividends separately (avoids double counting).
-        # - Sensitivity: adj_close_fallback_close if needed for broader coverage.
+        # Tier-1 return construction:
+        # - FMP stable EOD provides split-adjusted close prices (but not dividend-adjusted close).
+        # - In publication mode, we construct a total-return proxy by incorporating ex-dividend
+        #   cashflows (from `fmp_dividends`) into the close-to-close daily return stream.
+        # - `price_only` disables dividends as a sensitivity mode (price returns).
         if self.data_tier != "tier1":
             raise ValueError(
                 f"JulyJuneReturnCalculator supports Tier-1 (FMPDailyPrice) only. Got data_tier={self.data_tier!r}."
             )
-        use_adj_only = self.price_mode == PRICE_MODE_ADJ_CLOSE_ONLY
+        # Normalize legacy price_mode strings to the current semantics.
+        effective_price_mode = self.price_mode
+        if self.price_mode == PRICE_MODE_ADJ_CLOSE_ONLY:
+            effective_price_mode = PRICE_MODE_TOTAL_RETURN_DIVIDENDS
+        elif self.price_mode == PRICE_MODE_ADJ_CLOSE_FALLBACK_CLOSE:
+            effective_price_mode = PRICE_MODE_PRICE_ONLY
+
+        include_dividends = effective_price_mode == PRICE_MODE_TOTAL_RETURN_DIVIDENDS
 
         result = await self.session.execute(
             select(
                 FMPDailyPrice.date,
-                FMPDailyPrice.adj_close,
                 FMPDailyPrice.close,
+                FMPDividend.adj_dividend,
+                FMPDividend.dividend,
+            )
+            .outerjoin(
+                FMPDividend,
+                and_(
+                    FMPDividend.symbol == FMPDailyPrice.symbol,
+                    FMPDividend.date == FMPDailyPrice.date,
+                ),
             )
             .where(
                 FMPDailyPrice.symbol == symbol,
                 FMPDailyPrice.date >= start_date,
                 FMPDailyPrice.date <= end_date,
-                # At least one price must exist
-                (FMPDailyPrice.adj_close.isnot(None)) | (FMPDailyPrice.close.isnot(None)),
-                (FMPDailyPrice.adj_close > 0) | (FMPDailyPrice.close > 0),
-                # For publication-grade TSR claims, require adjusted close to be available.
-                # This avoids silently mixing price-only series in a “total return” pipeline.
-                (FMPDailyPrice.adj_close.isnot(None) if use_adj_only else True),
+                # Tier-1 close is split-adjusted (but not dividend-adjusted) on the stable endpoint.
+                FMPDailyPrice.close.isnot(None),
+                FMPDailyPrice.close > 0,
             )
             .order_by(FMPDailyPrice.date)
         )
         
         rows = result.fetchall()
 
-        # Construct the price series deterministically in Python (so we can audit fallback usage).
+        # Construct price + dividend series deterministically in Python (so we can audit dividend usage).
         price_list: List[float] = []
+        dividend_list: List[float] = []
+        dividend_days = 0
+
+        # Legacy audit counters kept for backwards-compatibility with earlier tooling.
+        # In the current Tier-1 pipeline, `adj_close` is not populated, and `close` is always used.
         adj_close_days = 0
         close_fallback_days = 0
 
         for r in rows:
-            adj = float(r.adj_close) if r.adj_close is not None else None
             close = float(r.close) if r.close is not None else None
-
-            if adj is not None and adj > 0:
-                price_list.append(adj)
-                adj_close_days += 1
-                continue
-
-            if use_adj_only:
-                # No fallback allowed in publication mode.
-                continue
 
             if close is not None and close > 0:
                 price_list.append(close)
                 close_fallback_days += 1
+
+                div = None
+                if r.adj_dividend is not None:
+                    div = float(r.adj_dividend)
+                elif r.dividend is not None:
+                    div = float(r.dividend)
+                div = div if (div is not None and div > 0) else 0.0
+                dividend_list.append(div)
+                if div > 0:
+                    dividend_days += 1
 
         trading_days = len(price_list)
         
@@ -236,12 +262,28 @@ class JulyJuneReturnCalculator:
             )
             return None
         
-        # Extract prices (using adjusted close for total return calculation)
+        # Extract prices (close is split-adjusted; dividends handled via `dividend_list` when enabled)
         july_start_price = price_list[0]
         june_end_price = price_list[-1]
-        
-        # Calculate total return
-        total_return = (june_end_price / july_start_price) - 1
+
+        # Calculate total return.
+        #
+        # - price_only: price return from split-adjusted close
+        # - total_return_dividends: reinvest dividends using ex-dividend events
+        if trading_days <= 1:
+            total_return = 0.0
+            annualized_volatility = 0.0
+        else:
+            daily_returns = []
+            for i in range(1, trading_days):
+                numerator = price_list[i]
+                if include_dividends:
+                    numerator += dividend_list[i]
+                daily_returns.append((numerator / price_list[i - 1]) - 1.0)
+
+            total_return = float(np.prod([1.0 + r for r in daily_returns]) - 1.0)
+            daily_std = float(np.std(daily_returns)) if len(daily_returns) > 1 else 0.0
+            annualized_volatility = daily_std * SQRT_252
 
         # Publication semantics:
         # - This series is defined over the fixed July–June window.
@@ -249,11 +291,6 @@ class JulyJuneReturnCalculator:
         #   for the remainder of the window. Therefore the correct “annual” return for the window is
         #   simply the observed holding-period return to the last price (not re-annualized).
         annualized_return = float(total_return)
-        
-        # Calculate volatility from daily returns
-        daily_returns = np.diff(price_list) / price_list[:-1]
-        daily_std = np.std(daily_returns) if len(daily_returns) > 1 else 0
-        annualized_volatility = daily_std * SQRT_252
         
         return JulyJuneReturnResult(
             symbol=symbol,
@@ -264,9 +301,10 @@ class JulyJuneReturnCalculator:
             annualized_return=annualized_return,
             volatility=annualized_volatility,
             trading_days=trading_days,
-            price_mode=self.price_mode,
+            price_mode=effective_price_mode,
             adj_close_days=adj_close_days,
             close_fallback_days=close_fallback_days,
+            dividend_days=dividend_days,
         )
     
     async def compute_all_july_june_returns(

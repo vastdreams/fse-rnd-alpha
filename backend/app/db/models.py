@@ -390,6 +390,38 @@ class FMPDailyPrice(Base):
     )
 
 
+class FMPDividend(Base):
+    """
+    FMP dividend events (ex-dividend dates).
+
+    WHY THIS EXISTS:
+      Our Tier-1 price ingestion uses the FMP *stable* EOD endpoint which provides split-adjusted
+      closes but does not provide vendor `adjClose` (dividend-adjusted close). To construct a
+      total-return proxy (TSR) suitable for publication, we ingest dividend events separately
+      and combine them with split-adjusted closes in the return calculator.
+    """
+
+    __tablename__ = "fmp_dividends"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    date: Mapped[date_type] = mapped_column(Date, nullable=False, index=True)  # ex-dividend date
+
+    dividend: Mapped[Optional[float]] = mapped_column(Float)  # raw dividend per share (vendor)
+    adj_dividend: Mapped[Optional[float]] = mapped_column(Float)  # split-adjusted dividend per share (preferred)
+
+    declaration_date: Mapped[Optional[date_type]] = mapped_column(Date)
+    record_date: Mapped[Optional[date_type]] = mapped_column(Date)
+    payment_date: Mapped[Optional[date_type]] = mapped_column(Date)
+
+    frequency: Mapped[Optional[str]] = mapped_column(String(20))
+    yield_pct: Mapped[Optional[float]] = mapped_column(Float)
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "date", name="uq_fmp_dividend"),
+    )
+
+
 class FMPAnnualReturn(Base):
     """FMP computed annual returns."""
     __tablename__ = "fmp_annual_returns"

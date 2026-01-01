@@ -173,7 +173,7 @@ export const Formulas = {
       block
       compact
       label="Total Shareholder Return"
-      description="Conceptual definition: complete return including price appreciation and dividends. In our Tier-1 publication pipeline we approximate TSR using provider-adjusted close (split+dividend adjusted per vendor) and do not add dividends separately (to avoid double counting)."
+      description="Conceptual definition: complete return including price appreciation and dividends. In our Tier-1 publication pipeline we approximate TSR by combining split-adjusted close prices with ex-dividend cashflows (dividends are incorporated on ex-dividend dates and reinvested), rather than relying on a vendor dividend-adjusted close series."
     >
       <Var>TSR</Var> = <Frac num={<><Var>P</Var><Sub>end</Sub> − <Var>P</Var><Sub>start</Sub> + Div</>} den={<><Var>P</Var><Sub>start</Sub></>} />
     </Formula>

@@ -338,7 +338,7 @@ export function CompanyDetail() {
         <TabsContent value="prices" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Stock Price (5 Years)</CardTitle>
+              <CardTitle>Stock Price (5 Years, split-adjusted close)</CardTitle>
             </CardHeader>
             <CardContent>
               <SafeChart height={400} minHeight={400}>
@@ -357,7 +357,7 @@ export function CompanyDetail() {
                     formatter={(value) => [`$${(value as number).toFixed(2)}`, 'Price']}
                     labelFormatter={(label) => `Date: ${label}`}
                   />
-                  <Area type="monotone" dataKey="adj_close" stroke="#3b82f6" fill="url(#priceGradient)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="close" stroke="#3b82f6" fill="url(#priceGradient)" strokeWidth={2} />
                 </AreaChart>
               </SafeChart>
             </CardContent>

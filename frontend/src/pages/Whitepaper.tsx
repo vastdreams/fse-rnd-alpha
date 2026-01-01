@@ -634,11 +634,11 @@ export function Whitepaper() {
                 <strong>Factor evidence:</strong>{" "}
                 {typeof rdPremium === "number" ? (
                   <>
-                    Q5−Q1 premium is <strong>+{rdPremium.toFixed(1)}%/yr</strong>
+                    Q5-Q1 premium is <strong>+{rdPremium.toFixed(1)}%/yr</strong>
                     {typeof tStat === "number" || typeof winRate === "number" ? (
                       <>
                         {" "}(
-                        {typeof tStat === "number" ? `Newey‑West t = ${tStat.toFixed(2)}` : ""}
+                        {typeof tStat === "number" ? `Newey-West t = ${tStat.toFixed(2)}` : ""}
                         {typeof tStat === "number" && typeof winRate === "number" ? ", " : ""}
                         {typeof winRate === "number" ? `win rate ${winRate}%` : ""}
                         ).
@@ -664,7 +664,7 @@ export function Whitepaper() {
             <div style={{ marginTop: 10, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12 }}>
               <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 4 }}>What to do (practical)</div>
               <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.5 }}>
-                Start with a <strong>small sleeve</strong> (5–15%), rebalance annually, and add <strong>sector caps</strong> if you want more diversification.
+                Start with a <strong>small sleeve</strong> (5-15%), rebalance annually, and add <strong>sector caps</strong> if you want more diversification.
               </div>
             </div>
           </SectionBox>
@@ -673,7 +673,7 @@ export function Whitepaper() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>ETF backtest: growth of $1 (net)</div>
               <div style={{ fontSize: 11, color: "#64748b" }}>
-                {invStartYear}–{invEndYear}
+                {invStartYear}-{invEndYear}
               </div>
             </div>
             <GrowthChart data={investableGrowthData} width={320} height={140} />
@@ -698,7 +698,7 @@ export function Whitepaper() {
               </div>
             </div>
             <div style={{ marginTop: 10, fontSize: 10, color: "#94a3b8", lineHeight: 1.4 }}>
-              Notes: 20‑stock equal‑weight basket, annual reconstitution, July–June convention. Backtest is informational (not advice).
+              Notes: 20-stock equal-weight basket, annual reconstitution, July-June convention. Backtest is informational (not advice).
             </div>
           </div>
         </div>
@@ -709,8 +709,8 @@ export function Whitepaper() {
             <div style={{ fontSize: 12, fontWeight: 800, color: "#1e40af", marginBottom: 6 }}>Implementation checklist</div>
             <ul style={{ fontSize: 12, color: "#1e3a8a", lineHeight: 1.55, paddingLeft: 18, margin: 0 }}>
               <li>June: compute R&amp;D/Rev (prior FY)</li>
-              <li>Buy top {invNHoldings} equal‑weight</li>
-              <li>Hold July→June; rebalance annually</li>
+              <li>Buy top {invNHoldings} equal-weight</li>
+              <li>Hold July-June; rebalance annually</li>
             </ul>
           </div>
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: 12 }}>
@@ -718,13 +718,13 @@ export function Whitepaper() {
             <ul style={{ fontSize: 12, color: "#78350f", lineHeight: 1.55, paddingLeft: 18, margin: 0 }}>
               <li>Add sector caps (avoid tech/healthcare crowding)</li>
               <li>Size for drawdowns (don’t lever it)</li>
-              <li>Stick to a rules‑based rebalance schedule</li>
+              <li>Stick to a rules-based rebalance schedule</li>
             </ul>
           </div>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: "#166534", marginBottom: 6 }}>Expected behavior</div>
             <ul style={{ fontSize: 12, color: "#166534", lineHeight: 1.55, paddingLeft: 18, margin: 0 }}>
-              <li>Edge is long-horizon (3–5yr lag)</li>
+              <li>Edge is long-horizon (3-5 year lag)</li>
               <li>Tracking error is normal</li>
               <li>Patience is the “cost” you pay</li>
             </ul>
@@ -736,7 +736,7 @@ export function Whitepaper() {
     // ═══════════════════════════════════════════════════════════════════════════
     // SLIDE 2: EXEC SUMMARY
     // ═══════════════════════════════════════════════════════════════════════════
-    <Slide key="how-to-make-money" slideNumber={2} totalSlides={TOTAL_SLIDES} title="How to Make Money with R&D Alpha" subtitle="A simple, rules-based tilt toward innovation (and what to expect)" accent="emerald">
+    <Slide key="how-to-make-money" slideNumber={2} totalSlides={TOTAL_SLIDES} title="Implementation Summary" subtitle="Rules, expectations, and what drives the premium" accent="emerald">
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
         {/* Key numbers up top */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
@@ -765,10 +765,10 @@ export function Whitepaper() {
                 <strong>Rank:</strong> all S&amp;P 500 firms by R&amp;D intensity.
               </li>
               <li>
-                <strong>Buy:</strong> top <strong>{invNHoldings}</strong> names equal‑weight (ETFlike), or buy the full top quintile for broad factor exposure.
+                <strong>Buy:</strong> top <strong>{invNHoldings}</strong> names equal-weight (ETF-like), or buy the full top quintile for broad factor exposure.
               </li>
               <li>
-                <strong>Hold:</strong> July→June; <strong>rebalance annually</strong>.
+                <strong>Hold:</strong> July-June; <strong>rebalance annually</strong>.
               </li>
               <li>
                 <strong>Time horizon:</strong> treat it like a 5+ year sleeve (innovation pays with a lag).
@@ -778,7 +778,7 @@ export function Whitepaper() {
             <div style={{ marginTop: 12, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 12 }}>
               <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 4 }}>Why this works (in plain English)</div>
               <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.6 }}>
-                R&amp;D creates intangible assets that are hard to value. Markets tend to underreact, and the payoff shows up over multi‑year horizons.
+                R&amp;D creates intangible assets that are hard to value. Markets tend to underreact, and the payoff shows up over multi-year horizons.
               </div>
             </div>
 
@@ -786,7 +786,7 @@ export function Whitepaper() {
               <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 6 }}>Defaults (copy/paste)</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {[
-                  { k: "Holdings", v: `Top ${invNHoldings} (equal‑weight)` },
+                  { k: "Holdings", v: `Top ${invNHoldings} (equal-weight)` },
                   { k: "Rebalance", v: "Annual (end of June)" },
                   { k: "Risk control", v: "Add sector caps (optional)" },
                   { k: "Horizon", v: "5+ years (lagged payoffs)" },
@@ -805,7 +805,7 @@ export function Whitepaper() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>Performance profile (net)</div>
               <div style={{ fontSize: 11, color: "#64748b" }}>
-                {invStartYear}–{invEndYear}
+                {invStartYear}-{invEndYear}
               </div>
             </div>
 
@@ -862,7 +862,7 @@ export function Whitepaper() {
             </div>
 
             <div style={{ marginTop: 10, fontSize: 10, color: "#94a3b8", lineHeight: 1.45 }}>
-              Costs: round‑trip cost per 100% turnover{" "}
+              Costs: round-trip cost per 100% turnover{" "}
               {typeof invRoundTripCostPer100PctTurnover === "number" ? `${invRoundTripCostPer100PctTurnover.toFixed(3)}%` : "…"}; benchmark cost{" "}
               {typeof invBenchmarkCostPct === "number" ? `${invBenchmarkCostPct.toFixed(2)}%` : "…"} (model).
             </div>
@@ -882,7 +882,7 @@ export function Whitepaper() {
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", marginBottom: 6 }}>When it hurts</div>
             <ul style={{ fontSize: 12, color: "#78350f", lineHeight: 1.6, paddingLeft: 18, margin: 0 }}>
-              <li>Risk‑off / high‑rate regimes that punish long-duration growth</li>
+              <li>Risk-off / high-rate regimes that punish long-duration growth</li>
               <li>Sector concentration (tech/healthcare) without caps</li>
               <li>Short holding periods (innovation needs time)</li>
             </ul>
@@ -950,7 +950,7 @@ export function Whitepaper() {
             <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, flex: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>Example names (highest R&amp;D intensity)</div>
-                <div style={{ fontSize: 10, color: "#94a3b8" }}>R&amp;D/Rev can exceed 100% pre‑revenue</div>
+                <div style={{ fontSize: 10, color: "#94a3b8" }}>R&amp;D/Rev can exceed 100% pre-revenue</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.7fr", gap: 10, fontSize: 11, color: "#64748b", fontWeight: 700, paddingBottom: 8, borderBottom: "1px solid #eef2f7" }}>
                 <div>Ticker</div>
@@ -997,12 +997,12 @@ export function Whitepaper() {
             </div>
 
             <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: 14, flex: 1, display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1e40af", marginBottom: 10 }}>Signal + formation (no look‑ahead)</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1e40af", marginBottom: 10 }}>Signal + formation (no look-ahead)</div>
               <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 6 }}>Signal</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>R&amp;D Intensity = R&amp;D Expense / Revenue</div>
                 <div style={{ fontSize: 12, color: "#475569", marginTop: 6, lineHeight: 1.6 }}>
-                  Use prior fiscal-year fundamentals and form portfolios in June (July–June returns) so the 10‑K is public before formation.
+                  Use prior fiscal-year fundamentals and form portfolios in June (July-June returns) so the 10-K is public before formation.
                 </div>
               </div>
 
@@ -1153,9 +1153,9 @@ export function Whitepaper() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
             {[
               { t: "Fiscal year ends", d: "Companies close FY" },
-              { t: "10‑K filed", d: "Fundamentals become public" },
+              { t: "10-K filed", d: "Fundamentals become public" },
               { t: "End of June", d: "Rank by R&D/Rev" },
-              { t: "July → June", d: "Hold for 12 months" },
+              { t: "July-June", d: "Hold for 12 months" },
             ].map((x, i) => (
               <div key={i} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: 10 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: "#1e40af", marginBottom: 4 }}>{x.t}</div>
@@ -1164,7 +1164,7 @@ export function Whitepaper() {
             ))}
           </div>
           <div style={{ marginTop: 8, fontSize: 10, color: "#1e3a8a" }}>
-            We use <strong>July–June returns</strong> so filings are public before portfolio formation.
+            We use <strong>July-June returns</strong> so filings are public before portfolio formation.
           </div>
         </div>
 
@@ -1264,7 +1264,7 @@ export function Whitepaper() {
             <div style={{ marginTop: 10, padding: 10, background: "#f0fdf4", borderRadius: 8, border: "1px solid #bbf7d0" }}>
               <div style={{ fontSize: 11, color: "#166534", fontWeight: 600, marginBottom: 4 }}>📊 Monotonic Pattern</div>
               <div style={{ fontSize: 10, color: "#166534", lineHeight: 1.4 }}>
-                Returns increase steadily from Q1→Q5, suggesting a true factor relationship rather than a single-quintile anomaly.
+                Returns increase steadily from Q1 to Q5, suggesting a true factor relationship rather than a single-quintile anomaly.
               </div>
             </div>
             <div style={{ marginTop: 10, background: "#047857", borderRadius: 10, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1329,7 +1329,7 @@ export function Whitepaper() {
             <div style={{ fontSize: 11, color: "#92400e", lineHeight: 1.5 }}>
               Effect sizes grow with horizon
               {typeof etaSquared5yr === "number" && typeof etaSquared20yr === "number"
-                ? ` (η² ${etaSquared5yr.toFixed(2)} → ${etaSquared20yr.toFixed(2)} over 5→20 years).`
+                ? ` (η² ${etaSquared5yr.toFixed(2)} to ${etaSquared20yr.toFixed(2)} over 5 to 20 years).`
                 : "."}{" "}
               R&D benefits have a <strong>3-5 year lag</strong>, so patient investors are rewarded.
             </div>
@@ -1348,7 +1348,7 @@ export function Whitepaper() {
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>Annual R&D Premium (Q5 − Q1)</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>Annual R&D Premium (Q5-Q1)</h3>
               <p style={{ fontSize: 11, color: "#64748b", margin: "4px 0 0 0" }}>High R&D quintile minus Low R&D quintile returns</p>
                     </div>
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -1375,7 +1375,7 @@ export function Whitepaper() {
                 {/* Y-axis labels */}
             <div style={{ position: "absolute", left: 0, top: -4, fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>+30%</div>
             <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#64748b", fontWeight: 600 }}>0%</div>
-            <div style={{ position: "absolute", left: 0, bottom: -4, fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>−30%</div>
+            <div style={{ position: "absolute", left: 0, bottom: -4, fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>-30%</div>
             
                 {/* Bars */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "100%", marginLeft: 40, paddingRight: 4 }}>
@@ -1448,7 +1448,7 @@ export function Whitepaper() {
                 ))}
           </div>
             <div style={{ marginTop: 10, background: "linear-gradient(90deg, #059669 0%, #10b981 100%)", borderRadius: 6, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Spread (Q5−Q1)</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>Spread (Q5-Q1)</span>
               <span style={{ fontSize: 18, fontWeight: 800, color: "white" }}>
                 {(() => {
                   const q5 = getQuintileReturn(5)
@@ -1534,7 +1534,7 @@ export function Whitepaper() {
           </div>
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", marginBottom: 4 }}>📈 Monotonic Returns</div>
-            <div style={{ fontSize: 11, color: "#1e3a8a" }}>Returns increase linearly from Q1→Q5, true factor behavior.</div>
+            <div style={{ fontSize: 11, color: "#1e3a8a" }}>Returns increase linearly from Q1 to Q5; true factor behavior.</div>
           </div>
           <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#a16207", marginBottom: 4 }}>⏳ Patient Capital</div>
@@ -1659,7 +1659,7 @@ export function Whitepaper() {
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>💡 Practical Implication</div>
               <div style={{ fontSize: 11, color: "#78350f", lineHeight: 1.5 }}>
-                To reduce sector concentration, apply <strong>sector caps</strong> (e.g., 20% max per sector) during portfolio construction. This improves diversification but can reduce the raw premium—treat caps as a risk-control trade-off.
+                To reduce sector concentration, apply <strong>sector caps</strong> (e.g., 20% max per sector) during portfolio construction. This improves diversification but can reduce the raw premium; treat caps as a risk-control trade-off.
               </div>
             </div>
           </div>
@@ -1694,7 +1694,7 @@ export function Whitepaper() {
             { authors: "Chan, Lakonishok & Sougiannis", year: "2001", journal: "Journal of Finance", finding: "High R&D-to-market-cap stocks earned significant excess returns over subsequent years. First major documentation of the R&D anomaly." },
             { authors: "Lev & Sougiannis", year: "1996", journal: "J. Accounting & Economics", finding: "R&D-adjusted earnings provide superior return predictions vs. reported GAAP earnings. R&D capitalization improves valuation." },
             { authors: "Eberhart, Maxwell & Siddique", year: "2004", journal: "Journal of Finance", finding: "Firms increasing R&D outperform over 5+ years. Market systematically underreacts to R&D investment announcements." },
-            { authors: "Gu", year: "2005", journal: "J. Business Finance & Accounting", finding: "R&D intensity predicts future profitability and market-to-book ratios. Effect is stronger for firms with consistent R&D programs." },
+            { authors: "Ahmed, Bu & Ye", year: "2025", journal: "Journal of Money, Credit and Banking", finding: "Finds the R&D premium is stronger among illiquid stocks, consistent with information frictions amplifying the return pattern." },
           ].map((paper, i) => (
             <div key={i} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -1762,7 +1762,7 @@ export function Whitepaper() {
         {/* Bottom note */}
         <div style={{ marginTop: 10, background: "#0f172a", borderRadius: 12, padding: 10, textAlign: "center" }}>
           <span style={{ fontSize: 12, color: "#94a3b8" }}>
-            <strong style={{ color: "white" }}>Our view:</strong> Both hypotheses likely contribute. The premium persists because (a) accounting creates mispricing and (b) innovation risk deters some investors.
+            <strong style={{ color: "white" }}>Interpretation:</strong> Both hypotheses are plausible. This whitepaper focuses on documenting the pattern and implementability rather than isolating a single mechanism.
           </span>
         </div>
       </div>
@@ -1803,7 +1803,7 @@ export function Whitepaper() {
                 { label: "Signal", value: "R&D Expense / Revenue (fiscal year)", icon: "📊" },
                 { label: "Portfolio", value: `Top ${invNHoldings} by R&D intensity (or full Q5)`, icon: "📈" },
                 { label: "Formation Date", value: "End of June (after 10-K filings)", icon: "📅" },
-                { label: "Holding Period", value: "12 months (July → June)", icon: "⏱️" },
+                { label: "Holding Period", value: "12 months (July-June)", icon: "⏱️" },
                 { label: "Weighting", value: `Equal-weight (${Math.round(100 / Math.max(1, invNHoldings))}% each)`, icon: "⚖️" },
                 { label: "Rebalance", value: `Annual (avg turnover ${typeof invTurnoverAvg === "number" ? `${invTurnoverAvg.toFixed(0)}%` : "…"})`, icon: "🔄" },
               ].map((item, i) => (
@@ -1844,8 +1844,8 @@ export function Whitepaper() {
                   },
                   {
                     label: "Return Convention",
-                    value: "July–June",
-                    note: "Avoid look-ahead (10‑K public before formation)",
+                    value: "July-June",
+                    note: "Avoid look-ahead (10-K public before formation)",
                   },
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #e2e8f0" }}>
@@ -2040,7 +2040,7 @@ export function Whitepaper() {
                 num: "2",
                 text:
                   typeof etaSquared5yr === "number" && typeof etaSquared20yr === "number"
-                    ? `Effect size grows with horizon (η² ${etaSquared5yr.toFixed(2)}→${etaSquared20yr.toFixed(2)}), suggesting R&D benefits compound. Patience is rewarded.`
+                    ? `Effect size grows with horizon (η² ${etaSquared5yr.toFixed(2)} to ${etaSquared20yr.toFixed(2)}), suggesting R&D benefits compound. Patience is rewarded.`
                     : "Effect size grows with horizon (η² rises), suggesting R&D benefits compound. Patience is rewarded.",
               },
               { num: "3", text: "Results align with decades of academic research on intangible asset mispricing (Chan et al., Lev & Sougiannis)." },

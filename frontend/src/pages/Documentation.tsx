@@ -440,7 +440,7 @@ export function Documentation() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     We default to July-June returns (Fama-French convention) to reduce look-ahead bias when forming
-                    portfolios from fiscal-year financial statements. Prices are taken from adjusted close when available.
+                    portfolios from fiscal-year financial statements. Total returns are constructed from split-adjusted close prices plus dividend events (reinvested).
                   </p>
                 </div>
 

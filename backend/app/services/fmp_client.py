@@ -400,6 +400,28 @@ class FMPClient:
         if data and isinstance(data, list) and len(data) > 0:
             return data[0]
         return None
+
+    # =========================================================================
+    # Corporate Actions (Dividends)
+    # =========================================================================
+
+    async def get_dividends(
+        self,
+        symbol: str,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get dividend events for a ticker.
+
+        Notes:
+          - Uses the FMP *stable* endpoint which is available on our current plan.
+          - The returned `date` is the ex-dividend date (and can equal record date under T+1 settlement).
+          - `adjDividend` is split-adjusted and is preferred when constructing total-return series
+            from split-adjusted close prices.
+        """
+        data = await self._get("/stable/dividends", {"symbol": symbol})
+        if isinstance(data, list):
+            return data
+        return []
     
     async def get_eod_bulk(self, date_str: str) -> List[Dict[str, Any]]:
         """

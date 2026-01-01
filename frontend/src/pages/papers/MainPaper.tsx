@@ -1284,12 +1284,13 @@ export function MainPaper() {
                           <span className="inline-flex items-center gap-1">
                             Return definition
                             <InfoTooltip title="Return Definition" size={12}>
-                              Publication returns are computed from provider <strong>adjusted close</strong> (split+dividend adjusted per vendor) to approximate total shareholder return.
-                              We do not add dividends separately (to avoid double counting). In publication mode, we do not silently fall back to unadjusted close; fallback modes exist only for sensitivity/coverage checks.
+                              Publication returns are computed as a dividend-reinvested total-return proxy built from <strong>split-adjusted close</strong> prices plus <strong>ex-dividend cashflows</strong>.
+                              In Tier-1, prices come from the provider’s stable EOD feed (split-adjusted close) and dividends come from the provider’s stable dividends feed (adjDividend).
+                              We incorporate dividends on ex-dividend dates when computing daily returns, so dividends are included exactly once.
                             </InfoTooltip>
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-mono">Adj close (publication)</TableCell>
+                        <TableCell className="text-right font-mono">Close + dividends (publication)</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">
@@ -3857,7 +3858,7 @@ export function MainPaper() {
                             <strong className="text-foreground">Do nothing</strong>{" "}
                             <InfoTooltip term="holding_period" size={12} />
                             <br />
-                            <span className="text-xs">Seriously. No mid-year trading.</span>
+                            <span className="text-xs">Avoid mid-year trading.</span>
                           </span>
                         </li>
                         <li className="flex items-start gap-2">

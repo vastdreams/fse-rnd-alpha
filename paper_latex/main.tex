@@ -102,7 +102,7 @@
 
 \noindent\textbf{Results.} The high-minus-low R\&D factor (\textbf{HML\_RD}) averages \textbf{\AnnualMeanPremium\%} per year ($t = \AnnualTStat$, $p = \AnnualPValue$; Newey-West \citep{newey_west_1987}), positive in \AnnualPositiveYears{}/\AnnualNYears{} years (\AnnualWinRatePct\% win rate). The investable \textbf{RD20 strategy} delivers \textbf{\NetPremiumAfterCostsPct\%} annual excess return versus SPY after transaction costs (\BacktestPeriodLabel{} backtest, N=\BacktestNYears), retaining \PremiumCaptureRatePct\% of the gross premium.
 
-\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via adjusted close) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. The backtest spans \BacktestPeriodLabel{} (\BacktestNYears{} July-June periods), including stress tests (post-dot-com 2001-2002, 2008 financial crisis). Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
+\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus SPY (S\&P 500 total-return proxy via split-adjusted close + dividends) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. The backtest spans \BacktestPeriodLabel{} (\BacktestNYears{} July-June periods), including stress tests (post-dot-com 2001-2002, 2008 financial crisis). Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
 \noindent\textbf{Interpretation.} Results are consistent with either mispricing of intangible assets or risk compensation for innovation exposure. We document sector tilts, factor exposures, and regime dependence without claiming to isolate a single mechanism. The analysis is associational rather than causal.
 \end{abstract}
@@ -199,6 +199,8 @@ The relationship between R\&D investment and stock returns has been studied acro
 \subsection{Intangible Investment, Accounting, and Mispricing}
 
 A recurring theme in the intangible-capital literature is that standard accounting can understate the economic value of R\&D by expensing it. This matters because expensing R\&D lowers contemporaneous earnings for innovation-intensive firms even when expected future cash flows rise.
+
+Related work proposes intangible-adjusted profitability measures that treat intangible expenditures as investment to better capture underlying ``asset quality'' and documents that such measures predict longer-horizon cash flows and return patterns \citep{jagannathan_korajczyk_wang_2025}.
 
 The foundational work on R\&D capitalization and stock returns comes from \citet{lev_sougiannis_1996}, who construct estimates of R\&D capital and show that it is associated with subsequent returns and earnings. They argue that expensing R\&D leads to systematic undervaluation of intangible-intensive firms. \citet{kothari_laguerre_leone_2002} provide evidence on the uncertainty of future earnings from R\&D, showing that R\&D-intensive firms have more volatile future earnings, which may justify some market discount.
 
@@ -303,9 +305,11 @@ The total shareholder return (TSR) is conceptually defined as:
 \begin{equation}
 \text{TSR}_{i,t} = \frac{P_{i,t+1} + D_{i,t+1} - P_{i,t}}{P_{i,t}} \times 100\%
 \end{equation}
-where $P$ is price and $D$ is dividends paid during the period. Tier-1 uses the vendor-provided \texttt{adj\_close} series, which is adjusted for dividends and splits, as a total-return proxy. Tier-2 (when available) uses CRSP-style total returns with authoritative delisting treatment.
+where $P$ is price and $D$ is dividends paid during the period.
 
-\textbf{Tier-1 implementation note (this snapshot):} This snapshot uses the FMP \texttt{adj\_close} field, which incorporates dividend and split adjustments. This approximates total shareholder return without requiring a separate dividend series. The approximation may differ slightly from authoritative CRSP total returns due to vendor-specific adjustment methodologies, but avoids the systematic downward bias of pure price returns.
+\textbf{Tier-1 implementation note (this snapshot):} The Tier-1 price feed provides split-adjusted closes but does not provide a vendor dividend-adjusted close series. We therefore construct a total-return proxy by combining split-adjusted closes with ex-dividend cashflows (dividend events are ingested separately). On ex-dividend dates we compute daily returns as $(P_t + D_t)/P_{t-1} - 1$ (and $P_t/P_{t-1} - 1$ otherwise), and compound within each July-June window. This approximates dividend-reinvested total return without double counting.
+
+Tier-2 (when available) uses CRSP-style total returns with authoritative delisting treatment.
 
 \begin{tcolorbox}[title=Example Timeline, colback=gray!5, colframe=gray!50]
 \textbf{Timeline for FY2022 R\&D data:}
@@ -807,7 +811,7 @@ Key findings (snapshot-defined):
 \begin{itemize}[leftmargin=*]
     \item \textbf{Turnover-based cost model:} Trading cost is approximated as (round-trip cost per 100\% turnover) $\times$ (realized turnover from the investable backtest), using S\&P 500 liquidity characteristics \citep{novy_marx_velikov_2016}.
     \item \textbf{Premium capture:} The strategy retains \PremiumCaptureRatePct\% of the gross premium after trading costs.
-    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 total-return proxy via \texttt{adj\_close}). Backtest period: \BacktestPeriodLabel{} (N=\BacktestNYears).
+    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 total-return proxy via split-adjusted close + dividends). Backtest period: \BacktestPeriodLabel{} (N=\BacktestNYears).
 \end{itemize}
 
 \subsection{Backtest Performance}
@@ -832,10 +836,10 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
 \addplot+[mark=none,thick] table [x=year,y=benchmark_index,col sep=comma] {data/investable_growth.csv};
 \addlegendentry{Cohort (EW, net)}
 \addplot+[mark=none,thick] table [x=year,y=sp500_index,col sep=comma] {data/investable_growth.csv};
-\addlegendentry{SPY (S\&P 500 total-return proxy via \texttt{adj\_close})}
+\addlegendentry{SPY (S\&P 500 total-return proxy; close + dividends)}
 \end{axis}
 \end{tikzpicture}
-\caption{Investable strategy cumulative growth (\BacktestPeriodLabel{} backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 total-return proxy (via \texttt{adj\_close}).}
+\caption{Investable strategy cumulative growth (\BacktestPeriodLabel{} backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 total-return proxy (close + dividends).}
 \label{fig:investable_growth}
 \end{figure}
 

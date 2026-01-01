@@ -370,7 +370,7 @@ export function Methodology() {
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-1">Total Shareholder Return</h3>
                   <p className="text-xs text-muted-foreground">
-                    where <Var>P</Var> is approximated using provider-adjusted close (split + dividend adjusted per vendor)
+                    where <Var>P</Var> is the split-adjusted close; dividends are incorporated via ex-dividend cashflows to form a total-return proxy
                   </p>
                 </div>
                 <Formulas.TSR />
@@ -741,7 +741,7 @@ export function Methodology() {
                   <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-foreground">Returns Are Total Shareholder Return</p>
-                    <p className="text-xs text-muted-foreground">Approximated via provider-adjusted close (split + dividend adjusted; no separate dividend add)</p>
+                    <p className="text-xs text-muted-foreground">Approximated via split-adjusted close + dividend events (reinvested)</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">

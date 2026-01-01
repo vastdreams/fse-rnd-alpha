@@ -79,12 +79,14 @@ async def _run_tier1(
             # Return-definition audit (publication readiness): how often do we fall back to close?
             total_adj_days = 0
             total_fallback_days = 0
+            total_dividend_days = 0
             total_records = 0
             for _, by_year in results.items():
                 for _, r in by_year.items():
                     total_records += 1
                     total_adj_days += int(getattr(r, "adj_close_days", 0))
                     total_fallback_days += int(getattr(r, "close_fallback_days", 0))
+                    total_dividend_days += int(getattr(r, "dividend_days", 0))
 
             denom = total_adj_days + total_fallback_days
             fallback_share = (total_fallback_days / denom) if denom > 0 else 0.0
@@ -96,6 +98,7 @@ async def _run_tier1(
                     "adj_close_days": total_adj_days,
                     "close_fallback_days": total_fallback_days,
                     "close_fallback_share": round(fallback_share, 6),
+                    "dividend_days": total_dividend_days,
                 },
             )
             saved = await calculator.save_july_june_returns(results)
@@ -149,12 +152,20 @@ def main() -> None:
     )
     parser.add_argument(
         "--price-mode",
-        choices=["adj_close_only", "adj_close_fallback_close"],
-        default="adj_close_only",
+        choices=[
+            # Current (recommended) modes
+            "total_return_dividends",
+            "price_only",
+            # Backwards-compatible aliases (kept for older docs/scripts)
+            "adj_close_only",
+            "adj_close_fallback_close",
+        ],
+        default="total_return_dividends",
         help=(
             "Tier-1 price construction policy. "
-            "adj_close_only is publication-grade (no silent fallback); "
-            "adj_close_fallback_close is a coverage-oriented sensitivity mode."
+            "total_return_dividends is publication-grade (split-adjusted close + dividends → TSR proxy); "
+            "price_only is a price-return sensitivity mode (no dividends). "
+            "Legacy aliases adj_close_only/adj_close_fallback_close are accepted for backwards compatibility."
         ),
     )
     parser.add_argument(

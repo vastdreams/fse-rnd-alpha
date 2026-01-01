@@ -427,8 +427,8 @@ class FactorSpanningAnalyzer:
 
         Design:
           - Keep the study's annual July reconstitution rule.
-          - Compute *monthly* HML_RD returns within each July–June year using month-end adj_close
-            from the Tier-1 daily price table.
+          - Compute *monthly* HML_RD returns within each July-June year using month-end split-adjusted
+            closes plus dividend events (Tier-1 total-return proxy).
           - Regress monthly HML_RD on monthly FF factors; report alpha annualized (×12) for readability.
         """
         from datetime import date as _date
@@ -436,9 +436,9 @@ class FactorSpanningAnalyzer:
         from app.db.models import FamaFrenchFactor, SP500HistoricalConstituent
 
         if not use_july_june:
-            return {"error": "Monthly spanning currently implemented for July–June convention only."}
+            return {"error": "Monthly spanning currently implemented for July-June convention only."}
         if data_tier != "tier1":
-            return {"error": f"Monthly spanning currently supports Tier-1 (daily adj_close) only. Got data_tier={data_tier!r}."}
+            return {"error": f"Monthly spanning currently supports Tier-1 only. Got data_tier={data_tier!r}."}
 
         # Membership availability (point-in-time S&P 500 constituents)
         membership_total = await self.session.scalar(select(func.count(SP500HistoricalConstituent.id)))
@@ -446,7 +446,7 @@ class FactorSpanningAnalyzer:
 
         monthly_rows: list[dict[str, Any]] = []
 
-        # Build monthly HML_RD across all July–June windows.
+        # Build monthly HML_RD across all July-June windows.
         for return_year in range(int(start_return_year), int(end_return_year) + 1):
             formation_year = int(return_year) - 1
             formation_date = _date(int(return_year), 7, 1)
@@ -486,26 +486,45 @@ class FactorSpanningAnalyzer:
                         FROM rd_data rd
                         WHERE rd.rd_intensity IS NOT NULL
                     ),
-                    month_end AS (
-                        SELECT DISTINCT ON (p.symbol, date_trunc('month', p.date))
+                    daily AS (
+                        SELECT
                             p.symbol,
-                            date_trunc('month', p.date)::date AS month,
-                            p.date AS last_date,
-                            COALESCE(p.adj_close, p.close) AS price
+                            p.date,
+                            p.close AS price,
+                            COALESCE(d.adj_dividend, d.dividend, 0.0) AS dividend,
+                            LAG(p.close) OVER (PARTITION BY p.symbol ORDER BY p.date) AS prev_price
                         FROM fmp_daily_prices p
                         JOIN ranked r ON r.symbol = p.symbol
+                        LEFT JOIN fmp_dividends d
+                          ON d.symbol = p.symbol
+                         AND d.date = p.date
                         WHERE p.date >= :price_start
                           AND p.date <= :price_end
-                          AND COALESCE(p.adj_close, p.close) IS NOT NULL
-                          AND COALESCE(p.adj_close, p.close) > 0
-                        ORDER BY p.symbol, date_trunc('month', p.date), p.date DESC
+                          AND p.close IS NOT NULL
+                          AND p.close > 0
+                    ),
+                    daily_ret AS (
+                        SELECT
+                            symbol,
+                            date_trunc('month', date)::date AS month,
+                            CASE
+                                WHEN prev_price IS NOT NULL AND prev_price > 0
+                                THEN ((price + dividend) / prev_price) - 1
+                                ELSE NULL
+                            END AS ret
+                        FROM daily
                     ),
                     monthly_ret AS (
                         SELECT
                             symbol,
                             month,
-                            (price / LAG(price) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
-                        FROM month_end
+                            (EXP(SUM(LN(1 + ret))) - 1) AS ret
+                        FROM daily_ret
+                        WHERE ret IS NOT NULL
+                          AND (1 + ret) > 0
+                          AND month >= :window_start_month
+                          AND month <= :window_end_month
+                        GROUP BY symbol, month
                     ),
                     joined AS (
                         SELECT
@@ -514,9 +533,7 @@ class FactorSpanningAnalyzer:
                             mr.ret
                         FROM monthly_ret mr
                         JOIN ranked r ON r.symbol = mr.symbol
-                        WHERE mr.month >= :window_start_month
-                          AND mr.month <= :window_end_month
-                          AND r.quintile IN (1, 5)
+                        WHERE r.quintile IN (1, 5)
                           AND mr.ret IS NOT NULL
                     )
                     SELECT
@@ -561,26 +578,45 @@ class FactorSpanningAnalyzer:
                         FROM rd_data rd
                         WHERE rd.rd_intensity IS NOT NULL
                     ),
-                    month_end AS (
-                        SELECT DISTINCT ON (p.symbol, date_trunc('month', p.date))
+                    daily AS (
+                        SELECT
                             p.symbol,
-                            date_trunc('month', p.date)::date AS month,
-                            p.date AS last_date,
-                            COALESCE(p.adj_close, p.close) AS price
+                            p.date,
+                            p.close AS price,
+                            COALESCE(d.adj_dividend, d.dividend, 0.0) AS dividend,
+                            LAG(p.close) OVER (PARTITION BY p.symbol ORDER BY p.date) AS prev_price
                         FROM fmp_daily_prices p
                         JOIN ranked r ON r.symbol = p.symbol
+                        LEFT JOIN fmp_dividends d
+                          ON d.symbol = p.symbol
+                         AND d.date = p.date
                         WHERE p.date >= :price_start
                           AND p.date <= :price_end
-                          AND COALESCE(p.adj_close, p.close) IS NOT NULL
-                          AND COALESCE(p.adj_close, p.close) > 0
-                        ORDER BY p.symbol, date_trunc('month', p.date), p.date DESC
+                          AND p.close IS NOT NULL
+                          AND p.close > 0
+                    ),
+                    daily_ret AS (
+                        SELECT
+                            symbol,
+                            date_trunc('month', date)::date AS month,
+                            CASE
+                                WHEN prev_price IS NOT NULL AND prev_price > 0
+                                THEN ((price + dividend) / prev_price) - 1
+                                ELSE NULL
+                            END AS ret
+                        FROM daily
                     ),
                     monthly_ret AS (
                         SELECT
                             symbol,
                             month,
-                            (price / LAG(price) OVER (PARTITION BY symbol ORDER BY month)) - 1 AS ret
-                        FROM month_end
+                            (EXP(SUM(LN(1 + ret))) - 1) AS ret
+                        FROM daily_ret
+                        WHERE ret IS NOT NULL
+                          AND (1 + ret) > 0
+                          AND month >= :window_start_month
+                          AND month <= :window_end_month
+                        GROUP BY symbol, month
                     ),
                     joined AS (
                         SELECT
@@ -589,9 +625,7 @@ class FactorSpanningAnalyzer:
                             mr.ret
                         FROM monthly_ret mr
                         JOIN ranked r ON r.symbol = mr.symbol
-                        WHERE mr.month >= :window_start_month
-                          AND mr.month <= :window_end_month
-                          AND r.quintile IN (1, 5)
+                        WHERE r.quintile IN (1, 5)
                           AND mr.ret IS NOT NULL
                     )
                     SELECT
@@ -1306,16 +1340,16 @@ class LiquidityModerationAnalyzer:
       Size is an imperfect proxy for trading frictions and information asymmetry. A direct
       liquidity proxy reduces reviewer friction when interpreting “mispricing vs risk”.
 
-    METHOD (Tier-1, July–June aligned):
-      - Compute pre-formation liquidity over Jul(Y)–Jun(Y+1) for formation_year = Y.
+    METHOD (Tier-1, July-June aligned):
+      - Compute pre-formation liquidity over Jul(Y)-Jun(Y+1) for formation_year = Y.
       - Bucket stocks into terciles by liquidity within each formation year.
       - Within each tercile, compute internal RD quintiles and the Q5−Q1 premium by year.
-      - Aggregate across years and report mean premium + Newey–West t-stat on the annual series.
+      - Aggregate across years and report mean premium + Newey-West t-stat on the annual series.
 
     OUTPUT:
       Two panels:
-        (A) Amihud (2002) illiquidity using daily adj_close returns and dollar volume
-        (B) Dollar volume proxy (avg adj_close × volume), inverted so higher = more illiquid
+        (A) Amihud (2002) illiquidity using daily close returns and dollar volume
+        (B) Dollar volume proxy (avg close × volume), inverted so higher = more illiquid
     """
 
     def __init__(self, session: AsyncSession):
@@ -1557,8 +1591,8 @@ class LiquidityModerationAnalyzer:
                 "end_formation_year": int(end_formation_year - 1),
                 "return_convention": "july_june",
                 "data_tier": str(data_tier),
-                "liquidity_window": "Jul(Y)–Jun(Y+1) (pre-formation)",
-                "premium_definition": "Within-bucket Q5−Q1 using July–June annualized returns (percent)",
+                "liquidity_window": "Jul(Y)-Jun(Y+1) (pre-formation)",
+                "premium_definition": "Within-bucket Q5-Q1 using July-June annualized returns (percent)",
                 "nw_lags": 1,
                 "trading_days_min": 150,
             },

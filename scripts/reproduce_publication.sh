@@ -108,6 +108,9 @@ python scripts/ingest_ff_factors.py 2>/dev/null || echo "  (skipped - may alread
 echo "1.4 Ingesting delisting returns..."
 python scripts/ingest_delisting_returns.py 2>/dev/null || echo "  (skipped - may already exist)"
 
+echo "1.5 Ingesting dividend events (Tier-1)..."
+python scripts/ingest_dividends.py 2>/dev/null || echo "  (skipped or failed - ensure FMP_API_KEY and API tier supports /stable/dividends)"
+
 echo ""
 echo "============================================================"
 echo "STEP 2: COMPUTE RESEARCH METRICS"

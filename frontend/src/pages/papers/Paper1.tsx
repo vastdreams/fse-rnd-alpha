@@ -625,8 +625,10 @@ export function Paper1() {
                   <span className="text-muted-foreground">FY 2019 ends Dec 31 → 10-K filed by March 2020 → Portfolio formed July 1, 2020 → Returns measured July 2020 to June 2021</span>
               </div>
                 <div className="font-mono text-sm mt-2">
-                  <p className="text-primary">TSR = (P_June_end - P_July_start) / P_July_start</p>
-                  <p className="text-slate-500 dark:text-slate-400 mt-1">where P = adjusted closing price (split and dividend-adjusted)</p>
+                  <p className="text-primary">TSR = (P_June_end + Dividends - P_July_start) / P_July_start</p>
+                  <p className="text-slate-500 dark:text-slate-400 mt-1">
+                    where P = split-adjusted close and Dividends are ex-dividend cashflows (reinvested in the return stream)
+                  </p>
                 </div>
               </div>
               <p className="text-muted-foreground leading-relaxed mt-3">
@@ -644,7 +646,7 @@ export function Paper1() {
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">2.</span>
-                  <span className="text-muted-foreground"><strong className="text-foreground">Exit Handling:</strong> When a firm exits mid-period (merger/delisting), we compute return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the July–June window (cash-after-exit). Delisting uncertainty is quantified via sensitivity analysis.</span>
+                  <span className="text-muted-foreground"><strong className="text-foreground">Exit Handling:</strong> When a firm exits mid-period (merger/delisting), we compute return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the July-June window (cash-after-exit). Delisting uncertainty is quantified via sensitivity analysis.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">3.</span>
@@ -1008,7 +1010,7 @@ export function Paper1() {
                   <p className="text-sm font-semibold text-foreground">1. Financial Modeling Prep (Tier-1)</p>
                   <ul className="text-sm text-muted-foreground mt-1 space-y-1 list-disc list-inside">
                     <li>Income statements: R&amp;D expense and revenue</li>
-                    <li>Daily prices: provider adjusted close for publication returns (split+dividend adjusted; no separate dividend cashflows added)</li>
+                    <li>Daily prices: split-adjusted close + dividend events (reinvested) for the total-return proxy used in publication returns</li>
                     <li>Historical constituents: point-in-time S&amp;P 500 membership (Tier-1 proxy)</li>
                     <li>
                       Replication requires an <code>FMP_API_KEY</code> (data cannot be redistributed)

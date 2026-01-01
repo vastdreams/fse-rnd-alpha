@@ -727,8 +727,9 @@ class PortfolioOptimizer:
         from app.db.models import JulyJuneReturn
 
         # S&P 500 comparison series:
-        # - Use SPY (cap-weighted, total-return proxy via adj_close) to avoid relying on any
-        #   “constituents API” and to keep the benchmark investable for practitioner readers.
+        # - Use SPY (cap-weighted, total-return proxy via split-adjusted close + dividends)
+        #   to avoid relying on any “constituents API” and to keep the benchmark investable
+        #   for practitioner readers.
         sp500_proxy_symbol = "SPY"
 
         universe_symbols = sorted({*universe_portfolio_symbols, *benchmark_symbols, sp500_proxy_symbol})
@@ -930,7 +931,7 @@ class PortfolioOptimizer:
             "meta": {
                 "return_convention": "july_june" if self.use_july_june else "calendar",
                 "benchmark_universe": "research_cohort_equal_weight",
-                "sp500_proxy": "SPY_adj_close_total_return_proxy",
+                "sp500_proxy": "SPY_total_return_proxy_close_plus_dividends",
                 "selection_method": selection_method,
                 "n_holdings": int(n_holdings),
                 "use_point_in_time": bool(use_point_in_time),

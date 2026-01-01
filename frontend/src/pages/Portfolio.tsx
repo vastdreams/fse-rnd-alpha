@@ -741,7 +741,7 @@ export function Portfolio() {
                 records (companies are only included after their S&amp;P 500 addition date). However, 
                 <strong> historical removals are not tracked</strong> in our Tier-1 source, so some companies 
                 that were later removed from the index may appear in earlier years. Returns are computed 
-                from adjusted close prices (total-return proxy including dividends).
+                from split-adjusted close prices plus dividend events (total-return proxy including dividends).
               </p>
               <p>
                 <strong>Publication-grade estimates:</strong> For rigorous premium inference, use the frozen 
