@@ -726,7 +726,12 @@ class PortfolioOptimizer:
         # Prefetch returns for performance-consistent yearly series
         from app.db.models import JulyJuneReturn
 
-        universe_symbols = sorted({*universe_portfolio_symbols, *benchmark_symbols})
+        # S&P 500 comparison series:
+        # - Use SPY (cap-weighted, total-return proxy via adj_close) to avoid relying on any
+        #   “constituents API” and to keep the benchmark investable for practitioner readers.
+        sp500_proxy_symbol = "SPY"
+
+        universe_symbols = sorted({*universe_portfolio_symbols, *benchmark_symbols, sp500_proxy_symbol})
 
         # Return series (one query for the whole universe + period)
         returns_map: Dict[Tuple[str, int], float] = {}
@@ -764,25 +769,13 @@ class PortfolioOptimizer:
         benchmark_annual_returns: List[float] = []
         benchmark_years: List[int] = []
         
-        # S&P 500 market returns from Fama-French factors (MKT-RF + RF)
-        from app.db.models import FamaFrenchFactor
+        # S&P 500 proxy returns (SPY) aligned to the same return convention and return pipeline.
+        # NOTE: This is a *proxy*, not the SPXTR index.
         sp500_returns_map: Dict[int, float] = {}
-        
-        # Fetch annual market returns for the period
-        # FF data stores returns as decimals (0.10 = 10%), same as our portfolio returns
-        ff_result = await self.session.execute(
-            select(FamaFrenchFactor.date, FamaFrenchFactor.mkt_rf, FamaFrenchFactor.rf)
-            .where(
-                FamaFrenchFactor.frequency == "annual",
-                func.extract("year", FamaFrenchFactor.date).in_(years),
-            )
-        )
-        for row in ff_result.fetchall():
-            if row.mkt_rf is not None and row.rf is not None:
-                year = int(row.date.year)
-                # Market return = MKT-RF + RF (already in decimals)
-                mkt_return = float(row.mkt_rf) + float(row.rf)
-                sp500_returns_map[year] = mkt_return
+        for year in years:
+            spy_ret = returns_map.get((sp500_proxy_symbol, year))
+            if spy_ret is not None:
+                sp500_returns_map[int(year)] = float(spy_ret)
         
         sp500_annual_returns: List[float] = []
 
@@ -937,6 +930,7 @@ class PortfolioOptimizer:
             "meta": {
                 "return_convention": "july_june" if self.use_july_june else "calendar",
                 "benchmark_universe": "research_cohort_equal_weight",
+                "sp500_proxy": "SPY_adj_close_total_return_proxy",
                 "selection_method": selection_method,
                 "n_holdings": int(n_holdings),
                 "use_point_in_time": bool(use_point_in_time),

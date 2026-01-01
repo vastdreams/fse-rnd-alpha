@@ -24,7 +24,7 @@ This project presents evidence that companies with higher R&D intensity (R&D exp
 
 - **Return Convention**: July-June (Fama-French) to avoid look-ahead bias
 - **Universe**: Point-in-time S&P 500 constituents
-- **Sample Period**: 1995-2024 (30 years)
+- **Sample Period (primary annual inference)**: Jul2001–Jun2025 (24 annual periods)
 - **Delisting Adjustment**: Literature-calibrated (Shumway 1997)
 
 ---
@@ -45,7 +45,7 @@ Features:
 ## 📁 Repository Structure
 
 ```
-rd-alpha-research/
+fse-rnd-alpha/
 ├── backend/                    # FastAPI Python backend
 │   ├── app/
 │   │   ├── api/routes/         # REST API endpoints
@@ -242,8 +242,8 @@ rd-alpha-research/
 
 ```bash
 # Clone repository
-git clone https://github.com/vastdreams/rd-alpha-research.git
-cd rd-alpha-research
+git clone https://github.com/vastdreams/fse-rnd-alpha.git
+cd fse-rnd-alpha
 
 # Backend setup
 cd backend
@@ -500,14 +500,25 @@ pytest tests/unit/test_backtesting.py
 
 ## 📜 Citation
 
-If you use this research, please cite:
+If you use this research, please cite the working paper (and optionally the open-source platform code):
 
 ```bibtex
-@software{rd_alpha_2024,
-  author = {Sehgal, Abhishek},
-  title = {R&D Alpha: Innovation-Driven Investment Research},
-  year = {2024},
-  url = {https://github.com/vastdreams/rd-alpha-research}
+@techreport{sehgal_rnd_alpha_2025,
+  author      = {Sehgal, Abhishek},
+  title       = {R\\&D Alpha: Investment Intensity and Long-Term Stock Returns},
+  institution = {FSE Research \\& Investments Pty Ltd},
+  year        = {2025},
+  month       = {12},
+  url         = {https://research.finsoeasy.com/rnd-alpha-paper.pdf},
+  note        = {Working paper; results are pinned to a frozen publication snapshot (see PDF for snapshot ID).}
+}
+
+@software{sehgal_fse_rnd_alpha_2026,
+  author  = {Sehgal, Abhishek},
+  title   = {FSE R\\&D Alpha Research Platform},
+  year    = {2026},
+  version = {2.1.0},
+  url     = {https://github.com/vastdreams/fse-rnd-alpha}
 }
 ```
 

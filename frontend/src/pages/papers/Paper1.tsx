@@ -1052,12 +1052,12 @@ export function Paper1() {
               </h4>
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Full analysis code available on GitHub: <a href="https://github.com/vastdreams/rd-alpha-research" className="text-primary hover:underline">github.com/vastdreams/rd-alpha-research</a>
+                  Full analysis code available on GitHub: <a href="https://github.com/vastdreams/fse-rnd-alpha" className="text-primary hover:underline">github.com/vastdreams/fse-rnd-alpha</a>
                 </p>
                 <div className="space-y-2 text-sm font-mono">
                   <p className="text-slate-600 dark:text-slate-400"># Clone and setup</p>
-                  <p className="text-foreground">git clone https://github.com/vastdreams/rd-alpha-research.git</p>
-                  <p className="text-foreground">cd rd-alpha-research && pip install -r requirements.txt</p>
+                  <p className="text-foreground">git clone https://github.com/vastdreams/fse-rnd-alpha.git</p>
+                  <p className="text-foreground">cd fse-rnd-alpha && pip install -r requirements.txt</p>
                   <p className="text-slate-600 dark:text-slate-400 mt-3"># Run data pipeline</p>
                   <p className="text-foreground">./scripts/reproduce_publication.sh</p>
                   <p className="text-slate-600 dark:text-slate-400 mt-3"># Key scripts:</p>

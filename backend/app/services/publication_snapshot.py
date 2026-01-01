@@ -162,6 +162,15 @@ async def build_snapshot_payload(
     except Exception as e:
         payload["annual_hml_premium"] = {"error": str(e)}
 
+    # Sector-neutral annual HML premium (robustness; addresses sector concentration critique)
+    try:
+        stats = StatisticalAnalyzer(session, use_july_june=use_july_june, data_tier=data_tier)
+        payload["annual_hml_premium_sector_neutral"] = _json_safe(
+            await stats.compute_sector_neutral_annual_hml_premium(use_july_june=use_july_june)
+        )
+    except Exception as e:
+        payload["annual_hml_premium_sector_neutral"] = {"error": str(e)}
+
     # Factor premium time series (used by Paper 3)
     try:
         result = await session.execute(
@@ -532,10 +541,28 @@ async def build_snapshot_payload(
         if isinstance(inv, dict) and isinstance(inv.get("portfolio_performance"), dict) and isinstance(inv.get("benchmark_performance"), dict):
             meta = inv.get("meta") if isinstance(inv.get("meta"), dict) else {}
             n_holdings = int(meta.get("n_holdings") or 20)
-            benchmark_universe = meta.get("benchmark_universe") if isinstance(meta.get("benchmark_universe"), str) else "benchmark"
+            # Publication-facing benchmark: SPY (cap-weighted S&P 500 TR proxy via adj_close).
+            # Keep the cohort equal-weight benchmark as a secondary comparison in the backtest payload.
+            benchmark_universe = "SPY_adj_close_total_return_proxy"
 
-            gross_premium_pct = inv.get("excess_return")
-            net_premium_pct = inv.get("excess_return_net")
+            # Prefer the strategy spread versus SPY for practitioner-facing reporting.
+            gross_premium_pct = inv.get("excess_vs_sp500") if isinstance(inv.get("excess_vs_sp500"), (int, float)) else inv.get("excess_return")
+
+            # Net premium vs SPY: strategy net annualized return minus SPY annualized return.
+            net_premium_pct = None
+            try:
+                port_net = inv.get("portfolio_performance_net") if isinstance(inv.get("portfolio_performance_net"), dict) else {}
+                sp500_perf = inv.get("sp500_performance") if isinstance(inv.get("sp500_performance"), dict) else {}
+                port_net_ann = port_net.get("annualized_return")
+                sp500_ann = sp500_perf.get("annualized_return")
+                if isinstance(port_net_ann, (int, float)) and isinstance(sp500_ann, (int, float)):
+                    net_premium_pct = float(port_net_ann) - float(sp500_ann)
+            except Exception:
+                net_premium_pct = None
+
+            if net_premium_pct is None and isinstance(inv.get("excess_return_net"), (int, float)):
+                # Fallback: benchmark-relative net premium (legacy cohort benchmark).
+                net_premium_pct = inv.get("excess_return_net")
 
             # Trading cost estimate from realized turnover (excluding first year by construction in backtest)
             turnover_meta = inv.get("turnover") if isinstance(inv.get("turnover"), dict) else {}
@@ -552,6 +579,24 @@ async def build_snapshot_payload(
             if isinstance(gross_premium_pct, (int, float)) and isinstance(net_premium_pct, (int, float)) and float(gross_premium_pct) != 0.0:
                 capture_rate_pct = round(float(net_premium_pct) / float(gross_premium_pct) * 100.0, 1)
 
+            # Cost sensitivity band (reviewer-friendly): show net premium under alternative
+            # per-100% turnover cost assumptions (in basis points).
+            cost_sensitivity = []
+            if isinstance(avg_turnover_pct, (int, float)) and isinstance(gross_premium_pct, (int, float)):
+                for bps in [5, 10, 25, 50]:
+                    cost_per_100pct_turnover_pct = float(bps) / 100.0  # 5bp -> 0.05%
+                    annual_cost_pct = cost_per_100pct_turnover_pct * (float(avg_turnover_pct) / 100.0)
+                    net_prem = float(gross_premium_pct) - float(annual_cost_pct)
+                    capture = round(net_prem / float(gross_premium_pct) * 100.0, 1) if float(gross_premium_pct) != 0.0 else None
+                    cost_sensitivity.append(
+                        {
+                            "assumption_bps_per_100pct_turnover": int(bps),
+                            "annual_trading_cost_pct": round(float(annual_cost_pct), 3),
+                            "net_premium_pct": round(float(net_prem), 2),
+                            "premium_capture_rate_pct": capture,
+                        }
+                    )
+
             payload["transaction_costs"] = {
                 # Backward-compatible fields used by LaTeX asset generation
                 "annual_trading_cost_pct": round(float(annual_trading_cost_pct), 3) if annual_trading_cost_pct is not None else None,
@@ -559,12 +604,13 @@ async def build_snapshot_payload(
                 "net_rd_premium_pct": round(float(net_premium_pct), 2) if isinstance(net_premium_pct, (int, float)) else None,
                 "premium_after_costs_pct": capture_rate_pct,
                 "premium_capture_rate_pct": capture_rate_pct,
+                "cost_sensitivity": cost_sensitivity,
                 # Transparency / definitions
                 "definition": {
                     "strategy": f"Top-{n_holdings} R&D strategy (annual reconstitution)",
                     "benchmark": benchmark_universe,
-                    "gross_premium": "strategy_gross_annualized_return − benchmark_gross_annualized_return",
-                    "net_premium": "strategy_net_annualized_return − benchmark_net_annualized_return",
+                    "gross_premium": "strategy_gross_annualized_return − SPY_gross_annualized_return",
+                    "net_premium": "strategy_net_annualized_return − SPY_gross_annualized_return",
                     "turnover_definition": "0.5 * sum |w_t − w_{t-1}| (first year excluded from averages)",
                     "annual_cost_approx": "round_trip_cost_per_100pct_turnover × realized_turnover",
                 },
@@ -575,6 +621,11 @@ async def build_snapshot_payload(
                     "net_annualized_return_pct": inv.get("portfolio_performance_net", {}).get("annualized_return"),
                 },
                 "benchmark_returns": {
+                    "gross_annualized_return_pct": inv.get("sp500_performance", {}).get("annualized_return"),
+                    "net_annualized_return_pct": inv.get("sp500_performance", {}).get("annualized_return"),
+                },
+                "secondary_benchmark_returns": {
+                    "benchmark": "research_cohort_equal_weight",
                     "gross_annualized_return_pct": inv.get("benchmark_performance", {}).get("annualized_return"),
                     "net_annualized_return_pct": inv.get("benchmark_performance_net", {}).get("annualized_return"),
                 },
@@ -616,9 +667,19 @@ async def build_snapshot_payload(
         payload["ff_factors_status"] = _json_safe(await ensure_ff_factors_populated(session))
 
         spanning_analyzer = FactorSpanningAnalyzer(session)
-        payload["spanning_tests_full"] = _json_safe(
-            await spanning_analyzer.run_all_spanning_tests(hml_rd_series, use_july_june=use_july_june)
-        )
+        # Publication upgrade: use monthly spanning (annual July reconstitution, monthly observations)
+        # to improve regression stability versus a short annual sample.
+        if hml_rd_series:
+            payload["spanning_tests_full"] = _json_safe(
+                await spanning_analyzer.run_all_spanning_tests_monthly(
+                    start_return_year=min(hml_rd_series.keys()),
+                    end_return_year=max(hml_rd_series.keys()),
+                    data_tier=data_tier,
+                    use_july_june=use_july_june,
+                )
+            )
+        else:
+            payload["spanning_tests_full"] = {"error": "No annual series available to define spanning window."}
     except Exception as e:
         payload["spanning_tests_full"] = {"error": str(e)}
 

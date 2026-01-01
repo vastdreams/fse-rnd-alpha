@@ -1,19 +1,19 @@
 cff-version: 1.2.0
 message: "If you use this research, please cite it as below."
 type: software
-title: "R&D Alpha: Empirical Evidence on R&D Investment Intensity and Long-Term Stock Returns"
+title: "R&D Alpha: Investment Intensity and Long-Term Stock Returns"
 authors:
   - family-names: "Sehgal"
     given-names: "Abhishek"
-    orcid: ""
-repository-code: "https://github.com/vastdreams/rd-alpha-research"
+    orcid: "https://orcid.org/0009-0000-9424-4695"
+repository-code: "https://github.com/vastdreams/fse-rnd-alpha"
 url: "https://research.finsoeasy.com"
 abstract: >-
-  Empirical research investigating the relationship between 
-  R&D investment intensity and long-term stock returns. Finds a 
-  statistically significant Q5-Q1 annual premium of +7.6%/yr 
-  (Newey-West t = 2.78, win rate 71%) within the S&P 500 universe
-  over 2010-2024.
+  Research platform and working paper investigating the relationship between
+  R&D investment intensity and subsequent stock returns. Using point-in-time
+  S&P 500 constituents and July–June returns to mitigate look-ahead bias, the
+  frozen publication snapshot reports an annual Q5–Q1 (HML) premium of +7.55%/yr
+  (Newey–West t = 2.78; win rate 71%) over Jul2001–Jun2025 (N=24 annual periods).
 keywords:
   - R&D intensity
   - stock returns
@@ -22,5 +22,18 @@ keywords:
   - innovation premium
   - long-horizon returns
 license: MIT
-version: "1.0.0"
-date-released: "2025-12-28"
+version: "2.1.0"
+date-released: "2026-01-01"
+
+preferred-citation:
+  type: report
+  authors:
+    - family-names: "Sehgal"
+      given-names: "Abhishek"
+      orcid: "https://orcid.org/0009-0000-9424-4695"
+  title: "R&D Alpha: Investment Intensity and Long-Term Stock Returns"
+  year: 2025
+  month: 12
+  institution: "FSE Research & Investments Pty Ltd"
+  url: "https://research.finsoeasy.com/rnd-alpha-paper.pdf"
+  notes: "Working paper; results are pinned to a frozen publication snapshot (see PDF for snapshot ID)."

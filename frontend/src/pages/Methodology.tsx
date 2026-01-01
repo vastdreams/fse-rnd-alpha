@@ -675,8 +675,8 @@ export function Methodology() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Full analysis code available on GitHub:
                 </p>
-                <a href="https://github.com/vastdreams/rd-alpha-research" className="text-primary hover:underline flex items-center gap-2">
-                  github.com/vastdreams/rd-alpha-research
+                <a href="https://github.com/vastdreams/fse-rnd-alpha" className="text-primary hover:underline flex items-center gap-2">
+                  github.com/vastdreams/fse-rnd-alpha
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </div>
@@ -684,8 +684,8 @@ export function Methodology() {
               <h3 className="text-lg font-semibold text-foreground">Quick Start</h3>
               <div className="p-4 bg-muted/50 rounded-lg border border-border font-mono text-xs space-y-2">
                 <p className="text-muted-foreground"># Clone repository</p>
-                <p className="text-foreground">git clone https://github.com/vastdreams/rd-alpha-research.git</p>
-                <p className="text-foreground">cd rd-alpha-research</p>
+                <p className="text-foreground">git clone https://github.com/vastdreams/fse-rnd-alpha.git</p>
+                <p className="text-foreground">cd fse-rnd-alpha</p>
                 <p className="text-muted-foreground mt-2"># Install dependencies</p>
                 <p className="text-foreground">pip install -r requirements.txt</p>
                 <p className="text-muted-foreground mt-2"># Run full pipeline</p>

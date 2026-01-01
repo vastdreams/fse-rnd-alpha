@@ -656,7 +656,7 @@ export function MainPaper() {
                   Download PDF
                 </Button>
                 <a
-                  href="https://github.com/vastdreams/rd-alpha-research"
+                  href="https://github.com/vastdreams/fse-rnd-alpha"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -3771,7 +3771,7 @@ export function MainPaper() {
                             <strong className="text-foreground">Bookmark data sources</strong>{" "}
                             <InfoTooltip term="data_sources" size={12} />
                             <br />
-                            <span className="text-xs">SEC EDGAR (10-Ks), S&P 500 list (Wikipedia/Bloomberg)</span>
+                            <span className="text-xs">SEC EDGAR (10-Ks), point-in-time S&amp;P 500 constituent history (index provider)</span>
                           </span>
                         </li>
                         <li className="flex items-start gap-2">
@@ -4115,13 +4115,13 @@ export function MainPaper() {
                   The core research code is open source under MIT license. Clone the repository to replicate results or build upon this work.
                 </p>
                 <a
-                  href="https://github.com/vastdreams/rd-alpha-research"
+                  href="https://github.com/vastdreams/fse-rnd-alpha"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors"
                 >
                   <Github className="h-4 w-4" />
-                  github.com/vastdreams/rd-alpha-research
+                  github.com/vastdreams/fse-rnd-alpha
                   <ExternalLink className="h-3 w-3 opacity-70" />
                 </a>
               </div>
@@ -4207,7 +4207,9 @@ export function MainPaper() {
                   Download PDF
                 </a>
                 <Button variant="outline" size="sm" onClick={() => {
-                  navigator.clipboard.writeText(`Sehgal, A. (2025). R&D Alpha: Investment Intensity and Long-Term Stock Returns. FSE Research & Investments. https://research.finsoeasy.com/papers/main`);
+                  navigator.clipboard.writeText(
+                    `Sehgal, A. (2025). R&D Alpha: Investment Intensity and Long-Term Stock Returns (Working paper). FSE Research & Investments Pty Ltd. https://research.finsoeasy.com/rnd-alpha-paper.pdf`
+                  );
                   alert("Citation copied to clipboard!");
                 }}>
                   Copy Citation
@@ -4218,20 +4220,21 @@ export function MainPaper() {
                 <div>
                   <p className="text-sm font-semibold text-foreground mb-1">APA Format:</p>
                   <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md font-mono">
-                    Sehgal, A. (2025). R&D Alpha: Investment Intensity and Long-Term Stock Returns. <em>FSE Research & Investments</em>. https://research.finsoeasy.com/papers/main
+                    Sehgal, A. (2025). R&amp;D Alpha: Investment Intensity and Long-Term Stock Returns (Working paper). <em>FSE Research &amp; Investments Pty Ltd</em>. https://research.finsoeasy.com/rnd-alpha-paper.pdf
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-sm font-semibold text-foreground mb-1">BibTeX:</p>
                   <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-md overflow-x-auto">
-{`@article{sehgal_rnd_alpha_2025,
-  author  = {Sehgal, Abhishek},
-  title   = {R\\&D Alpha: Investment Intensity and Long-Term Stock Returns},
-  year    = {2025},
-  journal = {FSE Research \\& Investments},
-  url     = {https://research.finsoeasy.com/papers/main},
-  note    = {Working Paper}
+{`@techreport{sehgal_rnd_alpha_2025,
+  author      = {Sehgal, Abhishek},
+  title       = {R\\&D Alpha: Investment Intensity and Long-Term Stock Returns},
+  institution = {FSE Research \\& Investments Pty Ltd},
+  year        = {2025},
+  month       = {12},
+  url         = {https://research.finsoeasy.com/rnd-alpha-paper.pdf},
+  note        = {Working paper; results pinned to a frozen publication snapshot (see PDF for snapshot ID).}
 }`}
                   </pre>
                 </div>

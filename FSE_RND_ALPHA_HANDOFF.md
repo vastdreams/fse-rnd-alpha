@@ -186,13 +186,13 @@ AWS_REGION: ${AWS_REGION:-us-east-1}
 
 | Property | Value |
 |----------|-------|
-| **GitHub Repo** | `https://github.com/vastdreams/rd-alpha-research.git` |
+| **GitHub Repo** | `https://github.com/vastdreams/fse-rnd-alpha.git` |
 | **Main Branch** | `main` |
 | **Local Path** | `/Users/abhisheksehgal/Desktop/fse-rnd-alpha` |
 
 ### Clone Command
 ```bash
-git clone https://github.com/vastdreams/rd-alpha-research.git
+git clone https://github.com/vastdreams/fse-rnd-alpha.git
 cd fse-rnd-alpha
 ```
 
@@ -423,18 +423,18 @@ To add this as a subrepo in finsoeasy main project:
 
 ```bash
 # From finsoeasy root
-git submodule add https://github.com/vastdreams/rd-alpha-research.git research
+git submodule add https://github.com/vastdreams/fse-rnd-alpha.git research
 git submodule update --init --recursive
 
 # Or as a subtree
-git subtree add --prefix=research https://github.com/vastdreams/rd-alpha-research.git main --squash
+git subtree add --prefix=research https://github.com/vastdreams/fse-rnd-alpha.git main --squash
 ```
 
 ---
 
 ## Contacts & Resources
 
-- **GitHub:** https://github.com/vastdreams/rd-alpha-research
+- **GitHub:** https://github.com/vastdreams/fse-rnd-alpha
 - **Live Site:** http://research.finsoeasy.com
 - **API Docs:** http://research.finsoeasy.com/docs
 
@@ -583,7 +583,7 @@ cd deploy && docker compose restart frontend
 | Resource | URL |
 |----------|-----|
 | **Live Site** | http://research.finsoeasy.com |
-| **GitHub Repo** | https://github.com/vastdreams/rd-alpha-research |
+| **GitHub Repo** | https://github.com/vastdreams/fse-rnd-alpha |
 | **API Docs** | http://research.finsoeasy.com/docs |
 | **Main Finsoeasy** | https://finsoeasy.com |
 

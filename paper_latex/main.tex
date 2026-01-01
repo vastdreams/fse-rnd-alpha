@@ -94,11 +94,11 @@
 \begin{abstract}
 \noindent\textbf{Objective.} We test whether high research and development (R\&D) intensity predicts higher subsequent equity returns in a large-cap U.S.\ universe using methodology designed for portfolio implementability.
 
-\noindent\textbf{Method.} Each year, we sort point-in-time S\&P 500 constituents into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series (Q5--Q1) spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. Where historical constituent spans are available, we enforce point-in-time membership at formation dates; exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
+\noindent\textbf{Method.} Each year, we sort point-in-time S\&P 500 constituents into quintiles by R\&D intensity (R\&D expense divided by revenue) and evaluate subsequent July--June returns to mitigate look-ahead bias \citep{fama_french_1993}. Primary inference uses a non-overlapping annual high-minus-low premium series, denoted \textbf{HML\_RD} (Q5--Q1), spanning \AnnualSeriesStart{} to \AnnualSeriesEnd{} (\AnnualNYears{} observations). This timing convention aligns with Fama--French methodology to avoid look-ahead bias. Where historical constituent spans are available, we enforce point-in-time membership at formation dates; exits are handled via return construction (cash-after-exit) and delisting uncertainty is addressed via sensitivity analysis rather than a single hard-coded proxy.
 
-\noindent\textbf{Results.} The high-minus-low premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. In plain terms: stocks in the top 20\% by R\&D intensity outperformed the bottom 20\% by approximately \AnnualMeanPremium\% annually over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
+\noindent\textbf{Results.} The \textbf{HML\_RD} premium (Q5 minus Q1) averages \textbf{\AnnualMeanPremium\%} per year in non-overlapping annual returns. In plain terms: stocks in the top 20\% by R\&D intensity outperformed the bottom 20\% by approximately \AnnualMeanPremium\% annually over the sample period. This difference is statistically significant with conservative Newey--West inference \citep{newey_west_1987} ($t = \AnnualTStat$, $p = \AnnualPValue$), and is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate).
 
-\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. Under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover from the investable backtest and S\&P 500 liquidity characteristics, estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net premium of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
+\noindent\textbf{Implementation.} For implementability, we map the signal into a simple long-only portfolio that holds the top \textbf{20} stocks by R\&D intensity (equal-weighted) and reconstitutes annually in July. We report the resulting \textbf{RD20 strategy spread} versus an investable S\&P 500 total-return proxy (SPY) under a literature-calibrated transaction-cost model \citep{novy_marx_velikov_2016} using realized turnover. Estimated trading costs are \AnnualTradingCostPct\% per year, yielding a net spread of \NetPremiumAfterCostsPct\% after costs and a premium capture rate of \PremiumCaptureRatePct\%.
 
 \noindent\textbf{Interpretation.} Results are consistent with either mispricing of intangible assets or risk compensation for innovation exposure. We document sector tilts, factor exposures, and regime dependence without claiming to isolate a single mechanism. The analysis is associational rather than causal.
 \end{abstract}
@@ -130,14 +130,19 @@ This accounting convention motivates two broad interpretations for any return pr
 
 \subsection{Terminology and Scope}
 
-Throughout this paper, the \emph{premium} refers to the within-universe return spread between the high-R\&D and low-R\&D portfolios formed for the same period, typically the high-minus-low (HML) spread Q5 minus Q1. This is \textbf{not} automatically a benchmark excess return relative to the S\&P 500; benchmark comparisons are shown separately in the strategy section.
+Throughout this paper we keep two return objects distinct (a common source of reader confusion):
+\begin{itemize}[leftmargin=*]
+    \item \textbf{HML\_RD:} The within-universe high-minus-low premium (Q5 $-$ Q1) from annual quintile sorts on R\&D intensity.
+    \item \textbf{RD20 strategy spread:} The benchmark-relative spread of an implementable long-only strategy (top-20 by R\&D intensity, equal-weighted, annual July reconstitution) versus an investable S\&P 500 proxy (SPY).
+\end{itemize}
 
 \begin{tcolorbox}[title=Key Terminology, colback=gray!5, colframe=gray!50, breakable]
 \begin{itemize}[leftmargin=*]
     \item \textbf{R\&D Intensity:} R\&D expense divided by revenue, expressed as a percentage. This measures how much a firm invests in research relative to its operating scale.
-    \item \textbf{Premium (HML):} The return spread between high-R\&D and low-R\&D portfolios formed in the same universe for the same period. In most exhibits this is Q5 $-$ Q1 (highest R\&D quintile minus lowest R\&D quintile).
+    \item \textbf{HML\_RD premium:} The return spread between high-R\&D and low-R\&D portfolios formed in the same universe for the same period. In most exhibits this is Q5 $-$ Q1 (highest R\&D quintile minus lowest R\&D quintile).
+    \item \textbf{RD20 strategy spread:} The excess return of the top-20 long-only strategy versus SPY (benchmark-relative), reported gross and net of modeled trading costs.
     \item \textbf{Quintile:} One of five equal-count groups formed by sorting stocks on R\&D intensity. Q1 contains the lowest 20\%; Q5 contains the highest 20\%.
-    \item \textbf{Not a benchmark excess return:} This premium is not automatically ``above the S\&P 500.'' Benchmark comparisons are shown separately in the investable strategy section (Section~\ref{sec:strategy}).
+    \item \textbf{Not the same object:} HML\_RD is a within-universe characteristic premium; RD20 is benchmark-relative and depends on benchmark definition.
     \item \textbf{Absolute return:} The average return of a single portfolio (for example, Q5 alone). Absolute returns can be high even when the premium is small if both Q5 and Q1 perform similarly.
     \item \textbf{Non-overlapping:} Annual observations with no shared return months between adjacent years (reduces mechanical overlap). We still use Newey--West inference to allow for mild time-series dependence.
     \item \textbf{Rolling window:} Multi-year periods that overlap with adjacent windows. Useful for visualization but autocorrelated, so not suitable for primary inference.
@@ -352,6 +357,12 @@ We construct portfolios using a standard academic approach that prioritizes tran
     \item \textbf{Exit handling:} When a stock's price history ends mid-period (merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter for the remainder of the July--June window. Note: This is a ``cash-after-exit'' assumption, not CRSP delisting returns; we address this uncertainty via sensitivity analysis (Section~\ref{sec:robustness}).
 \end{itemize}
 
+\begin{tcolorbox}[title=Exit Handling in Tier-1 Data (Why This Is Not CRSP dlret), colback=yellow!5, colframe=yellow!40, breakable]
+\textbf{Baseline (A): cash-after-exit.} If a firm exits during a July--June window and the price series ends, we compute the holding-period return to the last observed trading day and treat cash as earning 0\% thereafter.\newline
+\textbf{Sensitivity (B): penalty scenarios.} Because Tier-1 vendor datasets do not provide authoritative CRSP-style delisting settlement returns, we do \emph{not} claim to substitute for CRSP dlret. Instead, we report sensitivity of the annual HML results to conservative delisting-return penalties.\newline
+\textbf{Bottom line:} Exit handling is explicit and bias-aware, but delisting-return uncertainty remains a known limitation without CRSP/Compustat-grade data.
+\end{tcolorbox}
+
 \begin{tcolorbox}[title=Understanding Quintiles, colback=gray!5, colframe=gray!50]
 Each year, stocks are sorted by R\&D intensity and divided into 5 equal-count groups (quintiles):
 \begin{center}
@@ -360,9 +371,9 @@ Each year, stocks are sorted by R\&D intensity and divided into 5 equal-count gr
 Lowest 20\% & 20--40\% & 40--60\% & 60--80\% & Highest 20\% \\
 \end{tabular}
 \end{center}
-The \textbf{HML premium} (High-Minus-Low) is Q5 return minus Q1 return:
+The \textbf{HML\_RD premium} (High-Minus-Low R\&D) is Q5 return minus Q1 return:
 \begin{equation}
-\text{HML}_{t} = R_{Q5,t} - R_{Q1,t}
+\text{HML\_RD}_{t} = R_{Q5,t} - R_{Q1,t}
 \end{equation}
 A positive premium means high-R\&D stocks outperformed low-R\&D stocks in that period. A negative premium means low-R\&D stocks outperformed.
 
@@ -384,6 +395,10 @@ For inference on time-series regressions and mean estimates, we use Newey--West 
 \end{equation}
 
 where $\hat{\sigma}^2_j$ is the $j$-th order autocovariance and $L$ is the lag truncation parameter. This adjustment accounts for potential serial correlation in the premium series, providing conservative (larger) standard errors than naive OLS.
+
+To avoid anchoring inference on a single lag choice in a short annual sample, we report lag=1 as the baseline and include a robustness panel for lags 0--3 (Table~\ref{tab:nw_lag_robustness}).
+
+\input{tables/table_nw_lag_robustness.tex}
 
 \subsubsection{t-Statistics and p-Values}
 
@@ -556,11 +571,15 @@ Table~\ref{tab:rd_by_sector} shows that R\&D intensity is concentrated in a subs
 
 \input{tables/table_rd_by_sector.tex}
 
+To address the common critique that the premium is ``just sector exposure,'' Table~\ref{tab:sector_neutral_hml} reports a sector-neutral robustness result: we form quintiles \emph{within} each sector and then average the within-sector HML premiums equally across sectors.
+
+\input{tables/table_sector_neutral_hml.tex}
+
 \begin{tcolorbox}[title=Interpreting Sector Concentration, colback=gray!5, colframe=gray!50]
 \textbf{Key observations:}
 \begin{itemize}[leftmargin=*]
     \item \textbf{Technology and Healthcare dominate:} These sectors have the highest R\&D intensity, so Q5 (high R\&D) portfolios will be heavily weighted toward them.
-    \item \textbf{Not a pure size/factor artifact:} Section~\ref{sec:robustness} reports factor spanning tests and size $\times$ R\&D double-sorts; we do not present a sector-neutralized premium in this snapshot.
+    \item \textbf{Not a pure size/factor artifact:} Section~\ref{sec:robustness} reports factor spanning tests, size $\times$ R\&D double-sorts, and a sector-neutral HML robustness exhibit (Table~\ref{tab:sector_neutral_hml}).
     \item \textbf{Sector risk:} Even if the premium is ``real,'' sector concentration exposes the strategy to sector-specific drawdowns (e.g., tech crashes).
 \end{itemize}
 \end{tcolorbox}
@@ -636,6 +655,8 @@ A positive and statistically significant alpha indicates that the R\&D premium i
 R^{HML-RD}_t = \alpha + \beta_1 MKT_t + \beta_2 SMB_t + \beta_3 HML_t + \cdots + \epsilon_t
 \end{equation}
 where $R^{HML-RD}_t$ is the R\&D high-minus-low premium and the right-hand-side variables are standard factors.
+
+\textbf{Frequency note (JPM robustness):} Although the signal is formed annually (July reconstitution), we run spanning regressions at \textbf{monthly} frequency to increase the number of observations and stabilize inference; reported alphas are annualized for readability.
 
 \input{tables/table_spanning_tests_full.tex}
 
@@ -755,11 +776,15 @@ Table~\ref{tab:transaction_costs} summarizes the snapshot's transaction-cost cal
 
 \input{tables/table_transaction_costs.tex}
 
+\noindent\textbf{Sensitivity:} To avoid overconfidence in a single cost calibration, Table~\ref{tab:transaction_cost_sensitivity} reports net premium under a range of round-trip cost assumptions (bp per 100\% turnover).
+
+\input{tables/table_transaction_cost_sensitivity.tex}
+
 Key findings (snapshot-defined):
 \begin{itemize}[leftmargin=*]
     \item \textbf{Turnover-based cost model:} Trading cost is approximated as (round-trip cost per 100\% turnover) $\times$ (realized turnover from the investable backtest), using S\&P 500 liquidity characteristics \citep{novy_marx_velikov_2016}.
     \item \textbf{Premium capture:} The strategy retains \PremiumCaptureRatePct\% of the gross premium after trading costs.
-    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus the snapshot benchmark.
+    \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 total-return proxy).
 \end{itemize}
 
 \subsection{Backtest Performance}
@@ -781,12 +806,12 @@ Figure~\ref{fig:investable_growth} shows cumulative performance of the investabl
 \addplot+[mark=none,thick] table [x=year,y=portfolio_index,col sep=comma] {data/investable_growth.csv};
 \addlegendentry{R\&D strategy (net)}
 \addplot+[mark=none,thick] table [x=year,y=benchmark_index,col sep=comma] {data/investable_growth.csv};
-\addlegendentry{Benchmark (net)}
+\addlegendentry{Cohort (EW, net)}
 \addplot+[mark=none,thick] table [x=year,y=sp500_index,col sep=comma] {data/investable_growth.csv};
-\addlegendentry{S\&P 500}
+\addlegendentry{SPY (S\&P 500 TR proxy)}
 \end{axis}
 \end{tikzpicture}
-\caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The benchmark is the snapshot-defined equal-weighted cohort universe; the S\&P 500 series is shown separately.}
+\caption{Investable strategy cumulative growth (snapshot backtest; incomplete terminal years removed). The R\&D strategy is a concentrated top-20 R\&D-intensity portfolio (equal-weighted) with annual reconstitution and transaction costs deducted. The cohort equal-weight series is shown as an internal universe benchmark; SPY is shown as an investable S\&P 500 total-return proxy.}
 \label{fig:investable_growth}
 \end{figure}
 
@@ -831,13 +856,13 @@ This study is designed to be transparent and replicable, but several limitations
 
 All tables and figures in this paper are generated from the snapshot JSON at \path{data/publication_snapshot.json} via \path{scripts/build_assets.py}. This design prevents accidental drift: updating the snapshot and regenerating assets updates the entire manuscript deterministically.
 
-The full codebase is available at: \url{https://github.com/vastdreams/rd-alpha-research}
+The full codebase is available at: \url{https://github.com/vastdreams/fse-rnd-alpha}
 
 Researchers can replicate this paper as follows:
 \begin{enumerate}[leftmargin=*]
     \item Clone the repository:
     \begin{quote}
-    \texttt{git clone }\url{https://github.com/vastdreams/rd-alpha-research.git}
+    \texttt{git clone }\url{https://github.com/vastdreams/fse-rnd-alpha.git}
     \end{quote}
     \item Navigate to the LaTeX directory: \texttt{cd research/paper\_latex}
     \item Run the asset builder: \texttt{python3 scripts/build\_assets.py}
@@ -890,14 +915,16 @@ This research was independently conceived and funded by FSE Research \& Investme
 \section*{Data Availability Statement}
 
 The data and code supporting the findings of this study are publicly available at:\\[0.3em]
-\url{https://github.com/vastdreams/rd-alpha-research}\\[0.5em]
+\url{https://github.com/vastdreams/fse-rnd-alpha}\\[0.5em]
 The repository contains:
 \begin{itemize}[leftmargin=*,topsep=0pt]
     \item Source code for all statistical analyses
     \item Publication snapshot (JSON) used to generate all tables and figures
     \item LaTeX source for this manuscript
     \item Replication scripts
+    \item Note: the snapshot is sufficient to reproduce all reported numbers, tables, and figures. Raw Tier-1 vendor data (fundamentals/prices) is not redistributed; rebuilding from scratch requires an external data source.
 \end{itemize}
+Citation metadata is provided in \path{CITATION.cff} in the repository and on the platform's ``How to Cite'' section.
 The live interactive platform is available at \url{https://research.finsoeasy.com}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

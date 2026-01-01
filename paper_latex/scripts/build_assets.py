@@ -650,6 +650,79 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
 
     (TABLES_DIR / "table_annual_hml_summary.tex").write_text(table_annual, encoding="utf-8")
 
+    # Newey–West lag robustness panel (reviewer-friendly)
+    nw_panel = annual.get("hac_lag_robustness") if isinstance(annual.get("hac_lag_robustness"), dict) else {}
+    nw_rows = []
+    for lag in [0, 1, 2, 3]:
+        node = nw_panel.get(str(lag)) if isinstance(nw_panel.get(str(lag)), dict) else {}
+        nw_se = _safe_float(node.get("nw_std_error"))
+        nw_t = _safe_float(node.get("t_statistic"))
+        nw_p = _safe_float(node.get("p_value"))
+        nw_rows.append(
+            f"{lag} & {_fmt_pct(nw_se,4)} & {_fmt_pct(nw_t,2)} & {_fmt_p_value(nw_p)} \\\\"
+        )
+
+    table_nw = "\n".join(
+        [
+            "% Auto-generated. Do not edit by hand.",
+            "\\begin{table}[htbp]",
+            "\\centering",
+            "\\caption{Newey--West lag robustness for the annual HML premium}",
+            "\\label{tab:nw_lag_robustness}",
+            "\\begin{tabular}{lrrr}",
+            "\\toprule",
+            "Lag & NW SE & t-stat & p-value \\\\",
+            "\\midrule",
+            *nw_rows,
+            "\\bottomrule",
+            "\\multicolumn{4}{l}{\\footnotesize Note: primary reporting uses lag=1; this panel shows robustness for lags 0--3.}\\\\",
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    (TABLES_DIR / "table_nw_lag_robustness.tex").write_text(table_nw, encoding="utf-8")
+
+    # Sector-neutral annual HML premium (robustness)
+    sector_neutral = payload.get("annual_hml_premium_sector_neutral") if isinstance(payload.get("annual_hml_premium_sector_neutral"), dict) else {}
+    sn_hac = sector_neutral.get("hac_adjusted") if isinstance(sector_neutral.get("hac_adjusted"), dict) else {}
+    sn_mean = _safe_float(sector_neutral.get("mean_premium"))
+    sn_std = _safe_float(sector_neutral.get("std_dev"))
+    sn_n = _safe_int(sector_neutral.get("n_years"))
+    sn_pos = _safe_int(sector_neutral.get("positive_years"))
+    sn_win = _safe_float(sector_neutral.get("win_rate"))
+    sn_win_pct = (sn_win * 100.0) if isinstance(sn_win, float) else None
+    sn_t = _safe_float(sn_hac.get("t_statistic"))
+    sn_p = _safe_float(sn_hac.get("p_value"))
+
+    table_sector_neutral = "\n".join(
+        [
+            "% Auto-generated. Do not edit by hand.",
+            "\\begin{table}[htbp]",
+            "\\centering",
+            "\\caption{Sector-neutral annual HML premium (within-sector quintiles; equal-weight across sectors)}",
+            "\\label{tab:sector_neutral_hml}",
+            "\\begin{tabular}{lr}",
+            "\\toprule",
+            "Statistic & Value \\\\",
+            "\\midrule",
+            f"Years (N) & {sn_n or 0} \\\\",
+            f"Mean premium (\\%) & {_fmt_pct(sn_mean,2)} \\\\",
+            f"Std. dev. (\\%) & {_fmt_pct(sn_std,2)} \\\\",
+            f"Positive years & {sn_pos or 0} \\\\",
+            f"Win rate (\\%) & {_fmt_pct(sn_win_pct,0)} \\\\",
+            f"Newey--West t-stat (lag=1) & {_fmt_pct(sn_t,2)} \\\\",
+            f"Newey--West p-value & {_fmt_p_value(sn_p)} \\\\",
+            "\\bottomrule",
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    (TABLES_DIR / "table_sector_neutral_hml.tex").write_text(table_sector_neutral, encoding="utf-8")
+
     # Rolling window summaries (descriptive)
     def _horizon_row(h: str) -> dict[str, Any] | None:
         node = stats.get(h)
@@ -659,17 +732,13 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
         q1 = _safe_float(means.get("Q1"))
         q5 = _safe_float(means.get("Q5"))
         premium = (q5 - q1) if (q1 is not None and q5 is not None) else None
-        ttest = node.get("ttest_high_vs_low") if isinstance(node.get("ttest_high_vs_low"), dict) else {}
-        t = _safe_float(ttest.get("t_statistic"))
-        p = _safe_float(ttest.get("p_value"))
-        d = _safe_float(ttest.get("cohens_d"))
-        return {"h": h, "q5": q5, "q1": q1, "premium": premium, "t": t, "p": p, "d": d}
+        return {"h": h, "q5": q5, "q1": q1, "premium": premium}
 
     horizon_rows = [r for r in (_horizon_row("5yr"), _horizon_row("10yr"), _horizon_row("20yr")) if r]
 
     body_lines = "\n".join(
         [
-            f"{r['h'].upper()} & {_fmt_pct(r.get('q5'),2)} & {_fmt_pct(r.get('q1'),2)} & {_fmt_pct(r.get('premium'),2)} & {_fmt_pct(r.get('t'),2)} & {_fmt_p_value(r.get('p'))} & {_fmt_pct(r.get('d'),2)} \\\\"
+            f"{r['h'].upper()} & {_fmt_pct(r.get('q5'),2)} & {_fmt_pct(r.get('q1'),2)} & {_fmt_pct(r.get('premium'),2)} \\\\"
             for r in horizon_rows
         ]
     )
@@ -679,13 +748,13 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
 \\centering
 \\caption{{Rolling-window quintile averages (descriptive) and Q5--Q1 spread}}
 \\label{{tab:rolling_windows}}
-\\begin{{tabular}}{{lrrrrrr}}
+\\begin{{tabular}}{{lrrr}}
 \\toprule
-Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) & t-stat & p-value & Cohen's d \\\\
+Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) \\\\
 \\midrule
 {body_lines}
 \\bottomrule
-\\multicolumn{{7}}{{l}}{{\\footnotesize Note: rolling windows overlap; these statistics are descriptive. Primary inference uses Table~\\ref{{tab:annual_hml_summary}}.}}\\\\
+\\multicolumn{{4}}{{l}}{{\\footnotesize Note: rolling windows overlap; these summaries are descriptive. Primary inference uses Table~\\ref{{tab:annual_hml_summary}}.}}\\\\
 \\end{{tabular}}
 \\end{{table}}
 """
@@ -701,7 +770,7 @@ Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) & t-stat & p-value & Cohen's d \\\\
     table_tx = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Transaction-cost calibration and net premium (Novy--Marx \\& Velikov, 2016)}}
+\\caption{{Transaction-cost calibration and net premium vs SPY (Novy--Marx \\& Velikov, 2016)}}
 \\label{{tab:transaction_costs}}
 \\begin{{tabular}}{{lr}}
 \\toprule
@@ -717,6 +786,42 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
 """
 
     (TABLES_DIR / "table_transaction_costs.tex").write_text(table_tx, encoding="utf-8")
+
+    # Transaction cost sensitivity band (bps per 100% turnover)
+    sens = tx.get("cost_sensitivity") if isinstance(tx.get("cost_sensitivity"), list) else []
+    if sens:
+        lines = []
+        for row in sens:
+            if not isinstance(row, dict):
+                continue
+            bps = _safe_int(row.get("assumption_bps_per_100pct_turnover"))
+            annual_cost = _safe_float(row.get("annual_trading_cost_pct"))
+            net_prem = _safe_float(row.get("net_premium_pct"))
+            capture = _safe_float(row.get("premium_capture_rate_pct"))
+            lines.append(
+                f"{bps if bps is not None else '--'} & {_fmt_pct(annual_cost,3)} & {_fmt_pct(net_prem,2)} & {_fmt_pct(capture,1)} \\\\"
+            )
+
+        table_sens = "\n".join(
+            [
+                "% Auto-generated. Do not edit by hand.",
+                "\\begin{table}[htbp]",
+                "\\centering",
+                "\\caption{Transaction cost sensitivity (net premium vs SPY)}",
+                "\\label{tab:transaction_cost_sensitivity}",
+                "\\begin{tabular}{lrrr}",
+                "\\toprule",
+                "Cost assumption (bp per 100\\% turnover) & Annual cost (\\%) & Net premium (\\%) & Capture rate (\\%) \\\\",
+                "\\midrule",
+                *lines,
+                "\\bottomrule",
+                "\\end{tabular}",
+                "\\end{table}",
+                "",
+            ]
+        )
+
+        (TABLES_DIR / "table_transaction_cost_sensitivity.tex").write_text(table_sens, encoding="utf-8")
 
     # Spanning tests (snapshot already provides a LaTeX table)
     spanning = payload.get("spanning_tests_full")

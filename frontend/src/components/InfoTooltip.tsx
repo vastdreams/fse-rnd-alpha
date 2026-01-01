@@ -189,7 +189,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   newey_west: {
     title: "Newey-West Standard Errors",
     explanation:
-      "A statistical correction that accounts for autocorrelation and heteroskedasticity in time-series data. Because returns can be correlated across time, standard errors without this adjustment may be too small, leading to overstated significance. We use lag=1 for annual data.",
+      "A statistical correction that accounts for autocorrelation and heteroskedasticity in time-series data. Because returns can be correlated across time, standard errors without this adjustment may be too small, leading to overstated significance. For the annual series we report a baseline lag=1 estimate and include a reviewer-friendly robustness panel for lags 0–3.",
     formula: "HAC-adjusted SE = √(Var + 2×Cov_lag1)",
   },
   rolling_window: {
@@ -312,7 +312,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   data_sources: {
     title: "Data Sources for DIY",
     explanation:
-      "R&D expense and revenue are in 10-K filings (SEC EDGAR free). S&P 500 constituents from Wikipedia or index providers. No premium data subscription required for the basic strategy.",
+      "R&D expense and revenue ultimately come from 10-K filings (SEC EDGAR). For point-in-time S&P 500 membership, use an index-provider constituent history (best practice). This platform uses a Tier-1 vendor feed to standardize fundamentals/prices and constituent spans; the frozen publication snapshot is shipped for exact replication even without redistributing raw vendor data.",
   },
   position_sizing: {
     title: "Position Sizing",

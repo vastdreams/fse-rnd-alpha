@@ -74,7 +74,7 @@ Both tiers use the same methodology (July-June returns, quintile sorting) but di
 | Field | Value |
 |-------|-------|
 | **Primary Source** | FMP Historical Constituent API |
-| **Secondary Source** | Wikipedia S&P 500 changes list |
+| **Secondary Source** | Optional manual cross-check against index-provider change logs (not a required pipeline input) |
 | **Coverage** | 1994-present (API), manually curated for earlier dates |
 | **Last Update** | December 2025 |
 
