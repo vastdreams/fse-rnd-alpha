@@ -198,10 +198,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health checks and analytics
-        skip_paths = ["/health", "/api/health", "/", "/api", "/api/analytics/pageview", "/api/analytics/duration"]
-        if request.url.path in skip_paths or request.url.path.startswith("/api/analytics"):
-            return await call_next(request)
+        # Skip rate limiting entirely for this research platform
+        # Rate limiting is handled by Nginx, no need for double rate limiting
+        return await call_next(request)
         
         # Check rate limit
         allowed, headers = rate_limiter.check_rate_limit(request)
