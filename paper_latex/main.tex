@@ -162,7 +162,7 @@ We follow three design principles that distinguish this analysis from prior work
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Bias-aware timing:} The default return convention is July-June to mitigate look-ahead from filing lags \citep{fama_french_1993}. Most U.S.\ firms have December fiscal year ends and must file 10-K reports within 60-90 days. By waiting until July to form portfolios, we ensure all accounting data is publicly available. Studies using calendar-year returns may inadvertently trade on private information.
     
-    \item \textbf{Clear separation of inference vs.\ description:} Statistical inference is anchored on a non-overlapping annual premium series; overlapping rolling windows are used only for descriptive context. Annual non-overlapping observations reduce mechanical overlap and support cleaner inference. Rolling windows are autocorrelated (overlapping periods share data) but useful for visualizing trends and regime dependence. We distinguish these explicitly to avoid treating autocorrelated rolling-window statistics as independent evidence.
+    \item \textbf{Clear separation of inference vs.\ description:} Statistical inference is anchored on higher-power monthly tests (Fama-MacBeth cross-sectional regressions and monthly factor spanning tests), while the annual non-overlapping premium series is used to summarize economic magnitude and year-to-year consistency. Rolling windows are autocorrelated (overlapping periods share data) and are used only for descriptive context (horizon dependence and regimes). We distinguish these explicitly to avoid treating autocorrelated rolling-window statistics as independent evidence.
     
     \item \textbf{Reproducibility:} All tables and figures are snapshot-pinned; the PDF is deterministically generated from the frozen snapshot. This ensures every numeric claim can be verified against the source data. The codebase is publicly available for replication.
 \end{enumerate}
@@ -186,7 +186,7 @@ We follow three design principles that distinguish this analysis from prior work
 \end{itemize}
 \end{tcolorbox}
 
-The paper proceeds as follows. Section~\ref{sec:literature} frames related evidence and hypotheses. Section~\ref{sec:data} describes data and sample construction. Section~\ref{sec:methodology} specifies portfolio formation, return definitions, and inference. Section~\ref{sec:results} presents the primary annual premium evidence and descriptive time-variation, Section~\ref{sec:sector} documents sector structure, and Section~\ref{sec:robustness} reports robustness and factor diagnostics. Sections~\ref{sec:discussion}-\ref{sec:conclusion} discuss interpretation, implementation, limitations, replicability, and conclusion.
+The paper proceeds as follows. Section~\ref{sec:literature} frames related evidence and hypotheses. Section~\ref{sec:data} describes data and sample construction. Section~\ref{sec:methodology} specifies portfolio formation, return definitions, and inference. Section~\ref{sec:results} presents the annual premium evidence and descriptive time-variation, Section~\ref{sec:sector} documents sector structure, and Section~\ref{sec:robustness} reports robustness and factor diagnostics. Sections~\ref{sec:discussion}-\ref{sec:conclusion} discuss interpretation, implementation, limitations, replicability, and conclusion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2. LITERATURE REVIEW AND HYPOTHESES
@@ -245,7 +245,7 @@ For a portfolio audience, the core questions are implementability and robustness
 
 \citet{cohen_klepper_1996} examine the relationship between firm size and R\&D, documenting that larger firms tend to spend more on R\&D in absolute terms but may have lower R\&D intensity. This size-R\&D relationship motivates our double-sort robustness checks.
 
-We address these practitioner concerns by (i) prioritizing a clean annual return series for inference, (ii) reporting sector structure transparently, and (iii) mapping the signal into an explicit strategy section with realistic cost assumptions.
+We address these practitioner concerns by (i) reporting a transparent annual series for economic context and persistence, (ii) anchoring statistical inference on higher-power monthly tests (Fama-MacBeth and factor spanning), (iii) reporting sector structure transparently, and (iv) mapping the signal into an explicit strategy section with realistic cost assumptions.
 
 \subsection{Hypotheses}
 
@@ -324,7 +324,7 @@ The 6+ month lag between fiscal year end and portfolio formation ensures no info
 
 \subsection{Statistical Inference: Non-Overlapping vs.\ Rolling}
 
-We present (i) annual non-overlapping HML premiums for primary inference and (ii) rolling-window summaries for descriptive context.
+We present (i) annual non-overlapping HML premiums for economic context and (ii) rolling-window summaries for descriptive context. Statistical inference is anchored on monthly Fama-MacBeth regressions and monthly factor spanning tests.
 
 \textbf{Two complementary views.}
 \begin{itemize}[leftmargin=*]
@@ -566,7 +566,7 @@ Stable premiums across regimes support H2 (stability). Regime-specific premiums 
 \subsection{Key Takeaways from Results}
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Primary evidence is annual:} The mean annual premium is \AnnualMeanPremium\% with Newey-West inference ($t = \AnnualTStat$, $p = \AnnualPValue$).
+    \item \textbf{Annual series (economic context):} The mean annual premium is \AnnualMeanPremium\% with Newey-West inference ($t = \AnnualTStat$, $p = \AnnualPValue$).
     \item \textbf{Consistency matters:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate), indicating the result is not driven by a few extreme years.
     \item \textbf{Time variation exists:} Rolling windows and regime analysis show the premium varies across periods but remains positive on average.
     \item \textbf{Horizon decay reflects methodology, not strategy failure:} Lower premiums in 20-year rolling windows reflect signal staleness from not rebalancing, not a failure of the underlying relationship.
@@ -628,11 +628,11 @@ To address the common critique that the premium is ``just sector exposure,'' Tab
 \section{Robustness and Factor Tests}
 \label{sec:robustness}
 
-This section reports robustness and interpretation diagnostics that complement the primary annual premium evidence in Section~\ref{sec:results}. We present cumulative performance visualization, factor spanning tests, stratification diagnostics, double-sort analysis, and delisting sensitivity.
+This section reports robustness and interpretation diagnostics that complement the annual premium evidence in Section~\ref{sec:results} and provide higher-power statistical inference via monthly tests. We present cumulative performance visualization, factor spanning tests, Fama-MacBeth regressions, stratification diagnostics, double-sort analysis, and delisting sensitivity.
 
 \subsection{Cumulative Performance Context (Annual Series)}
 
-Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 and Q1 computed from the same annual non-overlapping series used for primary inference. The widening gap visualizes the compounding effect of a persistent premium and helps frame path dependence of implementation.
+Figure~\ref{fig:annual_quintile_growth} shows cumulative wealth indices for Q5 and Q1 computed from the annual non-overlapping series. The widening gap visualizes the compounding effect of a persistent premium and helps frame path dependence of implementation.
 
 \begin{figure}[H]
 \centering
