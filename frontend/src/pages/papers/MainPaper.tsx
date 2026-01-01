@@ -832,8 +832,9 @@ export function MainPaper() {
                       : "the majority of years"}.
                   </>
                 ) : (
-                  <>The high-minus-low premium (Q5 minus Q1) is positive and statistically significant in non-overlapping annual returns. 
-                    In plain terms: stocks with high R&amp;D intensity consistently outperformed those with low R&amp;D intensity.</>
+                  <>The high-minus-low premium (Q5 minus Q1) is positive and economically meaningful in non-overlapping annual returns. 
+                    While the annual time-series test has limited power due to variance, the monthly factor spanning tests confirm a significant alpha (FF5: 4.37%, p&lt;0.01). 
+                    In plain terms: stocks with high R&amp;D intensity have consistently outperformed those with low R&amp;D intensity.</>
                 )}
               </p>
 
@@ -2275,7 +2276,7 @@ export function MainPaper() {
                 <ul className="list-disc list-inside space-y-1">
                   <li>
                     <strong className="text-foreground">Variability is normal:</strong> Even a "real" premium will have negative years.
-                    The question is whether the long-run average is positive and statistically significant (see Table 5.1).
+                    The question is whether the long-run average is positive and economically meaningful (see Table 5.1 for annual results and Table 7.2 for monthly factor spanning tests).
                   </li>
                   <li>
                     <strong className="text-foreground">Win rate:</strong> Count the green vs red bars. A win rate above 50% suggests the premium
@@ -2826,7 +2827,7 @@ export function MainPaper() {
                                 For S&amp;P 500 (large-cap), delisting effects are typically 0.3-1.0% annually, smaller than small-cap universes.
                               </li>
                               <li>
-                                <strong>Key finding:</strong> The premium remains statistically significant (p &lt; 0.05) across all plausible delisting assumptions.
+                                <strong>Key finding:</strong> The premium remains directionally positive across all plausible delisting assumptions, supporting the robustness of the main result.
                               </li>
                             </ul>
                           ) : (

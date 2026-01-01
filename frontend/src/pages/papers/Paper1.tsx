@@ -907,8 +907,9 @@ export function Paper1() {
           <Card>
             <CardContent className="pt-6 prose prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground leading-relaxed">
-                Our findings provide strong evidence that R&D investment intensity is a significant predictor 
-                of long-term shareholder returns. The monotonic relationship between R&D quintiles and returns, 
+                Our findings provide evidence that R&D investment intensity is an economically meaningful predictor 
+                of long-term shareholder returns. While the annual time-series test has limited statistical power (30 observations, high variance), 
+                the monthly factor spanning tests show a statistically significant alpha (FF5: 4.37%, p&lt;0.01). The monotonic relationship between R&D quintiles and returns, 
                 combined with the increasing effect sizes over longer horizons, suggests that R&D investments 
                 create durable competitive advantages.
               </p>

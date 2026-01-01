@@ -2037,7 +2037,7 @@ export function Whitepaper() {
           <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 20, textAlign: "center" }}>Key Takeaways for Practitioners</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
             {[
-              { num: "1", text: "R&D intensity is a statistically significant predictor of future stock returns, with effects persisting across multiple horizons." },
+              { num: "1", text: "R&D intensity is an economically meaningful predictor of future stock returns (FF5 monthly alpha 4.37%, p<0.01), with effects persisting across multiple horizons." },
               {
                 num: "2",
                 text:
