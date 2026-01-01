@@ -517,9 +517,9 @@ export function MainPaper() {
 
   const sampleYearRange = useMemo(() => {
     // Primary: derive from annual_hml_premium (always available if snapshot loaded)
-    const annualPremiums = snapshotPayload?.annual_hml_premium?.annual_premiums
-    if (Array.isArray(annualPremiums) && annualPremiums.length > 0) {
-      const years = annualPremiums
+    const annualHml = snapshotPayload?.annual_hml_premium
+    if (annualHml && "annual_premiums" in annualHml && Array.isArray(annualHml.annual_premiums) && annualHml.annual_premiums.length > 0) {
+      const years = annualHml.annual_premiums
         .map((p: { year_start?: number }) => p.year_start)
         .filter((y): y is number => typeof y === "number")
       if (years.length > 0) {
@@ -539,7 +539,7 @@ export function MainPaper() {
     const max = Math.max(...years)
     if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined
     return `${min}-${max}`
-  }, [snapshotPayload?.annual_hml_premium?.annual_premiums, factorPremiumSeries])
+  }, [snapshotPayload?.annual_hml_premium, factorPremiumSeries])
 
   const snapshotBuiltAtLabel = useMemo(() => {
     const builtAt = snapshot?.meta?.built_at
