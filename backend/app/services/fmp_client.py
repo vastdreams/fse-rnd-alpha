@@ -119,7 +119,10 @@ class FMPClient:
         Returns:
             List of S&P 500 companies with symbol, name, sector, etc.
         """
-        data = await self._get("/api/v3/sp500_constituent")
+        # Try stable endpoint first, fall back to v3
+        data = await self._get("/stable/sp500-constituent")
+        if not data:
+            data = await self._get("/api/v3/sp500_constituent")
         return data or []
     
     async def get_historical_sp500_constituents(self) -> List[Dict[str, Any]]:
@@ -129,7 +132,10 @@ class FMPClient:
         Returns:
             List of additions/removals from S&P 500.
         """
-        data = await self._get("/api/v3/historical/sp500_constituent")
+        # Try stable endpoint first, fall back to v3
+        data = await self._get("/stable/historical/sp500-constituent")
+        if not data:
+            data = await self._get("/api/v3/historical/sp500_constituent")
         return data or []
     
     # =========================================================================
