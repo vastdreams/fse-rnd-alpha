@@ -190,7 +190,7 @@ export function Paper4() {
             
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
-              <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
+              <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">1 January 2026</span></div>
               <div><span className="text-muted-foreground">Focus:</span> <span className="text-foreground">Operational Metrics</span></div>
               <div><span className="text-muted-foreground">Total R&D:</span> <span className="text-foreground">${(totalRdSpend / 1e12).toFixed(1)}T Analyzed</span></div>
             </div>

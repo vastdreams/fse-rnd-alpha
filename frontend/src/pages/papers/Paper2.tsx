@@ -243,7 +243,7 @@ export function Paper2() {
             
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
-              <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
+              <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">1 January 2026</span></div>
               <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || "..."} Companies</span></div>
               <div><span className="text-muted-foreground">Sectors:</span> <span className="text-foreground">{sectorData.length} Industries</span></div>
             </div>

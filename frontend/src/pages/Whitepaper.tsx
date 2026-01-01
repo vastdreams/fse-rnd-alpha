@@ -97,7 +97,7 @@ function Slide({ children, slideNumber, totalSlides, title, subtitle, accent = "
         }}
       >
         <span>R&D Alpha Research</span>
-        <span>December 2025</span>
+        <span>January 2026</span>
         <span>{slideNumber} / {totalSlides}</span>
       </div>
     </div>
@@ -586,7 +586,7 @@ export function Whitepaper() {
           >
             Research Whitepaper
           </Badge>
-          <div style={{ fontSize: 12, color: "#64748b" }}>Abhishek Sehgal · December 2025 · PDF-ready</div>
+          <div style={{ fontSize: 12, color: "#64748b" }}>Abhishek Sehgal · January 2026 · PDF-ready</div>
         </div>
 
         {/* Title */}
@@ -2095,7 +2095,7 @@ export function Whitepaper() {
         <div style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#334155" }}>Abhishek Sehgal</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>December 2025</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>January 2026</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, color: "#64748b" }}>

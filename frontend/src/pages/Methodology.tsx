@@ -146,7 +146,7 @@ export function Methodology() {
             
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Version:</span> <span className="text-foreground">2.0</span></div>
-              <div><span className="text-muted-foreground">Last Updated:</span> <span className="text-foreground">December 2025</span></div>
+              <div><span className="text-muted-foreground">Last Updated:</span> <span className="text-foreground">January 2026</span></div>
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
             </div>
           </div>
