@@ -362,5 +362,44 @@
     "url": "https://doi.org/10.3905/joi.2023.1.264",
     "verified": true,
     "peer_reviewed": true
+  },
+  "amihud_2002": {
+    "id": "amihud_2002",
+    "authors": "Amihud, Y.",
+    "year": 2002,
+    "title": "Illiquidity and stock returns: Cross-section and time-series effects",
+    "journal": "Journal of Financial Markets",
+    "volume": "5(1)",
+    "pages": "31-56",
+    "doi": "10.1016/S1386-4181(01)00024-6",
+    "url": "https://doi.org/10.1016/S1386-4181(01)00024-6",
+    "verified": true,
+    "peer_reviewed": true
+  },
+  "ahmed_bu_ye_2025": {
+    "id": "ahmed_bu_ye_2025",
+    "authors": "Ahmed, S., Bu, Z., & Ye, X.",
+    "year": 2025,
+    "title": "Illiquidity, R&D investment, and stock returns",
+    "journal": "Journal of Money, Credit and Banking",
+    "volume": "57(4)",
+    "pages": "981-1012",
+    "doi": "10.1111/jmcb.13053",
+    "url": "https://doi.org/10.1111/jmcb.13053",
+    "verified": true,
+    "peer_reviewed": true
+  },
+  "jagannathan_korajczyk_wang_2025": {
+    "id": "jagannathan_korajczyk_wang_2025",
+    "authors": "Jagannathan, R., Korajczyk, R.A., & Wang, K.",
+    "year": 2025,
+    "title": "Intangibles investment and asset quality",
+    "journal": "SSRN working paper",
+    "volume": null,
+    "pages": null,
+    "doi": null,
+    "url": "https://ssrn.com/abstract=4394069",
+    "verified": true,
+    "peer_reviewed": false
   }
 }

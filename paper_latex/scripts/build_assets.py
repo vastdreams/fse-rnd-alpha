@@ -1190,6 +1190,105 @@ Return period & Q1 (\\%) & Q5 (\\%) & HML (\\%) \\\\
     (TABLES_DIR / "table_annual_hml_detail.tex").write_text(table, encoding="utf-8")
 
 
+def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
+    """
+    Writes `tables/table_liquidity_moderation.tex`.
+
+    WHY:
+      Reviewer-friendly robustness check motivated by Ahmed, Bu, and Ye (2025):
+      the R&D premium may strengthen with illiquidity (information frictions).
+
+    SOURCE:
+      Uses `payload["liquidity_moderation"]` produced by the publication snapshot.
+    """
+    node = payload.get("liquidity_moderation")
+    if not isinstance(node, dict) or "error" in node:
+        placeholder = "\n".join(
+            [
+                "% Auto-generated placeholder. Do not edit by hand.",
+                "\\begin{table}[htbp]",
+                "\\centering",
+                "\\caption{Illiquidity moderation of the R\\&D premium (unavailable)}",
+                "\\label{tab:liquidity_moderation}",
+                "\\begin{tabular}{lp{10cm}}",
+                "\\toprule",
+                "Status & Details \\\\",
+                "\\midrule",
+                "Unavailable & Liquidity moderation payload missing or invalid in this snapshot. \\\\",
+                "\\bottomrule",
+                "\\end{tabular}",
+                "\\end{table}",
+                "",
+            ]
+        )
+        (TABLES_DIR / "table_liquidity_moderation.tex").write_text(placeholder, encoding="utf-8")
+        return
+
+    meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+    amihud = node.get("amihud") if isinstance(node.get("amihud"), dict) else {}
+    dvol = node.get("dollar_volume") if isinstance(node.get("dollar_volume"), dict) else {}
+
+    def _row(panel: str, bucket: str, b: dict[str, Any]) -> str:
+        prem = _safe_float(b.get("mean_premium_pct"))
+        t = _safe_float(b.get("nw_t_stat"))
+        n_years = _safe_int(b.get("n_years"))
+        avg_firms = _safe_float(b.get("avg_firms_per_year"))
+        return (
+            f"{panel} & {bucket} & {_fmt_pct(prem, 2)} & {(_fmt_pct(t, 2) if t is not None else '--')} & "
+            f"{(n_years if n_years is not None else '--')} & "
+            f"{(_fmt_pct(avg_firms, 1) if avg_firms is not None else '--')} \\\\"
+        )
+
+    lines: list[str] = []
+
+    # Panel A: Amihud
+    a_buckets = amihud.get("buckets") if isinstance(amihud.get("buckets"), dict) else {}
+    for b in ["Liquid", "Medium", "Illiquid"]:
+        if isinstance(a_buckets.get(b), dict):
+            lines.append(_row("Amihud", b, a_buckets[b]))
+    if isinstance(a_buckets.get("Illiquid_minus_Liquid"), dict):
+        lines.append(_row("Amihud", "Illiquid − Liquid", a_buckets["Illiquid_minus_Liquid"]))
+
+    lines.append("\\addlinespace")
+
+    # Panel B: Dollar volume
+    d_buckets = dvol.get("buckets") if isinstance(dvol.get("buckets"), dict) else {}
+    for b in ["Liquid", "Medium", "Illiquid"]:
+        if isinstance(d_buckets.get(b), dict):
+            lines.append(_row("Dollar volume", b, d_buckets[b]))
+    if isinstance(d_buckets.get("Illiquid_minus_Liquid"), dict):
+        lines.append(_row("Dollar volume", "Illiquid − Liquid", d_buckets["Illiquid_minus_Liquid"]))
+
+    start_y = _safe_int(meta.get("start_formation_year"))
+    end_y = _safe_int(meta.get("end_formation_year"))
+    window = meta.get("liquidity_window") if isinstance(meta.get("liquidity_window"), str) else "pre-formation"
+    lags = _safe_int(meta.get("nw_lags"))
+    caption_suffix = f"({start_y}-{end_y}; {window}; Newey--West lags={lags})" if start_y and end_y and lags else ""
+
+    table = "\n".join(
+        [
+            "% Auto-generated. Do not edit by hand.",
+            "\\begin{table}[htbp]",
+            "\\centering",
+            f\"\\caption{{Illiquidity moderation of the R\\&D premium (descriptive) {caption_suffix}}}\",
+            "\\label{tab:liquidity_moderation}",
+            "\\begin{tabular}{llrrrr}",
+            "\\toprule",
+            "Proxy & Bucket & Premium (\\%) & NW $t$ & N years & Avg firms/year \\\\",
+            "\\midrule",
+            *lines,
+            "\\bottomrule",
+            "\\multicolumn{6}{l}{\\footnotesize Premium is within-bucket Q5$-$Q1 using July--June annualized returns.} \\\\",
+            "\\multicolumn{6}{l}{\\footnotesize Amihud (2002) uses daily |return| / dollar volume; dollar volume bucket uses avg(adj\\_close$\\times$volume).} \\\\",
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
+    (TABLES_DIR / "table_liquidity_moderation.tex").write_text(table, encoding="utf-8")
+
+
 def write_regime_breakdown_table(payload: dict[str, Any]) -> None:
     """
     Writes a regime/subperiod breakdown table showing premium by market era.
@@ -1433,6 +1532,7 @@ def main() -> None:
     write_investable_growth_csv(payload)
     write_tables(meta, payload)
     write_annual_hml_detail_table(payload)
+    write_liquidity_moderation_table(payload)
     write_regime_breakdown_table(payload)
     write_universe_integrity_table(payload)
 
@@ -1446,6 +1546,7 @@ def main() -> None:
     print(f"- {DATA_DIR / 'investable_growth.csv'}")
     print(f"- {TABLES_DIR}/*.tex")
     print(f"- {TABLES_DIR}/table_annual_hml_detail.tex")
+    print(f"- {TABLES_DIR}/table_liquidity_moderation.tex")
     print(f"- {TABLES_DIR}/table_regime_breakdown.tex")
 
 

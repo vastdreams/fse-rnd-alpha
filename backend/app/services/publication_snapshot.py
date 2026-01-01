@@ -733,6 +733,22 @@ async def build_snapshot_payload(
     except Exception as e:
         payload["mispricing_tests"] = {"error": str(e)}
 
+    # Liquidity moderation (Amihud + dollar volume) — descriptive conditional sorts.
+    # Motivation: the R&D premium may strengthen with illiquidity (information frictions).
+    try:
+        from app.services.factor_tests import LiquidityModerationAnalyzer
+
+        liquidity_analyzer = LiquidityModerationAnalyzer(session)
+        payload["liquidity_moderation"] = _json_safe(
+            await liquidity_analyzer.run_liquidity_moderation_tests(
+                start_formation_year=2000,
+                end_formation_year=2024,
+                data_tier=data_tier,
+            )
+        )
+    except Exception as e:
+        payload["liquidity_moderation"] = {"error": str(e)}
+
     try:
         stats = StatisticalAnalyzer(session, use_july_june=use_july_june, data_tier=data_tier)
         payload["double_sort_analysis"] = _json_safe(
