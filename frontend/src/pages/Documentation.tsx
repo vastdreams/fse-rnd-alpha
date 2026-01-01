@@ -524,7 +524,7 @@ export function Documentation() {
                     <li><strong>Quintile Analysis:</strong> Performance by R&D intensity quintiles</li>
                     <li><strong>Factor Premium:</strong> R&D factor returns over time</li>
                     <li><strong>ANOVA Results:</strong> Statistical significance tests</li>
-                    <li><strong>Cohort Companies:</strong> Full list of 503 companies</li>
+                    <li><strong>Cohort Companies:</strong> Full list of cohort companies (from API)</li>
                     <li><strong>Papers:</strong> Research papers with findings</li>
                     <li><strong>Methodology:</strong> Complete methodology documentation</li>
                   </ul>

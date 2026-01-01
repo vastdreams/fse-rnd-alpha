@@ -119,7 +119,7 @@ export function Paper4() {
   const keyMetrics = [
     { label: "Total R&D", value: `$${(totalRdSpend / 1e12).toFixed(1)}T`, color: "text-amber-600 dark:text-amber-400" },
     { label: "Avg Intensity", value: `${avgIntensity.toFixed(1)}%`, color: "text-green-600 dark:text-emerald-400" },
-    { label: "Companies", value: `${cohortSummary?.total_companies || 503}`, color: "text-foreground" },
+    { label: "Companies", value: `${cohortSummary?.total_companies || "..."}`, color: "text-foreground" },
     { label: "Years", value: `${trendData.length}`, color: "text-foreground" },
   ]
 
@@ -211,7 +211,7 @@ export function Paper4() {
                 We analyze how R&D intensity relates to operational performance metrics including revenue 
                 growth, profit margins, and competitive positioning. Our analysis covers 
                 ${(totalRdSpend / 1e12).toFixed(1)} trillion in cumulative R&D spending across 
-                {cohortSummary?.total_companies || 503} S&P 500 companies over {trendData.length} years.
+                {cohortSummary?.total_companies || "..."} S&P 500 companies over {trendData.length} years.
               </p>
               <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
                 <p className="text-sm text-amber-400 font-medium mb-2">Key Findings:</p>
@@ -343,7 +343,7 @@ export function Paper4() {
             <CardContent className="pt-6 space-y-6">
               <div className="prose prose-invert max-w-none">
                 <p className="text-muted-foreground">
-                  Our sample comprises {cohortSummary?.total_companies || 503} S&P 500 companies with 
+                  Our sample comprises {cohortSummary?.total_companies || "..."} S&P 500 companies with 
                   R&D data spanning {trendData.length} years. Total cumulative R&D investment in our 
                   sample exceeds ${(totalRdSpend / 1e12).toFixed(1)} trillion.
                 </p>
@@ -360,7 +360,7 @@ export function Paper4() {
                   <div className="text-sm text-slate-700 dark:text-slate-200">Avg Intensity</div>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 text-center">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{cohortSummary?.total_companies || 503}</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{cohortSummary?.total_companies || "..."}</div>
                   <div className="text-sm text-slate-700 dark:text-slate-200">Companies</div>
                 </div>
                 <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 text-center">

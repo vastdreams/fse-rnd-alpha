@@ -981,11 +981,11 @@ export function Whitepaper() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                       <div style={{ fontSize: 12, color: "#334155", fontWeight: 700 }}>{row.label}</div>
                       <div style={{ fontSize: 12, color: "#64748b" }}>
-                        {row.n} firms ({row.pct}%)
+                        {row.n} firms ({typeof row.pct === "number" ? `${row.pct}%` : "…"})
                       </div>
                     </div>
                     <div style={{ height: 10, background: "#e2e8f0", borderRadius: 6, overflow: "hidden" }}>
-                      <div style={{ width: `${Math.min(100, row.pct)}%`, height: "100%", background: row.color, borderRadius: 6 }} />
+                      <div style={{ width: `${Math.min(100, row.pct ?? 0)}%`, height: "100%", background: row.color, borderRadius: 6 }} />
                     </div>
                   </div>
                 ))}
@@ -1882,7 +1882,8 @@ export function Whitepaper() {
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>Patience Required</div>
               <div style={{ fontSize: 13, color: "#78350f", lineHeight: 1.5 }}>
-                R&D benefits manifest with a <strong>3-5 year lag</strong>. Short-term underperformance is possible (negative premium years: ~{100 - winRate}%). 
+                R&D benefits manifest with a <strong>3-5 year lag</strong>. Short-term underperformance is possible (negative premium years: ~
+                {typeof winRate === "number" ? `${(100 - winRate).toFixed(0)}%` : "…"}). 
                 This strategy is designed for <strong>long-term investors with 5+ year horizons</strong>.
               </div>
             </div>
@@ -2038,7 +2039,7 @@ export function Whitepaper() {
                     ? `Effect size grows with horizon (η² ${etaSquared5yr.toFixed(2)}→${etaSquared20yr.toFixed(2)}), suggesting R&D benefits compound. Patience is rewarded.`
                     : "Effect size grows with horizon (η² rises), suggesting R&D benefits compound. Patience is rewarded.",
               },
-              { num: "3", text: "Results align with 30+ years of academic research on intangible asset mispricing (Chan et al., Lev & Sougiannis)." },
+              { num: "3", text: "Results align with decades of academic research on intangible asset mispricing (Chan et al., Lev & Sougiannis)." },
               {
                 num: "4",
                 text:

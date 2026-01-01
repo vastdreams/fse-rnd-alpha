@@ -173,7 +173,7 @@ export function Paper2() {
     { label: "Top Sector", value: sectorData[0]?.sector?.substring(0, 10) || "Healthcare", color: "text-blue-600 dark:text-blue-400" },
     { label: "Total R&D", value: `$${sectorData.reduce((acc, s) => acc + s.totalRdB, 0).toFixed(0)}B`, color: "text-green-600 dark:text-emerald-400" },
     { label: "Sectors Analyzed", value: `${sectorData.length}`, color: "text-foreground" },
-    { label: "Sample Size", value: `${cohortSummary?.total_companies || 503}`, color: "text-foreground" },
+    { label: "Sample Size", value: `${cohortSummary?.total_companies || "..."}`, color: "text-foreground" },
   ]
 
   const handleDownload = () => {
@@ -244,7 +244,7 @@ export function Paper2() {
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
               <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
-              <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || 503} Companies</span></div>
+              <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || "..."} Companies</span></div>
               <div><span className="text-muted-foreground">Sectors:</span> <span className="text-foreground">{sectorData.length} Industries</span></div>
             </div>
           </div>
@@ -378,7 +378,7 @@ export function Paper2() {
             <CardContent className="pt-6 space-y-6">
               <div className="prose prose-invert max-w-none">
                 <p className="text-muted-foreground">
-                  Our sample comprises {cohortSummary?.total_companies || 503} S&P 500 companies 
+                  Our sample comprises {cohortSummary?.total_companies || "..."} S&P 500 companies 
                   classified into {sectorData.length} GICS sectors. We collect annual R&D expenditure 
                   and revenue data from company financial statements for the period {rdSampleYearRange || "shown above"}.
                 </p>

@@ -28,7 +28,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    // Production builds do not need source maps; disabling speeds up CI and reduces artifact size.
+    sourcemap: false
   },
   test: {
     projects: [{

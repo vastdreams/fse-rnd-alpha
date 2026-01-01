@@ -141,7 +141,7 @@ async def backtest_portfolio(
     PUBLICATION-GRADE (Dec 2025):
     - Default method changed to rd_alpha (research-based scoring)
     - Uses July-June returns by default (eliminates look-ahead bias)
-    - Integrates delisting returns for survivorship bias correction
+    - Handles exits via cash-after-exit return construction; delisting uncertainty is addressed via sensitivity analysis
     """
     optimizer = PortfolioOptimizer(session, use_july_june=use_july_june)
     sectors = [sector] if sector else None
@@ -763,9 +763,45 @@ async def get_forecast_distribution(
         # Premium dispersion: combine Q5 and Q1 volatility
         premium_std = (premium_data[5].get("std", 0) ** 2 + premium_data[1].get("std", 0) ** 2) ** 0.5
     else:
-        # Fallback based on research findings
-        base_premium = 5.0  # ~5% annual premium (conservative estimate)
-        premium_std = 5.0   # Approximate historical dispersion
+        # Fallback: derive inputs from the active publication snapshot (pins assumptions to the frozen dataset).
+        from app.db.models import PublicationSnapshot
+
+        snapshot_payload = None
+        try:
+            snap_res = await session.execute(
+                select(PublicationSnapshot.payload)
+                .where(PublicationSnapshot.is_active == True)  # noqa: E712
+                .order_by(PublicationSnapshot.built_at.desc())
+                .limit(1)
+            )
+            snapshot_payload = snap_res.scalar_one_or_none()
+        except Exception:
+            snapshot_payload = None
+
+        base_premium = None
+        premium_std = None
+
+        if isinstance(snapshot_payload, dict):
+            stats = snapshot_payload.get("publication_stats")
+            if isinstance(stats, dict):
+                stats_5yr = stats.get("5yr")
+                if isinstance(stats_5yr, dict):
+                    ttest = stats_5yr.get("ttest_high_vs_low")
+                    if isinstance(ttest, dict) and isinstance(ttest.get("mean_difference"), (int, float)):
+                        base_premium = float(ttest["mean_difference"])
+
+            annual = snapshot_payload.get("annual_hml_premium")
+            if isinstance(annual, dict) and isinstance(annual.get("std_dev"), (int, float)):
+                premium_std = float(annual["std_dev"])
+
+        # If we still can't derive a premium, return a clear error instead of a magic number.
+        if not isinstance(base_premium, (int, float)) or not isinstance(premium_std, (int, float)):
+            return {
+                "error": (
+                    "Forecast distribution unavailable: missing rolling-window premium series and no active "
+                    "publication snapshot could be found. Recompute research outputs or activate a snapshot."
+                )
+            }
     
     # Calculate expected return distribution
     # E[R] = Market Return + R&D Premium
@@ -823,7 +859,7 @@ async def get_forecast_distribution(
         },
         "confidence": {
             "level": "moderate",
-            "note": "Based on 30+ year historical analysis with point-in-time data",
+            "note": "Based on historical Tier-1 data; point-in-time constituent spans are enforced where available",
             "caveats": [
                 "Past performance does not guarantee future results",
                 "Premium may vary significantly year-to-year",

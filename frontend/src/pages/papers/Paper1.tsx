@@ -273,7 +273,7 @@ export function Paper1() {
             <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-border text-sm">
               <div><span className="text-muted-foreground">Author:</span> <span className="text-foreground">Abhishek Sehgal</span></div>
               <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground">17 December 2025</span></div>
-              <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || 503} Companies</span></div>
+              <div><span className="text-muted-foreground">Sample:</span> <span className="text-foreground">{cohortSummary?.total_companies || "..."} Companies</span></div>
               <div><span className="text-muted-foreground">Period:</span> <span className="text-foreground">{sampleYearRange || "..."}</span></div>
             </div>
           </div>
@@ -478,7 +478,7 @@ export function Paper1() {
               {/* Data Summary Stats */}
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                  <p className="text-2xl font-bold text-primary">{cohortSummary?.total_companies || 503}</p>
+                  <p className="text-2xl font-bold text-primary">{cohortSummary?.total_companies || "..."}</p>
                   <p className="text-sm text-muted-foreground">Total Companies</p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg border border-border">

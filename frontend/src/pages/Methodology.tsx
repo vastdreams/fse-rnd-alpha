@@ -12,7 +12,8 @@
  *   - This should be the single source of truth for how analysis is performed
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -32,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { RightTableOfContents } from "@/components/RightTableOfContents"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api"
 import { Sub, Sup, Var, Greek, Formulas } from "@/components/Formula"
 
 const sections = [
@@ -51,6 +53,31 @@ const sections = [
 export function Methodology() {
   const [activeSection, setActiveSection] = useState("overview")
   const [rightNavCollapsed, setRightNavCollapsed] = useState(false)
+
+  // “0 hallucinations” policy: any displayed counts/ranges should come from snapshot-backed API.
+  const { data: publicationSnapshot } = useQuery({
+    queryKey: ["publicationSnapshot", "methodology"],
+    queryFn: () => api.getPublicationSnapshot(),
+  })
+
+  const companiesLabel = useMemo(() => {
+    const cohort = publicationSnapshot?.payload?.cohort_summary as any
+    const totalCompanies = cohort && typeof cohort === "object" && !("error" in cohort) ? cohort.total_companies : undefined
+    return typeof totalCompanies === "number" ? String(totalCompanies) : "..."
+  }, [publicationSnapshot])
+
+  const timePeriodLabel = useMemo(() => {
+    const annual = publicationSnapshot?.payload?.annual_hml_premium as any
+    if (!annual || typeof annual !== "object" || ("error" in annual)) return "..."
+    const rows = annual.annual_premiums
+    const nYears = annual.n_years
+    if (!Array.isArray(rows) || rows.length === 0) return "..."
+    const first = rows[0]?.year
+    const last = rows[rows.length - 1]?.year
+    if (typeof first !== "string" || typeof last !== "string") return "..."
+    const range = `${first} to ${last}`
+    return typeof nYears === "number" ? `${range} (${nYears} yrs)` : range
+  }, [publicationSnapshot])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -81,8 +108,8 @@ export function Methodology() {
 
   const keyMetrics = [
     { label: "Data Sources", value: "3", color: "text-blue-500" },
-    { label: "Companies", value: "503+", color: "text-emerald-500" },
-    { label: "Time Period", value: "30 years", color: "text-purple-500" },
+    { label: "Companies", value: companiesLabel, color: "text-emerald-500" },
+    { label: "Time Period", value: timePeriodLabel, color: "text-purple-500" },
     { label: "Quintiles", value: "5", color: "text-foreground" },
   ]
 

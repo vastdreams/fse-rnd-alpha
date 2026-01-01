@@ -144,7 +144,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                                         <table role="presentation" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
-                                                    <strong style="color: #60a5fa;">~5% annual alpha</strong> — R&D-intensive portfolios outperform market benchmarks
+                                                    <strong style="color: #60a5fa;">+7.55% annual premium</strong> — High R&amp;D portfolios outperform low R&amp;D portfolios in the frozen snapshot
                                                 </td>
                                             </tr>
                                             <tr>
@@ -154,7 +154,7 @@ def send_thank_you_email(to_email: str, first_name: Optional[str] = None) -> boo
                                             </tr>
                                             <tr>
                                                 <td style="padding: 8px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
-                                                    <strong style="color: #60a5fa;">25-year backtest</strong> — Rigorous point-in-time testing with real SEC filings
+                                                    <strong style="color: #60a5fa;">24-year backtest</strong> — Non-overlapping annual July–June testing (Jul2001–Jun2025) with point-in-time membership where spans are available
                                                 </td>
                                             </tr>
                                         </table>
