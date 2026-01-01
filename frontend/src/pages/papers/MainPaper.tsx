@@ -92,6 +92,7 @@ const sections = [
   { id: "limitations", label: "10. Limitations" },
   { id: "replicability", label: "11. Replicability" },
   { id: "conclusion", label: "12. Conclusion" },
+  { id: "cite", label: "How to Cite" },
   { id: "references", label: "References" },
   { id: "appendix", label: "Online Appendix (Supporting Notes)" },
 ]
@@ -4192,6 +4193,53 @@ export function MainPaper() {
           </Card>
         </section>
 
+        {/* How to Cite */}
+        <section id="cite" className="scroll-mt-24">
+          <div className="flex items-center gap-3 mb-4">
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="text-2xl font-bold">How to Cite This Paper</h2>
+          </div>
+          <Card className="bg-card">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex flex-wrap gap-3 mb-4">
+                <a href="/rnd-alpha-paper.pdf" download className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </a>
+                <Button variant="outline" size="sm" onClick={() => {
+                  navigator.clipboard.writeText(`Sehgal, A. (2025). R&D Alpha: Investment Intensity and Long-Term Stock Returns. FSE Research & Investments. https://research.finsoeasy.com/papers/main`);
+                  alert("Citation copied to clipboard!");
+                }}>
+                  Copy Citation
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1">APA Format:</p>
+                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md font-mono">
+                    Sehgal, A. (2025). R&D Alpha: Investment Intensity and Long-Term Stock Returns. <em>FSE Research & Investments</em>. https://research.finsoeasy.com/papers/main
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1">BibTeX:</p>
+                  <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-md overflow-x-auto">
+{`@article{sehgal_rnd_alpha_2025,
+  author  = {Sehgal, Abhishek},
+  title   = {R\\&D Alpha: Investment Intensity and Long-Term Stock Returns},
+  year    = {2025},
+  journal = {FSE Research \\& Investments},
+  url     = {https://research.finsoeasy.com/papers/main},
+  note    = {Working Paper}
+}`}
+                  </pre>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* References */}
         <section id="references" className="scroll-mt-24">
           <div className="flex items-center gap-3 mb-4">
@@ -4209,10 +4257,27 @@ export function MainPaper() {
                   "hirshleifer_hsu_li_2013",
                   "cai_cooper_he_2023",
                   "kothari_laguerre_leone_2002",
+                  "griliches_1981",
+                  "griliches_1990",
+                  "hall_jaffe_trajtenberg_2005",
+                  "deng_lev_narin_1999",
+                  "gu_2005",
+                  "li_2011",
+                  "barth_kasznik_mcnichols_2001",
                   "fama_french_1993",
                   "fama_french_2015",
+                  "fama_macbeth_1973",
+                  "carhart_1997",
+                  "hou_xue_zhang_2015",
+                  "hou_mo_xue_zhang_2022",
+                  "asness_frazzini_2013",
                   "novy_marx_velikov_2016",
                   "newey_west_1987",
+                  "barney_1991",
+                  "porter_1992",
+                  "cohen_klepper_1996",
+                  "polk_sapienza_2009",
+                  "jaffe_1986",
                 ]}
               />
             </CardContent>
