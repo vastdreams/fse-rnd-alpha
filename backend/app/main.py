@@ -201,6 +201,12 @@ async def health_check():
     return {"status": "healthy", "version": "2.1.0"}
 
 
+@app.get("/api/health", tags=["Health"])
+async def api_health_check():
+    """Health check endpoint for monitoring (API-prefixed alias)."""
+    return {"status": "healthy", "version": "2.1.0"}
+
+
 @app.get("/", tags=["Health"])
 async def root():
     """
