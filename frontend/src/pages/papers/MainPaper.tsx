@@ -118,21 +118,8 @@ export function MainPaper() {
   const [rightNavCollapsed, setRightNavCollapsed] = useState(false)
 
   const handleDownloadPDF = () => {
-    // Use browser's native print functionality which handles PDF export reliably
-    // Add a class to body for print-specific styling
-    document.body.classList.add("printing-paper")
-    
-    // Force a reflow to ensure styles are applied before print dialog
-    document.body.offsetHeight
-    
-    // Small delay to ensure CSS is fully applied
-    setTimeout(() => {
-      window.print()
-      // Remove the class after print dialog closes
-      setTimeout(() => {
-        document.body.classList.remove("printing-paper")
-      }, 500)
-    }, 100)
+    // Download/open the official LaTeX-built PDF (served as a static asset).
+    window.open("/rnd-alpha-paper.pdf", "_blank", "noopener,noreferrer")
   }
 
   useEffect(() => {
@@ -4202,7 +4189,20 @@ export function MainPaper() {
           <Card className="bg-card">
             <CardContent className="pt-6 space-y-4">
               <div className="flex flex-wrap gap-3 mb-4">
-                <a href="/rnd-alpha-paper.pdf" download className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                <a
+                  href="/rnd-alpha-paper.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open PDF
+                </a>
+                <a
+                  href="/rnd-alpha-paper.pdf"
+                  download
+                  className="inline-flex items-center px-4 py-2 border border-input bg-background rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download PDF
                 </a>

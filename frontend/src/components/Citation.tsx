@@ -28,12 +28,28 @@ export function Citation({ id, inline = true }: CitationProps) {
   }
 
   if (inline) {
+    // Render a citation-friendly author-year inline label:
+    // - 1 author: "Fama, 1993"
+    // - 2 authors: "Fama & French, 1993"
+    // - 3+ authors: "Chan et al., 2001"
+    // - Corporate author: "Financial Accounting Standards Board, 1974"
+    const lastNames = Array.from(ref.authors.matchAll(/([A-Za-z][A-Za-z\-']+)\s*,/g)).map((m) => m[1])
+
+    const inlineLabel =
+      lastNames.length === 0
+        ? `${ref.authors}, ${ref.year}`
+        : lastNames.length === 1
+          ? `${lastNames[0]}, ${ref.year}`
+          : lastNames.length === 2
+            ? `${lastNames[0]} & ${lastNames[1]}, ${ref.year}`
+            : `${lastNames[0]} et al., ${ref.year}`
+
     return (
       <span 
         className="cursor-help text-primary hover:text-primary/80 font-medium"
         title={`${ref.title} - ${ref.authors} (${ref.year})`}
       >
-        ({ref.authors.split("&")[0].split(",")[0].trim()} et al., {ref.year})
+        ({inlineLabel})
       </span>
     )
   }
