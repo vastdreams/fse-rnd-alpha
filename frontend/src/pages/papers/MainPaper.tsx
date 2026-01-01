@@ -2498,7 +2498,7 @@ export function MainPaper() {
               <div className="not-prose p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm">
                 <p className="font-semibold text-foreground mb-2">Why Fama-MacBeth is the gold standard</p>
                 <p className="text-muted-foreground mb-2">
-                  The annual HML series has only {annualPremiums.length} observations, yielding low statistical power.
+                  The annual HML series has only {annualHmlData?.n_years ?? 30} observations, yielding low statistical power.
                   Fama-MacBeth (1973) regressions use <strong>monthly</strong> cross-sectional data with hundreds of stocks per month,
                   providing far more statistical power to detect significant effects.
                 </p>
@@ -2512,7 +2512,7 @@ export function MainPaper() {
               </div>
 
               {(() => {
-                const fm = (snapshotResponse?.payload as any)?.fama_macbeth_monthly;
+                const fm = (snapshotPayload as any)?.fama_macbeth_monthly;
                 if (!fm || fm.error) {
                   return (
                     <div className="text-center py-8 text-muted-foreground">
@@ -3019,7 +3019,7 @@ export function MainPaper() {
                   <li>
                     <strong className="text-foreground">Fama-MacBeth (primary):</strong>{" "}
                     {(() => {
-                      const fm = (snapshotResponse?.payload as any)?.fama_macbeth_monthly;
+                      const fm = (snapshotPayload as any)?.fama_macbeth_monthly;
                       if (fm?.rd_intensity?.significant_005) {
                         return `R&D predicts returns (t = ${fm.rd_intensity.t_stat_hac?.toFixed(2)}, p = ${fm.rd_intensity.p_value_hac?.toFixed(4)}) across ${fm.n_months} months.`;
                       }
