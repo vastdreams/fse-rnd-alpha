@@ -4287,13 +4287,16 @@ export function MainPaper() {
                   "hou_xue_zhang_2015",
                   "hou_mo_xue_zhang_2022",
                   "asness_frazzini_2013",
+                  "amihud_2002",
                   "novy_marx_velikov_2016",
+                  "ahmed_bu_ye_2025",
                   "newey_west_1987",
                   "barney_1991",
                   "porter_1992",
                   "cohen_klepper_1996",
                   "polk_sapienza_2009",
                   "jaffe_1986",
+                  "jagannathan_korajczyk_wang_2025",
                 ]}
               />
             </CardContent>
