@@ -29,10 +29,10 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
     formula: "Annual Cost = 2 × (Bid-Ask + Market Impact + Commission) × Turnover",
   },
   net_premium_after_costs: {
-    title: "Net Premium After Costs",
+    title: "Net Premium After Costs (vs SPY)",
     explanation:
-      "The R&D premium (Q5 minus benchmark) after subtracting strategy trading costs and benchmark index fund costs. This shows the implementable alpha available to a real investor.",
-    formula: "Net Premium = (Q5 Gross - Trading Cost) - (Benchmark Gross - Index Cost)",
+      "The RD20 strategy spread vs SPY (S&P 500 total-return proxy) after subtracting strategy trading costs. This shows the implementable excess return over the market available to a real investor.",
+    formula: "Net Premium = Strategy Return (net of costs) − SPY Return",
   },
   premium_capture_rate: {
     title: "Premium Capture Rate",
