@@ -788,6 +788,12 @@ export interface TransactionCostAnalysisResult {
   cost_breakdown: Record<string, unknown>
   methodology_note: string
   is_premium_significant: boolean
+  // Canonical period labels for frontends (from publication snapshot)
+  period_years?: string // e.g., "2001-2024"
+  period_label?: string // e.g., "Jul2001-Jun2025"
+  backtest_start_year?: number
+  backtest_end_year?: number
+  n_periods?: number
 }
 
 export interface NetOfCostReturnsResult {
