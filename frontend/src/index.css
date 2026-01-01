@@ -48,6 +48,8 @@ button:disabled,
 
 /* Base (light mode default) */
 :root {
+  /* Force light color scheme - ignore system preferences */
+  color-scheme: light only;
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
@@ -722,14 +724,15 @@ body {
   }
 }
 
-/* Force solid backgrounds on all overlay elements */
+/* Force solid backgrounds on all overlay elements - DEFAULT TO LIGHT */
 [data-radix-popper-content-wrapper] > * {
-  background-color: rgb(15 23 42) !important; /* slate-900 */
+  background-color: rgb(255 255 255) !important; /* white - light mode default */
+  color: rgb(15 23 42) !important;
 }
 
-.light [data-radix-popper-content-wrapper] > * {
-  background-color: rgb(241 245 249) !important; /* slate-100 */
-  color: rgb(15 23 42) !important;
+.dark [data-radix-popper-content-wrapper] > * {
+  background-color: rgb(15 23 42) !important; /* slate-900 - only for explicit dark mode */
+  color: rgb(241 245 249) !important;
 }
 
 /* Fix for Recharts ResponsiveContainer in hidden tabs
