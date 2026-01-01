@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
 from app.db.models import Base, JulyJuneReturn, MomentumCache, VolatilityCache
 from app.services.return_calculator import JulyJuneReturnCalculator
 from app.services.momentum_service import MomentumCalculator
