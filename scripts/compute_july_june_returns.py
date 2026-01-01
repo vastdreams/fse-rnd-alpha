@@ -58,6 +58,7 @@ async def _run_tier1(
     end_formation_year: int,
     *,
     price_mode: str,
+    symbols: list[str] | None,
 ) -> int:
     """
     Compute and store July–June returns using FMP daily prices (Tier-1).
@@ -73,7 +74,7 @@ async def _run_tier1(
             results = await calculator.compute_all_july_june_returns(
                 start_formation_year=start_formation_year,
                 end_formation_year=end_formation_year,
-                symbols=None,
+                symbols=symbols,
             )
             # Return-definition audit (publication readiness): how often do we fall back to close?
             total_adj_days = 0
@@ -156,6 +157,12 @@ def main() -> None:
             "adj_close_fallback_close is a coverage-oriented sensitivity mode."
         ),
     )
+    parser.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Optional comma-separated ticker list (e.g., SPY,AAPL). Default: all symbols with Tier-1 price data.",
+    )
     args = parser.parse_args()
 
     if args.end_formation_year < args.start_formation_year:
@@ -165,11 +172,15 @@ def main() -> None:
     logger.info(f"Data tier: {args.data_tier}")
 
     if args.data_tier == "tier1":
+        symbols = None
+        if isinstance(args.symbols, str) and args.symbols.strip():
+            symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
         saved = asyncio.run(
             _run_tier1(
                 args.start_formation_year,
                 args.end_formation_year,
                 price_mode=args.price_mode,
+                symbols=symbols,
             )
         )
         print(f"Saved {saved} Tier-1 (FMP) July–June return records to `july_june_returns`.")

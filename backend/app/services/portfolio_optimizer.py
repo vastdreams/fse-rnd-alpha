@@ -930,7 +930,7 @@ class PortfolioOptimizer:
             "meta": {
                 "return_convention": "july_june" if self.use_july_june else "calendar",
                 "benchmark_universe": "research_cohort_equal_weight",
-                "sp500_proxy": "SPY_adj_close_total_return_proxy",
+                "sp500_proxy": "SPY_close_price_return_proxy",
                 "selection_method": selection_method,
                 "n_holdings": int(n_holdings),
                 "use_point_in_time": bool(use_point_in_time),

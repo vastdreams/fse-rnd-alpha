@@ -541,9 +541,9 @@ async def build_snapshot_payload(
         if isinstance(inv, dict) and isinstance(inv.get("portfolio_performance"), dict) and isinstance(inv.get("benchmark_performance"), dict):
             meta = inv.get("meta") if isinstance(inv.get("meta"), dict) else {}
             n_holdings = int(meta.get("n_holdings") or 20)
-            # Publication-facing benchmark: SPY (cap-weighted S&P 500 TR proxy via adj_close).
+            # Publication-facing benchmark: SPY (cap-weighted S&P 500 price-return proxy via close).
             # Keep the cohort equal-weight benchmark as a secondary comparison in the backtest payload.
-            benchmark_universe = "SPY_adj_close_total_return_proxy"
+            benchmark_universe = "SPY_close_price_return_proxy"
 
             # Prefer the strategy spread versus SPY for practitioner-facing reporting.
             gross_premium_pct = inv.get("excess_vs_sp500") if isinstance(inv.get("excess_vs_sp500"), (int, float)) else inv.get("excess_return")
@@ -609,8 +609,8 @@ async def build_snapshot_payload(
                 "definition": {
                     "strategy": f"Top-{n_holdings} R&D strategy (annual reconstitution)",
                     "benchmark": benchmark_universe,
-                    "gross_premium": "strategy_gross_annualized_return − SPY_gross_annualized_return",
-                    "net_premium": "strategy_net_annualized_return − SPY_gross_annualized_return",
+                    "gross_premium": "strategy_gross_annualized_return − SPY_gross_annualized_return (price returns)",
+                    "net_premium": "strategy_net_annualized_return − SPY_gross_annualized_return (price returns)",
                     "turnover_definition": "0.5 * sum |w_t − w_{t-1}| (first year excluded from averages)",
                     "annual_cost_approx": "round_trip_cost_per_100pct_turnover × realized_turnover",
                 },

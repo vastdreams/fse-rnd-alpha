@@ -10,8 +10,9 @@ repository-code: "https://github.com/vastdreams/fse-rnd-alpha"
 url: "https://research.finsoeasy.com"
 abstract: >-
   Research platform and working paper investigating the relationship between
-  R&D investment intensity and subsequent stock returns. Using point-in-time
-  S&P 500 constituents and July–June returns to mitigate look-ahead bias, the
+  R&D investment intensity and subsequent stock returns. Using an S&P 500
+  large-cap universe (with point-in-time membership enforced when constituent
+  spans are available) and July–June returns to mitigate look-ahead bias, the
   frozen publication snapshot reports an annual Q5–Q1 (HML) premium of +7.55%/yr
   (Newey–West t = 2.78; win rate 71%) over Jul2001–Jun2025 (N=24 annual periods).
 keywords:
