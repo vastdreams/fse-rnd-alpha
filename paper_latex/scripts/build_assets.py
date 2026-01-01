@@ -423,8 +423,9 @@ def write_annual_quintile_growth_csv(payload: dict[str, Any]) -> None:
 
     WHY:
       The website renders this interactively; the LaTeX paper needs a deterministic, print-ready figure.
-      We compute cumulative wealth indices for Q5 and Q1 using the same annual return series used for
-      primary inference (July--June non-overlapping observations).
+      We compute cumulative wealth indices for Q5 and Q1 using the annual return series (July--June
+      non-overlapping observations). This chart provides economic intuition about compounding and
+      drawdowns; statistical inference is anchored on monthly tests elsewhere in the manuscript.
     """
     annual = payload.get("annual_hml_premium")
     if not isinstance(annual, dict):
@@ -700,7 +701,7 @@ Sector & Firms & Avg R\\&D intensity (\\%) & Total R\\&D spend (\\$B) \\\\
 
     (TABLES_DIR / "table_rd_by_sector.tex").write_text(table_sector, encoding="utf-8")
 
-    # Annual premium summary table (primary inference)
+    # Annual premium summary table (descriptive annual series)
     mean_premium = _safe_float(annual.get("mean_premium"))
     std_dev = _safe_float(annual.get("std_dev"))
     min_premium = _safe_float(annual.get("min_premium"))
@@ -715,7 +716,7 @@ Sector & Firms & Avg R\\&D intensity (\\%) & Total R\\&D spend (\\$B) \\\\
     table_annual = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Primary result: annual non-overlapping HML (Q5--Q1) R\\&D premium (July--June)}}
+\\caption{{Annual non-overlapping HML (Q5--Q1) R\\&D premium (July--June; descriptive)}}
 \\label{{tab:annual_hml_summary}}
 \\begin{{tabular}}{{lr}}
 \\toprule
@@ -841,7 +842,7 @@ Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) \\\\
 \\midrule
 {body_lines}
 \\bottomrule
-\\multicolumn{{4}}{{l}}{{\\footnotesize Note: rolling windows overlap; these summaries are descriptive. Primary inference uses Table~\\ref{{tab:annual_hml_summary}}.}}\\\\
+\\multicolumn{{4}}{{l}}{{\\footnotesize Note: rolling windows overlap; these summaries are descriptive. The annual series provides economic context; primary inference uses monthly spanning (Table~\\ref{{tab:spanning_tests}}) and Fama-MacBeth (Table~\\ref{{tab:fama_macbeth_monthly}}).}}\\\\
 \\end{{tabular}}
 \\end{{table}}
 """
