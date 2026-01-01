@@ -824,9 +824,10 @@ export function MainPaper() {
                     The high-minus-low premium (Q5 minus Q1) averages{" "}
                     <strong className="text-foreground">{annualHmlData.mean_premium.toFixed(2)}%</strong> per year
                     in non-overlapping annual returns. In plain terms: stocks in the top 20% by R&amp;D intensity outperformed the bottom 20% 
-                    by approximately {annualHmlData.mean_premium.toFixed(0)}% annually over the sample period. This difference is statistically 
-                    significant (Newey-West t = {annualHmlData.hac_adjusted.t_statistic.toFixed(2)}, p = {annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)}), 
-                    meaning it is unlikely to have occurred by chance. The premium was positive in{" "}
+                    by approximately {annualHmlData.mean_premium.toFixed(0)}% annually over the sample period. The annual time-series test is low-power in a short, volatile sample
+                    (Newey-West t = {annualHmlData.hac_adjusted.t_statistic.toFixed(2)}, p = {annualHmlData.hac_adjusted.p_value < 0.001 ? "<0.001" : annualHmlData.hac_adjusted.p_value.toFixed(4)}),
+                    so we treat the annual mean primarily as economic context and assess statistical significance using monthly tests (Sections 7.3-7.4).
+                    The premium was positive in{" "}
                     {typeof annualHmlData?.positive_years === "number" && typeof annualHmlData?.n_years === "number" 
                       ? `${annualHmlData.positive_years} of ${annualHmlData.n_years} years (${Math.round(annualHmlData.positive_years / annualHmlData.n_years * 100)}% win rate)`
                       : "the majority of years"}.
@@ -923,7 +924,7 @@ export function MainPaper() {
                   <p className="font-semibold text-foreground mb-2">What we do</p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                     <li>Form annual R&amp;D-intensity quintiles and evaluate subsequent returns under a July-June convention.</li>
-                    <li>Report primary inference on the annual non-overlapping premium series; use rolling windows for descriptive stability and regimes.</li>
+                    <li>Anchor statistical inference on monthly factor spanning tests and monthly Fama-MacBeth regressions; use the annual non-overlapping premium series for economic context and rolling windows for descriptive stability.</li>
                     <li>Show sector composition and robustness diagnostics (factor spanning, stratifications) when available in the snapshot.</li>
                     <li>Translate results into a rules-based, long-only implementation with explicit trading-friction assumptions.</li>
                   </ul>
@@ -940,7 +941,7 @@ export function MainPaper() {
 
               <p className="text-muted-foreground">
                 The paper proceeds as follows. Section 2 frames related evidence and hypotheses. Section 3 describes data and sample construction. Section 4
-                specifies portfolio formation, return definitions, and inference. Section 5 presents the primary annual premium evidence and descriptive
+                specifies portfolio formation, return definitions, and inference. Section 5 presents the annual premium evidence and descriptive
                 time-variation, Section 6 documents sector structure, and Section 7 reports robustness and factor diagnostics. Sections 8-12 discuss
                 interpretation, implementation, limitations, replicability, and conclusion.
               </p>
@@ -1111,10 +1112,10 @@ export function MainPaper() {
 
               <h3 className="text-lg font-semibold text-foreground mt-6">3.3 Statistical Inference</h3>
               <p className="text-muted-foreground">
-                We present (i) annual non-overlapping HML premiums for primary inference and (ii) rolling-window
-                summaries for descriptive context. <strong className="text-foreground">Why two approaches?</strong> Annual non-overlapping
-                observations are non-overlapping (reduces mechanical overlap) and support cleaner inference. Rolling windows are autocorrelated (overlapping periods share data)
-                but useful for visualizing trends and regime dependence. We are explicit about which is which.
+                We report three complementary objects with distinct roles: (i) the annual non-overlapping HML series (economic magnitude and year-to-year consistency),
+                (ii) rolling-window summaries (descriptive context; autocorrelated by construction), and (iii) monthly tests for statistical inference (factor spanning and
+                Fama-MacBeth regressions). <strong className="text-foreground">Why this structure?</strong> With only ~30 annual observations, the annual mean test can be low-power;
+                monthly tests provide a much larger sample for hypothesis testing while preserving bias-aware timing.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 Where overlapping windows are used, inference is HAC-adjusted using Newey-West standard errors to account for serial correlation.
@@ -1361,20 +1362,25 @@ export function MainPaper() {
               </div>
 
               <h3 className="text-lg font-semibold text-foreground mt-6 flex items-center gap-2">
-                4.3 Rolling windows vs annual inference (what each object means)
+                4.3 Rolling windows, annual series, and monthly inference (what each object means)
               </h3>
               <p className="text-muted-foreground">
-                <strong className="text-foreground">This distinction is critical for interpreting our results.</strong> We report two complementary objects, each with a specific interpretation:
+                <strong className="text-foreground">This distinction is critical for interpreting our results.</strong> We report three complementary objects, each with a specific interpretation:
               </p>
               <ul className="text-muted-foreground list-disc list-inside space-y-2">
                 <li>
-                  <strong className="text-foreground">Annual series (primary inference){" "}
+                  <strong className="text-foreground">Annual series (economic context){" "}
                     <InfoTooltip term="non_overlapping" size={12} />
                   :</strong> each year, we form R&amp;D quintiles using the prior fiscal
                   year and measure the next July-June return. This produces one observation per year, which is the cleanest basis for inference because
                   <em> the series is non-overlapping (reduces mechanical overlap)</em>. We still use Newey-West standard errors{" "}
                   <InfoTooltip term="newey_west" size={12} />{" "}
-                  to account for any residual autocorrelation.
+                  to account for any residual autocorrelation, but inference is inherently limited by the small number of annual observations.
+                </li>
+                <li>
+                  <strong className="text-foreground">Monthly tests (primary inference):</strong> we assess statistical significance using monthly factor spanning tests
+                  (does the premium have a statistically significant alpha after controlling for standard factors?) and monthly Fama-MacBeth regressions (does R&amp;D
+                  intensity predict returns after controlling for size and book-to-market?).
                 </li>
                 <li>
                   <strong className="text-foreground">Rolling windows (descriptive only){" "}
@@ -1387,8 +1393,8 @@ export function MainPaper() {
               </ul>
               <div className="not-prose mt-3 p-3 rounded-lg border bg-amber-500/5 border-amber-500/20">
                 <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Why does this matter?</strong> Many academic papers report rolling-window statistics as if they were independent observations,
-                  leading to overstated significance. We explicitly separate descriptive (rolling) from inferential (annual) results to avoid this pitfall.
+                  <strong className="text-foreground">Rationale:</strong> Rolling-window statistics are autocorrelated because adjacent windows share data, so treating them as independent
+                  observations can overstate significance. We explicitly separate descriptive (rolling) from inferential (monthly) evidence to avoid this pitfall.
                 </p>
               </div>
               
@@ -1449,12 +1455,12 @@ export function MainPaper() {
             </CardContent>
           </Card>
 
-          {/* Primary Result: Annual HML */}
+          {/* Annual HML (Descriptive) */}
           <AnnualHMLTable
             data={annualHmlData}
             isLoading={snapshotLoading}
-            title="5.1 Primary Result: Annual HML R&D Premium"
-            description="Non-overlapping annual observations (primary inference)"
+            title="5.1 Annual HML R&D Premium (Descriptive)"
+            description="Non-overlapping annual observations (economic context; low power for inference)"
           />
 
           <Card className="bg-card">
@@ -2169,7 +2175,7 @@ export function MainPaper() {
           <Card className="bg-card">
             <CardContent className="pt-6 prose dark:prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground">
-                This section reports robustness and interpretation diagnostics that complement the primary annual premium evidence in Section 5.1. We present
+                This section reports robustness and interpretation diagnostics that complement the annual premium evidence in Section 5.1 and provide higher-power inference via monthly tests. We present
                 the annual premium time series, cumulative growth of $1 for Q5 versus Q1, factor spanning tests (when factor inputs are available), and
                 stratification and double-sort diagnostics to assess size, sector, and other confounding.
               </p>
@@ -2533,6 +2539,8 @@ export function MainPaper() {
                   if (p < 0.10) return "*";
                   return "";
                 };
+
+                const rdPValueHac = typeof rd.p_value_hac === "number" ? (rd.p_value_hac as number) : null;
                 
                 return (
                   <div className="space-y-4">
@@ -2604,15 +2612,39 @@ export function MainPaper() {
                       </div>
                     </div>
 
-                    {rd.significant_005 && (
-                      <div className="p-4 rounded-lg bg-green-100 dark:bg-green-950/40 border border-green-300 dark:border-green-700">
-                        <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                          ✓ Statistically Significant: R&amp;D intensity predicts returns (p = {rd.p_value_hac?.toFixed(4)}{sigStars(rd.p_value_hac)})
-                        </p>
-                        <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-                          After controlling for size and book-to-market, R&amp;D intensity remains a significant predictor of next-month returns.
-                        </p>
-                      </div>
+                    {rdPValueHac !== null && (
+                      <>
+                        {rdPValueHac < 0.05 ? (
+                          <div className="p-4 rounded-lg bg-green-100 dark:bg-green-950/40 border border-green-300 dark:border-green-700">
+                            <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                              ✓ Statistically Significant (5%): R&amp;D intensity predicts returns (p = {rdPValueHac.toFixed(4)}
+                              {sigStars(rdPValueHac)})
+                            </p>
+                            <p className="text-xs text-green-700 dark:text-green-400 mt-1">
+                              After controlling for size and book-to-market, R&amp;D intensity remains a significant predictor of next-month returns.
+                            </p>
+                          </div>
+                        ) : rdPValueHac < 0.10 ? (
+                          <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700">
+                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                              △ Marginal Evidence (10%): R&amp;D intensity is directionally consistent (p = {rdPValueHac.toFixed(4)}
+                              {sigStars(rdPValueHac)})
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                              The coefficient is positive after controls, but does not meet a 5% threshold under Newey-West HAC.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-lg bg-muted/30 border">
+                            <p className="text-sm font-semibold text-foreground">
+                              Not significant at conventional levels (p = {rdPValueHac.toFixed(4)}).
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              The coefficient is still reported transparently; factor spanning tests provide stronger statistical evidence in this snapshot.
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {fm.interpretation && (
@@ -2875,7 +2907,7 @@ export function MainPaper() {
 
           <Card className="bg-card">
             <CardHeader>
-              <CardTitle>7.7 Delisting-return sensitivity (primary annual series)</CardTitle>
+              <CardTitle>7.7 Delisting-return sensitivity (annual series robustness)</CardTitle>
               <CardDescription>
                 Robustness of the annual premium to alternative delisting-return assumptions (scenario changes are not persisted).
               </CardDescription>
@@ -4213,7 +4245,7 @@ export function MainPaper() {
               </p>
               <ul className="text-muted-foreground list-disc list-inside space-y-1">
                 <li>Quintile sorts are unconditional; industry-adjusted or risk-adjusted sorts may yield different results.</li>
-                <li>Rolling-window analysis uses overlapping periods for descriptive purposes; primary inference is on annual non-overlapping series.</li>
+                <li>Rolling-window analysis uses overlapping periods for descriptive purposes; primary inference uses monthly spanning and cross-sectional tests.</li>
                 <li>Regime splits are post-hoc and should not be interpreted as independent tests.</li>
               </ul>
 

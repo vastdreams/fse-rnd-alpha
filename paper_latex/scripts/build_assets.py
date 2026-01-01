@@ -145,6 +145,16 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     """
     annual = payload.get("annual_hml_premium") if isinstance(payload.get("annual_hml_premium"), dict) else {}
     hac = annual.get("hac_adjusted") if isinstance(annual.get("hac_adjusted"), dict) else {}
+    annual_sector_neutral = (
+        payload.get("annual_hml_premium_sector_neutral")
+        if isinstance(payload.get("annual_hml_premium_sector_neutral"), dict)
+        else {}
+    )
+    sector_hac = (
+        annual_sector_neutral.get("hac_adjusted")
+        if isinstance(annual_sector_neutral.get("hac_adjusted"), dict)
+        else {}
+    )
     tx = payload.get("transaction_costs") if isinstance(payload.get("transaction_costs"), dict) else {}
     stats = payload.get("publication_stats") if isinstance(payload.get("publication_stats"), dict) else {}
     annual_rows = annual.get("annual_premiums") if isinstance(annual.get("annual_premiums"), list) else []
@@ -155,6 +165,11 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     n_years = _safe_int(annual.get("n_years"))
     positive_years = _safe_int(annual.get("positive_years"))
     win_rate = _safe_float(annual.get("win_rate"))
+
+    sector_mean_premium = _safe_float(annual_sector_neutral.get("mean_premium"))
+    sector_t_stat = _safe_float(sector_hac.get("t_statistic"))
+    sector_p_val = _safe_float(sector_hac.get("p_value"))
+    sector_n_years = _safe_int(annual_sector_neutral.get("n_years"))
 
     trading_cost_pct = _safe_float(tx.get("annual_trading_cost_pct"))
     net_premium_pct = _safe_float(tx.get("net_rd_premium_pct"))
@@ -292,6 +307,16 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     fm_rd_pval = _safe_float(fm_rd.get("p_value_hac"))
     fm_rd_sig = fm_rd.get("significant_005", False)
     fm_rd_sig_001 = fm_rd.get("significant_001", False)
+    fm_rd_sig_010 = bool(isinstance(fm_rd_pval, float) and fm_rd_pval < 0.10)
+
+    fm_rd_stars = ""
+    if isinstance(fm_rd_pval, float):
+        if fm_rd_pval < 0.01:
+            fm_rd_stars = "***"
+        elif fm_rd_pval < 0.05:
+            fm_rd_stars = "**"
+        elif fm_rd_pval < 0.10:
+            fm_rd_stars = "*"
 
     fm_macros = "\n".join([
         "",
@@ -304,11 +329,25 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
         f"\\newcommand{{\\FamaMacBethRDTStat}}{{{_fmt_pct(fm_rd_tstat, 2) if fm_rd_tstat is not None else '--'}}}",
         f"\\newcommand{{\\FamaMacBethRDPValue}}{{{_fmt_p_value(fm_rd_pval)}}}",
         f"\\newcommand{{\\FamaMacBethRDSignificant}}{{{'Yes' if fm_rd_sig else 'No'}}}",
-        f"\\newcommand{{\\FamaMacBethRDSignificantStars}}{{{'***' if fm_rd_sig_001 else ('**' if fm_rd_sig else '')}}}",
+        f"\\newcommand{{\\FamaMacBethRDSignificantStars}}{{{fm_rd_stars}}}",
+        f"\\newcommand{{\\FamaMacBethRDMarginal}}{{{'Yes' if fm_rd_sig_010 else 'No'}}}",
         "",
     ])
 
     content = content + fm_macros
+
+    # Sector-neutral annual HML macros (robustness; often smaller than the headline premium)
+    sector_macros = "\n".join([
+        "",
+        "% Sector-neutral annual HML premium (robustness)",
+        f"\\newcommand{{\\SectorNeutralMeanPremium}}{{{_fmt_pct(sector_mean_premium, 2)}}}",
+        f"\\newcommand{{\\SectorNeutralTStat}}{{{_fmt_pct(sector_t_stat, 2)}}}",
+        f"\\newcommand{{\\SectorNeutralPValue}}{{{_fmt_p_value(sector_p_val)}}}",
+        f"\\newcommand{{\\SectorNeutralNYears}}{{{sector_n_years or 0}}}",
+        "",
+    ])
+
+    content = content + sector_macros
 
     (DATA_DIR / "metrics.tex").write_text(content + "\n", encoding="utf-8")
 

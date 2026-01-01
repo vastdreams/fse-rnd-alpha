@@ -608,8 +608,8 @@ export function Methodology() {
                   <p className="text-sm font-semibold text-red-500 mb-2">Overlapping Windows</p>
                   <p className="text-xs text-muted-foreground">
                     Rolling k-year windows overlap by k-1 years, violating the independence assumption of 
-                    standard statistical tests. We treat rolling windows as descriptive context; primary inference uses the annual non-overlapping series
-                    with Newey–West standard errors.
+                    standard statistical tests. We treat rolling windows as descriptive context; primary inference uses monthly spanning tests and
+                    cross-sectional regressions, with the annual non-overlapping series reported for economic context (Newey–West adjusted).
                   </p>
                 </div>
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">

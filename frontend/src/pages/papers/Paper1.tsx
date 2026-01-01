@@ -909,8 +909,8 @@ export function Paper1() {
               <p className="text-muted-foreground leading-relaxed">
                 Our findings provide evidence that R&D investment intensity is an economically meaningful predictor 
                 of long-term shareholder returns. While the annual time-series test has limited statistical power (30 observations, high variance), 
-                monthly cross-sectional and factor tests are statistically significant: Fama-MacBeth regressions confirm R&D predicts returns after
-                controlling for size and book-to-market, and the FF5 spanning alpha is 4.37% (p&lt;0.01). The monotonic relationship between R&D quintiles and returns, 
+                monthly factor spanning tests show a statistically significant alpha (FF5: 4.37%, p&lt;0.01), and monthly Fama-MacBeth cross-sectional regressions
+                provide directionally consistent evidence after controlling for size and book-to-market. The monotonic relationship between R&D quintiles and returns, 
                 combined with the increasing effect sizes over longer horizons, suggests that R&D investments 
                 create durable competitive advantages.
               </p>

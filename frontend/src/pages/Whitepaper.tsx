@@ -648,7 +648,7 @@ export function Whitepaper() {
                     ) : (
                       "."
                     )}{" "}
-                    Statistically significant in monthly Fama-MacBeth regressions and factor spanning tests.
+                    Statistically significant in monthly factor spanning tests (FF5 p&lt;0.01); cross-sectional Fama-MacBeth is directionally consistent.
                   </>
                 ) : (
                   <>Premium metrics loading…</>
