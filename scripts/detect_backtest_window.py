@@ -68,7 +68,7 @@ async def get_coverage_by_year(session: AsyncSession) -> List[Dict[str, Any]]:
     # Query membership, signal, and return coverage per formation year
     query = text("""
         WITH years AS (
-            SELECT generate_series(:start_year::int, :end_year::int)::int AS formation_year
+            SELECT generate_series(CAST(:start_year AS INT), CAST(:end_year AS INT)) AS formation_year
         ),
         -- Members at formation date (July 1 of formation_year + 1)
         membership AS (
