@@ -497,7 +497,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="text-xs text-muted-foreground">
             <p>SEC Filing Analysis</p>
-            <p>S&P 500 • 25 Year Lookback</p>
+            <p>S&P 500 • Point-in-Time</p>
           </div>
         )}
       </div>
