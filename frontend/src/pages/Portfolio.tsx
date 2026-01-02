@@ -755,7 +755,7 @@ export function Portfolio() {
                 Returns use July-June fiscal year convention per Fama-French methodology. 
                 {asOfYear < CURRENT_YEAR - 1 && (
                   <span className="text-amber-600 ml-1">
-                    Viewing historical ({asOfYear}) — metrics reflect performance through that year only.
+                    Viewing historical ({asOfYear}); metrics reflect performance through that year only.
                   </span>
                 )}
               </p>
@@ -849,7 +849,7 @@ export function Portfolio() {
               </h4>
               <p className="text-sm text-muted-foreground ml-8">
                 An <strong>expected return range</strong> based on market consensus + historical 
-                R&D premium. Not a prediction—shows probability bands (p10/p50/p90) accounting 
+                R&D premium. Not a prediction. Shows probability bands (p10/p50/p90) accounting 
                 for market uncertainty and premium variability.
               </p>
             </div>
@@ -916,20 +916,20 @@ export function Portfolio() {
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 This portfolio implements the findings from our <Link to="/papers/main" className="text-blue-500 hover:underline font-medium">R&D Alpha research paper</Link>: 
-                <strong> R&D intensity</strong> (R&D/Revenue) predicts future stock returns with an annual, non-overlapping Q5–Q1 premium of{" "}
+                <strong> R&D intensity</strong> (R&D/Revenue) predicts future stock returns with an annual, non-overlapping Q5-Q1 premium of{" "}
                 <strong>
                   {typeof annualMeanPremiumPct === "number" ? `${annualMeanPremiumPct.toFixed(2)}%` : "..."}
                 </strong>{" "}
                 per year{" "}
                 {typeof annualTStat === "number" && typeof annualPValue === "number" ? (
                   <>
-                    (Newey–West t = {annualTStat.toFixed(2)}, p = {annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}
+                    (Newey-West t = {annualTStat.toFixed(2)}, p = {annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}
                     {typeof annualNYears === "number" ? `; N = ${annualNYears}` : ""})
                   </>
                 ) : (
                   ""
                 )}
-                . Holdings are selected using the July–June return convention to avoid look-ahead bias, with point-in-time membership (when available) and explicit exit handling (cash-after-exit) plus delisting sensitivity analysis.
+                . Holdings are selected using the July-June return convention to avoid look-ahead bias, with point-in-time membership (when available) and explicit exit handling (cash-after-exit) plus delisting sensitivity analysis.
               </p>
             </div>
           </div>

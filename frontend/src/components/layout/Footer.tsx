@@ -15,7 +15,7 @@ export function Footer() {
           {/* Copyright */}
           <div className="text-sm text-muted-foreground text-center md:text-left">
             <p>© {currentYear} FSE Research and Investments. All rights reserved.</p>
-            <p className="text-xs mt-1">R&D Alpha — Factor-Based Investment Research</p>
+            <p className="text-xs mt-1">R&D Alpha: Factor-Based Investment Research</p>
           </div>
           
           {/* Links */}

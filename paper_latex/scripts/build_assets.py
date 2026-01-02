@@ -75,9 +75,9 @@ def _format_return_convention(value: str | None) -> str:
     Convert internal labels to manuscript-friendly LaTeX-safe text.
     """
     if not value:
-        return "--"
+        return "N/A"
     if value == "july_june":
-        return "July--June"
+        return "July-June"
     if value == "calendar":
         return "Calendar year"
     return _latex_escape_text(value)
@@ -119,13 +119,13 @@ def _read_snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
 
 def _fmt_pct(value: float | None, decimals: int = 2) -> str:
     if value is None:
-        return "--"
+        return "N/A"
     return f"{value:.{decimals}f}"
 
 
 def _fmt_p_value(value: float | None) -> str:
     if value is None:
-        return "--"
+        return "N/A"
     if value < 0.001:
         return "<0.001"
     return f"{value:.4f}"
@@ -181,7 +181,7 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     backtest_end_year = _safe_int(tx.get("backtest_end_year"))
     backtest_n_periods = _safe_int(tx.get("n_periods"))
     backtest_period_label_raw = tx.get("period_label") if isinstance(tx.get("period_label"), str) else None
-    backtest_period_label = _latex_escape_text(backtest_period_label_raw).replace("-", "--") if backtest_period_label_raw else "--"
+    backtest_period_label = _latex_escape_text(backtest_period_label_raw) if backtest_period_label_raw else "N/A"
 
     built_at = meta.get("built_at")
     built_at_label = None
@@ -195,7 +195,7 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     return_convention = _format_return_convention(return_convention_raw)
 
     data_tier_raw = meta.get("data_tier") if isinstance(meta.get("data_tier"), str) else None
-    data_tier = _latex_escape_text(data_tier_raw) if data_tier_raw else "--"
+    data_tier = _latex_escape_text(data_tier_raw) if data_tier_raw else "N/A"
 
     win_rate_pct = (win_rate * 100.0) if isinstance(win_rate, float) else None
 
@@ -231,7 +231,7 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     rolling_10yr_premium = _rolling_hml_premium("10yr")
     rolling_20yr_premium = _rolling_hml_premium("20yr")
 
-    # Annual series label range for manuscript prose (e.g., Jul2001--Jun2002)
+    # Annual series label range for manuscript prose (e.g., Jul2001-Jun2002)
     def _annual_label_row(x: Any) -> tuple[int, str] | None:
         if not isinstance(x, dict):
             return None
@@ -244,8 +244,8 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     labels = [_annual_label_row(r) for r in annual_rows]
     labels = [x for x in labels if x is not None]
     labels.sort(key=lambda t: t[0])
-    annual_period_start = labels[0][1].replace("-", "--") if labels else "--"
-    annual_period_end = labels[-1][1].replace("-", "--") if labels else "--"
+    annual_period_start = labels[0][1] if labels else "N/A"
+    annual_period_end = labels[-1][1] if labels else "N/A"
 
     snapshot_id_raw = meta.get("id") if isinstance(meta.get("id"), str) else None
     snapshot_id = _latex_escape_text(snapshot_id_raw) if snapshot_id_raw else None
@@ -255,10 +255,10 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
             "% Auto-generated. Do not edit by hand.",
             "% Regenerate via: python3 scripts/build_assets.py",
             "",
-            f"\\newcommand{{\\SnapshotId}}{{{snapshot_id or '--'}}}",
-            f"\\newcommand{{\\SnapshotBuiltAt}}{{{built_at_label or '--'}}}",
-            f"\\newcommand{{\\ReturnConvention}}{{{return_convention or '--'}}}",
-            f"\\newcommand{{\\DataTier}}{{{data_tier or '--'}}}",
+            f"\\newcommand{{\\SnapshotId}}{{{snapshot_id or 'N/A'}}}",
+            f"\\newcommand{{\\SnapshotBuiltAt}}{{{built_at_label or 'N/A'}}}",
+            f"\\newcommand{{\\ReturnConvention}}{{{return_convention or 'N/A'}}}",
+            f"\\newcommand{{\\DataTier}}{{{data_tier or 'N/A'}}}",
             f"\\newcommand{{\\AnnualSeriesStart}}{{{annual_period_start}}}",
             f"\\newcommand{{\\AnnualSeriesEnd}}{{{annual_period_end}}}",
             "",
@@ -321,12 +321,12 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     fm_macros = "\n".join([
         "",
         "% Fama-MacBeth monthly cross-sectional regressions (PRIMARY INFERENCE)",
-        f"\\newcommand{{\\FamaMacBethNMonths}}{{{fm_n_months or '--'}}}",
-        f"\\newcommand{{\\FamaMacBethAvgNFirms}}{{{fm_avg_firms or '--'}}}",
-        f"\\newcommand{{\\FamaMacBethAvgRSquared}}{{{_fmt_pct(fm_avg_rsq, 4) if fm_avg_rsq else '--'}}}",
-        f"\\newcommand{{\\FamaMacBethMonthRange}}{{{_latex_escape_text(fm_month_range).replace('-', '--') if fm_month_range else '--'}}}",
-        f"\\newcommand{{\\FamaMacBethRDCoef}}{{{_fmt_pct(fm_rd_coef, 4) if fm_rd_coef is not None else '--'}}}",
-        f"\\newcommand{{\\FamaMacBethRDTStat}}{{{_fmt_pct(fm_rd_tstat, 2) if fm_rd_tstat is not None else '--'}}}",
+        f"\\newcommand{{\\FamaMacBethNMonths}}{{{fm_n_months or 'N/A'}}}",
+        f"\\newcommand{{\\FamaMacBethAvgNFirms}}{{{fm_avg_firms or 'N/A'}}}",
+        f"\\newcommand{{\\FamaMacBethAvgRSquared}}{{{_fmt_pct(fm_avg_rsq, 4) if fm_avg_rsq is not None else 'N/A'}}}",
+        f"\\newcommand{{\\FamaMacBethMonthRange}}{{{_latex_escape_text(fm_month_range) if fm_month_range else 'N/A'}}}",
+        f"\\newcommand{{\\FamaMacBethRDCoef}}{{{_fmt_pct(fm_rd_coef, 4) if fm_rd_coef is not None else 'N/A'}}}",
+        f"\\newcommand{{\\FamaMacBethRDTStat}}{{{_fmt_pct(fm_rd_tstat, 2) if fm_rd_tstat is not None else 'N/A'}}}",
         f"\\newcommand{{\\FamaMacBethRDPValue}}{{{_fmt_p_value(fm_rd_pval)}}}",
         f"\\newcommand{{\\FamaMacBethRDSignificant}}{{{'Yes' if fm_rd_sig else 'No'}}}",
         f"\\newcommand{{\\FamaMacBethRDSignificantStars}}{{{fm_rd_stars}}}",
@@ -335,6 +335,39 @@ def write_metrics_tex(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     ])
 
     content = content + fm_macros
+
+    # Monthly factor spanning macros (primary time-series inference for distinctiveness)
+    spanning = payload.get("spanning_tests_full") if isinstance(payload.get("spanning_tests_full"), dict) else {}
+    spanning_models = spanning.get("models") if isinstance(spanning.get("models"), dict) else {}
+    ff5 = spanning_models.get("FF5") if isinstance(spanning_models.get("FF5"), dict) else {}
+
+    ff5_alpha = _safe_float(ff5.get("alpha"))
+    ff5_alpha_pct = (ff5_alpha * 100.0) if isinstance(ff5_alpha, float) else None
+    ff5_alpha_t = _safe_float(ff5.get("alpha_t"))
+    ff5_alpha_p = _safe_float(ff5.get("alpha_p"))
+
+    ff5_stars = ""
+    if isinstance(ff5_alpha_p, float):
+        if ff5_alpha_p < 0.01:
+            ff5_stars = "***"
+        elif ff5_alpha_p < 0.05:
+            ff5_stars = "**"
+        elif ff5_alpha_p < 0.10:
+            ff5_stars = "*"
+
+    spanning_macros = "\n".join(
+        [
+            "",
+            "% Monthly factor spanning tests (distinctiveness)",
+            f"\\newcommand{{\\SpanningFFFiveAlphaPct}}{{{_fmt_pct(ff5_alpha_pct, 2)}}}",
+            f"\\newcommand{{\\SpanningFFFiveTStat}}{{{_fmt_pct(ff5_alpha_t, 2)}}}",
+            f"\\newcommand{{\\SpanningFFFivePValue}}{{{_fmt_p_value(ff5_alpha_p)}}}",
+            f"\\newcommand{{\\SpanningFFFiveStars}}{{{ff5_stars}}}",
+            "",
+        ]
+    )
+
+    content = content + spanning_macros
 
     # Sector-neutral annual HML macros (robustness; often smaller than the headline premium)
     sector_macros = "\n".join([
@@ -423,7 +456,7 @@ def write_annual_quintile_growth_csv(payload: dict[str, Any]) -> None:
 
     WHY:
       The website renders this interactively; the LaTeX paper needs a deterministic, print-ready figure.
-      We compute cumulative wealth indices for Q5 and Q1 using the annual return series (July--June
+      We compute cumulative wealth indices for Q5 and Q1 using the annual return series (July-June
       non-overlapping observations). This chart provides economic intuition about compounding and
       drawdowns; statistical inference is anchored on monthly tests elsewhere in the manuscript.
     """
@@ -575,7 +608,7 @@ def write_tables(meta: dict[str, Any], payload: dict[str, Any]) -> None:
 
     # Use a short, paper-friendly build date label (avoid long ISO timestamps in table captions).
     built_at_raw = meta.get("built_at")
-    built_at_label = "--"
+    built_at_label = "N/A"
     if isinstance(built_at_raw, str) and built_at_raw:
         try:
             built_at_label = datetime.fromisoformat(built_at_raw.replace("Z", "+00:00")).strftime("%Y-%m-%d")
@@ -584,7 +617,7 @@ def write_tables(meta: dict[str, Any], payload: dict[str, Any]) -> None:
     built_at = _latex_escape_text(built_at_label)
     return_convention = _format_return_convention(meta.get("return_convention") if isinstance(meta.get("return_convention"), str) else None)
     data_tier_raw = meta.get("data_tier") if isinstance(meta.get("data_tier"), str) else None
-    data_tier = _latex_escape_text(data_tier_raw) if data_tier_raw else "--"
+    data_tier = _latex_escape_text(data_tier_raw) if data_tier_raw else "N/A"
 
     table_sample = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
@@ -598,12 +631,12 @@ Item & Value \\\\
 Universe & Current S\\&P 500 (add-date gated; Tier-1) \\\\
 Return convention & {return_convention} \\\\
 Data tier & {data_tier} \\\\
-Unique tickers in cohort$^{{*}}$ & {total_companies or '--'} \\\\
-Eligible with 5-year window coverage & {eligible_5yr or '--'} \\\\
-Eligible with 10-year window coverage & {eligible_10yr or '--'} \\\\
-Eligible with 20-year window coverage & {eligible_20yr or '--'} \\\\
+Unique tickers in cohort$^{{*}}$ & {total_companies or 'N/A'} \\\\
+Eligible with 5-year window coverage & {eligible_5yr or 'N/A'} \\\\
+Eligible with 10-year window coverage & {eligible_10yr or 'N/A'} \\\\
+Eligible with 20-year window coverage & {eligible_20yr or 'N/A'} \\\\
 Average R\\&D intensity (\\%) & {_fmt_pct(avg_rd_intensity,2)} \\\\
-Average data quality score (0--100) & {_fmt_pct(avg_quality_score,1)} \\\\
+Average data quality score (0-100) & {_fmt_pct(avg_quality_score,1)} \\\\
 \\bottomrule
 \\end{{tabular}}
 \\\\[2pt]
@@ -620,12 +653,12 @@ Average data quality score (0--100) & {_fmt_pct(avg_quality_score,1)} \\\\
     sanity = methodology.get("sanity_check_constants") if isinstance(methodology.get("sanity_check_constants"), dict) else {}
 
     min_rev = _safe_float(filters.get("min_revenue_threshold_usd"))
-    min_rev_label = f"\\${min_rev/1e6:.0f}M" if isinstance(min_rev, float) else "--"
+    min_rev_label = f"\\${min_rev/1e6:.0f}M" if isinstance(min_rev, float) else "N/A"
     default_cap = _safe_float(capping.get("default_cap_pct"))
     high_cap = _safe_float(capping.get("high_rd_sector_cap_pct"))
     n_quintiles = _safe_int(portfolio.get("n_quintiles"))
-    weighting = portfolio.get("weighting") if isinstance(portfolio.get("weighting"), str) else "--"
-    rebal = portfolio.get("rebalance_frequency") if isinstance(portfolio.get("rebalance_frequency"), str) else "--"
+    weighting = portfolio.get("weighting") if isinstance(portfolio.get("weighting"), str) else "N/A"
+    rebal = portfolio.get("rebalance_frequency") if isinstance(portfolio.get("rebalance_frequency"), str) else "N/A"
 
     win_lo = _safe_int(sanity.get("winsorize_lower_pct"))
     win_hi = _safe_int(sanity.get("winsorize_upper_pct"))
@@ -639,15 +672,15 @@ Average data quality score (0--100) & {_fmt_pct(avg_quality_score,1)} \\\\
 \\toprule
 Parameter & Value \\\\
 \\midrule
-Universe & { _latex_escape_text(str(methodology.get('universe','--'))) if methodology.get('universe') else '--' } \\\\
+Universe & { _latex_escape_text(str(methodology.get('universe','N/A'))) if methodology.get('universe') else 'N/A' } \\\\
 Return convention & { _format_return_convention(methodology.get('return_convention') if isinstance(methodology.get('return_convention'), str) else None) } \\\\
 Rebalance frequency & { _latex_escape_text(rebal) } \\\\
-Quintiles & {n_quintiles or '--'} \\\\
+Quintiles & {n_quintiles or 'N/A'} \\\\
 Weighting & { _latex_escape_text(weighting) } \\\\
 Min revenue threshold & {min_rev_label} \\\\
 R\\&D intensity cap (default) & {_fmt_pct(default_cap,0)}\\% \\\\
 R\\&D intensity cap (high-R\\&D sectors) & {_fmt_pct(high_cap,0)}\\% \\\\
-Winsorization (annual returns) & {win_lo if win_lo is not None else '--'}--{win_hi if win_hi is not None else '--'} percentile \\\\
+Winsorization (annual returns) & {win_lo if win_lo is not None else 'N/A'}-{win_hi if win_hi is not None else 'N/A'} percentile \\\\
 \\bottomrule
 \\end{{tabular}}
 \\end{{table}}
@@ -679,7 +712,7 @@ Winsorization (annual returns) & {win_lo if win_lo is not None else '--'}--{win_
     top = sector_rows[:8]
     body = "\n".join(
         [
-            f"{_latex_escape_text(r['sector'])} & {r.get('count') or '--'} & {_fmt_pct(r.get('avg'),2)} & {_fmt_pct(r.get('spend_b'),1)} \\\\"
+            f"{_latex_escape_text(r['sector'])} & {r.get('count') or 'N/A'} & {_fmt_pct(r.get('avg'),2)} & {_fmt_pct(r.get('spend_b'),1)} \\\\"
             for r in top
         ]
     )
@@ -716,7 +749,7 @@ Sector & Firms & Avg R\\&D intensity (\\%) & Total R\\&D spend (\\$B) \\\\
     table_annual = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Annual non-overlapping HML (Q5--Q1) R\\&D premium (July--June; descriptive)}}
+\\caption{{Annual non-overlapping HML (Q5-Q1) R\\&D premium (July-June; descriptive)}}
 \\label{{tab:annual_hml_summary}}
 \\begin{{tabular}}{{lr}}
 \\toprule
@@ -729,8 +762,8 @@ Min (\\%) & {_fmt_pct(min_premium,2)} \\\\
 Max (\\%) & {_fmt_pct(max_premium,2)} \\\\
 Positive years & {positive_years or 0} \\\\
 Win rate (\\%) & {_fmt_pct(win_rate_pct,0)} \\\\
-Newey--West t-stat (lag=1) & {_fmt_pct(t_stat,2)} \\\\
-Newey--West p-value & {_fmt_p_value(p_val)} \\\\
+Newey-West t-stat (lag=1) & {_fmt_pct(t_stat,2)} \\\\
+Newey-West p-value & {_fmt_p_value(p_val)} \\\\
 \\bottomrule
 \\end{{tabular}}
 \\end{{table}}
@@ -738,7 +771,7 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
 
     (TABLES_DIR / "table_annual_hml_summary.tex").write_text(table_annual, encoding="utf-8")
 
-    # Newey–West lag robustness panel (reviewer-friendly)
+    # Newey-West lag robustness panel (reviewer-friendly)
     nw_panel = annual.get("hac_lag_robustness") if isinstance(annual.get("hac_lag_robustness"), dict) else {}
     nw_rows = []
     for lag in [0, 1, 2, 3]:
@@ -755,7 +788,7 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
             "% Auto-generated. Do not edit by hand.",
             "\\begin{table}[htbp]",
             "\\centering",
-            "\\caption{Newey--West lag robustness for the annual HML premium}",
+            "\\caption{Newey-West lag robustness for the annual HML premium}",
             "\\label{tab:nw_lag_robustness}",
             "\\begin{tabular}{lrrr}",
             "\\toprule",
@@ -763,7 +796,7 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
             "\\midrule",
             *nw_rows,
             "\\bottomrule",
-            "\\multicolumn{4}{l}{\\footnotesize Note: primary reporting uses lag=1; this panel shows robustness for lags 0--3.}\\\\",
+            "\\multicolumn{4}{l}{\\footnotesize Note: primary reporting uses lag=1; this panel shows robustness for lags 0-3.}\\\\",
             "\\end{tabular}",
             "\\end{table}",
             "",
@@ -800,8 +833,8 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
             f"Std. dev. (\\%) & {_fmt_pct(sn_std,2)} \\\\",
             f"Positive years & {sn_pos or 0} \\\\",
             f"Win rate (\\%) & {_fmt_pct(sn_win_pct,0)} \\\\",
-            f"Newey--West t-stat (lag=1) & {_fmt_pct(sn_t,2)} \\\\",
-            f"Newey--West p-value & {_fmt_p_value(sn_p)} \\\\",
+            f"Newey-West t-stat (lag=1) & {_fmt_pct(sn_t,2)} \\\\",
+            f"Newey-West p-value & {_fmt_p_value(sn_p)} \\\\",
             "\\bottomrule",
             "\\end{tabular}",
             "\\end{table}",
@@ -834,11 +867,11 @@ Newey--West p-value & {_fmt_p_value(p_val)} \\\\
     table_windows = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Rolling-window quintile averages (descriptive) and Q5--Q1 spread}}
+\\caption{{Rolling-window quintile averages (descriptive) and Q5-Q1 spread}}
 \\label{{tab:rolling_windows}}
 \\begin{{tabular}}{{lrrr}}
 \\toprule
-Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) \\\\
+Window & Q5 (\\%) & Q1 (\\%) & Q5-Q1 (\\%) \\\\
 \\midrule
 {body_lines}
 \\bottomrule
@@ -858,7 +891,7 @@ Window & Q5 (\\%) & Q1 (\\%) & Q5--Q1 (\\%) \\\\
     table_tx = f"""% Auto-generated. Do not edit by hand.
 \\begin{{table}}[htbp]
 \\centering
-\\caption{{Transaction-cost calibration and net premium vs SPY (Novy--Marx \\& Velikov, 2016)}}
+\\caption{{Transaction-cost calibration and net premium vs SPY (Novy-Marx \\& Velikov, 2016)}}
 \\label{{tab:transaction_costs}}
 \\begin{{tabular}}{{lr}}
 \\toprule
@@ -887,7 +920,7 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
             net_prem = _safe_float(row.get("net_premium_pct"))
             capture = _safe_float(row.get("premium_capture_rate_pct"))
             lines.append(
-                f"{bps if bps is not None else '--'} & {_fmt_pct(annual_cost,3)} & {_fmt_pct(net_prem,2)} & {_fmt_pct(capture,1)} \\\\"
+                f"{bps if bps is not None else 'N/A'} & {_fmt_pct(annual_cost,3)} & {_fmt_pct(net_prem,2)} & {_fmt_pct(capture,1)} \\\\"
             )
 
         table_sens = "\n".join(
@@ -983,7 +1016,7 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
                 "\\label{tab:double_sort}",
                 "\\begin{tabular}{lrrrrrr}",
                 "\\toprule",
-                "Size bucket & Low R\\&D & Medium R\\&D & High R\\&D & High--Low & t-stat & p-value \\\\",
+                "Size bucket & Low R\\&D & Medium R\\&D & High R\\&D & High-Low & t-stat & p-value \\\\",
                 "\\midrule",
                 *lines,
                 "\\bottomrule",
@@ -1075,7 +1108,7 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
         )
         (TABLES_DIR / "table_delisting_sensitivity.tex").write_text(placeholder, encoding="utf-8")
 
-    # Mispricing tests (arbitrage cost proxies) — descriptive
+    # Mispricing tests (arbitrage cost proxies) - descriptive
     mis = payload.get("mispricing_tests")
     if isinstance(mis, dict) and isinstance(mis.get("tests"), dict):
         tests = mis["tests"]
@@ -1087,7 +1120,7 @@ Premium capture rate (\\%) & {_fmt_pct(capture_rate_pct,1)} \\\\
                     continue
                 premium = _safe_float(v.get("premium"))
                 n = _safe_int(v.get("n_obs"))
-                lines2.append(f"{group_name}: {k} & {_fmt_pct(premium,2)} & {n or '--'} \\\\")
+                lines2.append(f"{group_name}: {k} & {_fmt_pct(premium,2)} & {n or 'N/A'} \\\\")
             return lines2
 
         lines = []
@@ -1204,7 +1237,7 @@ def write_annual_hml_detail_table(payload: dict[str, Any]) -> None:
             continue
         parsed.append({
             "formation_year": fy,
-            "label": label.replace("-", "--"),
+            "label": label,
             "q1": q1,
             "q5": q5,
             "hml": hml,
@@ -1243,7 +1276,7 @@ def write_annual_hml_detail_table(payload: dict[str, Any]) -> None:
 
     table = f"""% Auto-generated. Do not edit by hand.
 \\begin{{longtable}}{{lrrr}}
-\\caption{{Year-by-year annual HML premium (Q5--Q1) detail}} \\label{{tab:annual_hml_detail}} \\\\
+\\caption{{Year-by-year annual HML premium (Q5-Q1) detail}} \\label{{tab:annual_hml_detail}} \\\\
 \\toprule
 Return period & Q1 (\\%) & Q5 (\\%) & HML (\\%) \\\\
 \\midrule
@@ -1309,9 +1342,9 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
         n_years = _safe_int(b.get("n_years"))
         avg_firms = _safe_float(b.get("avg_firms_per_year"))
         return (
-            f"{panel} & {bucket} & {_fmt_pct(prem, 2)} & {(_fmt_pct(t, 2) if t is not None else '--')} & "
-            f"{(n_years if n_years is not None else '--')} & "
-            f"{(_fmt_pct(avg_firms, 1) if avg_firms is not None else '--')} \\\\"
+            f"{panel} & {bucket} & {_fmt_pct(prem, 2)} & {(_fmt_pct(t, 2) if t is not None else 'N/A')} & "
+            f"{(n_years if n_years is not None else 'N/A')} & "
+            f"{(_fmt_pct(avg_firms, 1) if avg_firms is not None else 'N/A')} \\\\"
         )
 
     lines: list[str] = []
@@ -1338,7 +1371,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
     end_y = _safe_int(meta.get("end_formation_year"))
     window = meta.get("liquidity_window") if isinstance(meta.get("liquidity_window"), str) else "pre-formation"
     lags = _safe_int(meta.get("nw_lags"))
-    caption_suffix = f"({start_y}-{end_y}; {window}; Newey--West lags={lags})" if start_y and end_y and lags else ""
+    caption_suffix = f"({start_y}-{end_y}; {window}; Newey-West lags={lags})" if start_y and end_y and lags else ""
 
     table = "\n".join(
         [
@@ -1353,7 +1386,7 @@ def write_liquidity_moderation_table(payload: dict[str, Any]) -> None:
             "\\midrule",
             *lines,
             "\\bottomrule",
-            "\\multicolumn{6}{l}{\\footnotesize Premium is within-bucket Q5$-$Q1 using July--June annualized returns.} \\\\",
+            "\\multicolumn{6}{l}{\\footnotesize Premium is within-bucket Q5$-$Q1 using July-June annualized returns.} \\\\",
             "\\multicolumn{6}{l}{\\footnotesize Amihud (2002) uses daily |return| / dollar volume; dollar volume bucket uses avg(close$\\times$volume).} \\\\",
             "\\end{tabular}",
             "\\end{table}",
@@ -1460,10 +1493,10 @@ def write_regime_breakdown_table(payload: dict[str, Any]) -> None:
     max_year = max(years) if years else 2024
 
     regimes = [
-        {"label": "2001--2002", "start": 2001, "end": 2002, "event": "Post-dot-com"},
-        {"label": "2003--2007", "start": 2003, "end": 2007, "event": "Pre-GFC expansion"},
-        {"label": "2008--2009", "start": 2008, "end": 2009, "event": "Financial Crisis"},
-        {"label": "2010--2016", "start": 2010, "end": 2016, "event": "Post-GFC recovery"},
+        {"label": "2001-2002", "start": 2001, "end": 2002, "event": "Post-dot-com"},
+        {"label": "2003-2007", "start": 2003, "end": 2007, "event": "Pre-GFC expansion"},
+        {"label": "2008-2009", "start": 2008, "end": 2009, "event": "Financial Crisis"},
+        {"label": "2010-2016", "start": 2010, "end": 2016, "event": "Post-GFC recovery"},
         {"label": f"2017--{max_year}", "start": 2017, "end": max_year, "event": "Recent era"},
     ]
 
@@ -1642,15 +1675,15 @@ Variable & Coefficient & t-stat (FM) & t-stat (NW) & \\\\
 
     def _get_coef(section):
         if not isinstance(section, dict):
-            return ("--", "--", "--", "")
+            return ("N/A", "N/A", "N/A", "")
         coef = _safe_float(section.get("coefficient"))
         t_fm = _safe_float(section.get("t_stat_fm"))
         t_hac = _safe_float(section.get("t_stat_hac"))
         p_hac = _safe_float(section.get("p_value_hac"))
         return (
-            f"{coef:.5f}" if coef is not None else "--",
-            f"{t_fm:.2f}" if t_fm is not None else "--",
-            f"{t_hac:.2f}" if t_hac is not None else "--",
+            f"{coef:.5f}" if coef is not None else "N/A",
+            f"{t_fm:.2f}" if t_fm is not None else "N/A",
+            f"{t_hac:.2f}" if t_hac is not None else "N/A",
             sig_stars(p_hac),
         )
 
@@ -1659,10 +1692,10 @@ Variable & Coefficient & t-stat (FM) & t-stat (NW) & \\\\
     size = _get_coef(fm.get("log_market_cap"))
     bm = _get_coef(fm.get("book_to_market"))
 
-    n_months = _safe_int(fm.get("n_months")) or "--"
-    avg_firms = _safe_int(fm.get("avg_n_firms_per_month")) or "--"
+    n_months = _safe_int(fm.get("n_months")) or "N/A"
+    avg_firms = _safe_int(fm.get("avg_n_firms_per_month")) or "N/A"
     avg_rsq = _safe_float(fm.get("avg_r_squared"))
-    avg_rsq_str = f"{avg_rsq:.4f}" if avg_rsq is not None else "--"
+    avg_rsq_str = f"{avg_rsq:.4f}" if avg_rsq is not None else "N/A"
     nw_lags = _safe_int(fm.get("nw_lags")) or 12
 
     table = f"""% Auto-generated. Do not edit by hand.

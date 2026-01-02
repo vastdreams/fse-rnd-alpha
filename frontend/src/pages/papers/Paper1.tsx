@@ -587,13 +587,13 @@ export function Paper1() {
 
               <h3 className="text-lg font-semibold text-foreground">4.3 Quintile Portfolio Construction</h3>
               <p className="text-muted-foreground leading-relaxed">
-                At portfolio formation (July 1 each year, per the July–June convention), we:
+                At portfolio formation (July 1 each year, per the July-June convention), we:
               </p>
               <ol className="text-muted-foreground list-decimal list-inside space-y-2">
                 <li>Collect R&D intensity for all S&P 500 companies using fiscal year t-1 data (most recent available)</li>
                 <li>Rank companies from lowest to highest R&D intensity</li>
                 <li>Sort into 5 equal-sized quintiles (each containing ~100 companies)</li>
-                <li>Calculate equal-weighted portfolio returns for the subsequent July–June window for each quintile</li>
+                <li>Calculate equal-weighted portfolio returns for the subsequent July-June window for each quintile</li>
               </ol>
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <table className="w-full text-sm">
@@ -908,7 +908,7 @@ export function Paper1() {
             <CardContent className="pt-6 prose prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 Our findings demonstrate that R&D investment intensity is a statistically significant predictor 
-                of long-term shareholder returns. Monthly factor spanning tests show a significant alpha (FF5: 4.37%, p&lt;0.01), 
+                of long-term shareholder returns. Monthly factor spanning tests show a statistically significant alpha (FF5), 
                 and Fama-MacBeth cross-sectional regressions confirm the relationship after controlling for size and book-to-market. 
                 The monotonic relationship between R&D quintiles and returns, combined with the increasing effect sizes over longer horizons, 
                 indicates that R&D investments create durable competitive advantages that compound over time.
@@ -963,16 +963,16 @@ export function Paper1() {
               <p className="text-muted-foreground leading-relaxed">
                 This study demonstrates a robust and economically significant positive relationship between 
                 R&D investment intensity and long-term shareholder returns among S&P 500 companies. Our 
-                quintile-based analysis shows a positive Q5--Q1 premium across horizons (rolling-window annualized premiums:{" "}
+                quintile-based analysis shows a positive Q5-Q1 premium across horizons (rolling-window annualized premiums:{" "}
                 {typeof rdPremium5yr === "number" ? `${rdPremium5yr >= 0 ? "+" : ""}${rdPremium5yr.toFixed(1)}%` : "..."}{" "}
                 for 5yr,{" "}
                 {typeof rdPremium10yr === "number" ? `${rdPremium10yr >= 0 ? "+" : ""}${rdPremium10yr.toFixed(1)}%` : "..."}{" "}
                 for 10yr, and{" "}
                 {typeof rdPremium20yr === "number" ? `${rdPremium20yr >= 0 ? "+" : ""}${rdPremium20yr.toFixed(1)}%` : "..."}{" "}
-                for 20yr; descriptive due to overlap). Primary inference uses the non-overlapping annual July--June premium series (mean{" "}
+                for 20yr; descriptive due to overlap). Primary inference uses the non-overlapping annual July-June premium series (mean{" "}
                 {typeof annualMeanPremium === "number" ? `${annualMeanPremium.toFixed(2)}%` : "..."}
                 {typeof annualTStat === "number" && typeof annualPValue === "number"
-                  ? `, Newey–West t=${annualTStat.toFixed(2)}, p=${annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}`
+                  ? `, Newey-West t=${annualTStat.toFixed(2)}, p=${annualPValue < 0.001 ? "<0.001" : annualPValue.toFixed(3)}`
                   : ""}
                 {typeof annualNYears === "number" ? `; N=${annualNYears}` : ""}).
               </p>

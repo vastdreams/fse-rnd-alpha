@@ -1006,7 +1006,7 @@ export function Admin() {
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Access Password</p>
                               <code className="text-sm font-mono text-amber-400">
-                                {client.accessPassword || "—"}
+                                {client.accessPassword || "N/A"}
                               </code>
                             </div>
                             <Button 

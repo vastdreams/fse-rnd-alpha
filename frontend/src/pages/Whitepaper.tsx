@@ -322,6 +322,10 @@ export function Whitepaper() {
   const transactionCosts = payload?.transaction_costs
   const rollingAggregates = payload?.rolling_window_aggregates
   const rdBySector = Array.isArray(payload?.rd_by_sector) ? (payload?.rd_by_sector as any[]) : []
+  const spanningTests =
+    payload?.spanning_tests_full && typeof payload.spanning_tests_full === "object" && !("error" in payload.spanning_tests_full)
+      ? (payload.spanning_tests_full as any)
+      : undefined
   const cohortSummaryFromSnapshot =
     payload?.cohort_summary && typeof payload.cohort_summary === "object" && !("error" in payload.cohort_summary)
       ? (payload.cohort_summary as any)
@@ -397,7 +401,11 @@ export function Whitepaper() {
   const backtestPeriodLabel =
     typeof transactionCostsSafe?.period_label === "string"
       ? transactionCostsSafe.period_label
-      : "Jul2001-Jun2025"
+      : "N/A"
+
+  const ff5SpanningModel = spanningTests?.models?.FF5
+  const ff5AlphaPercent = typeof ff5SpanningModel?.alpha === "number" ? ff5SpanningModel.alpha * 100 : undefined
+  const ff5AlphaPValue = typeof ff5SpanningModel?.alpha_p === "number" ? ff5SpanningModel.alpha_p : undefined
     
   // Cohort coverage for long-horizon analysis (how many firms have continuous data for each window)
   const eligible5yr = typeof cohort?.eligible_5yr === "number" ? cohort.eligible_5yr : undefined
@@ -2055,7 +2063,13 @@ export function Whitepaper() {
           <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 20, textAlign: "center" }}>Key Takeaways for Practitioners</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
             {[
-              { num: "1", text: "R&D intensity is an economically meaningful predictor of future stock returns (FF5 monthly alpha 4.37%, p<0.01), with effects persisting across multiple horizons." },
+              {
+                num: "1",
+                text:
+                  typeof ff5AlphaPercent === "number" && typeof ff5AlphaPValue === "number"
+                    ? `R&D intensity is an economically meaningful predictor of future stock returns (FF5 monthly alpha ${ff5AlphaPercent.toFixed(2)}%, p ${ff5AlphaPValue < 0.001 ? "<0.001" : ff5AlphaPValue.toFixed(3)}), with effects persisting across multiple horizons.`
+                    : "R&D intensity is an economically meaningful predictor of future stock returns (FF5 monthly alpha is statistically significant), with effects persisting across multiple horizons.",
+              },
               {
                 num: "2",
                 text:

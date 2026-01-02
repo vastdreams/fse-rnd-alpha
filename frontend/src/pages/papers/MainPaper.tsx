@@ -249,6 +249,10 @@ export function MainPaper() {
       ? snapshotPayload.spanning_tests_full
       : undefined
 
+  const ff5SpanningModel = spanningTests?.models?.FF5
+  const ff5AlphaPercent = typeof ff5SpanningModel?.alpha === "number" ? ff5SpanningModel.alpha * 100 : undefined
+  const ff5AlphaPValue = typeof ff5SpanningModel?.alpha_p === "number" ? ff5SpanningModel.alpha_p : undefined
+
   const mispricingTests =
     snapshotPayload?.mispricing_tests && typeof snapshotPayload.mispricing_tests === "object" && !("error" in snapshotPayload.mispricing_tests)
       ? snapshotPayload.mispricing_tests
@@ -846,7 +850,11 @@ export function MainPaper() {
                   </>
                 ) : (
                   <>The high-minus-low premium (Q5 minus Q1) is positive and statistically significant when tested appropriately. 
-                    Monthly factor spanning tests confirm a significant alpha (FF5: 4.37%, p&lt;0.01), and Fama-MacBeth regressions corroborate the cross-sectional relationship. 
+                    Monthly factor spanning tests confirm a significant alpha
+                    {typeof ff5AlphaPercent === "number" && typeof ff5AlphaPValue === "number" ? (
+                      <> (FF5: {ff5AlphaPercent.toFixed(2)}%, p {ff5AlphaPValue < 0.001 ? "<0.001" : ff5AlphaPValue.toFixed(3)})</>
+                    ) : null}
+                    , and Fama-MacBeth regressions corroborate the cross-sectional relationship. 
                     In plain terms: stocks with high R&amp;D intensity have consistently outperformed those with low R&amp;D intensity.</>
                 )}
               </p>
@@ -856,7 +864,9 @@ export function MainPaper() {
                 {typeof transactionCosts?.annual_trading_cost_pct === "number" && typeof transactionCosts?.net_rd_premium_pct === "number" ? (
                   <>
                     We translate this finding into an investable strategy: hold the top <strong className="text-foreground">20</strong> stocks by R&amp;D intensity
-                    (equal-weighted) and reconstitute annually in July. The backtest spans <strong className="text-foreground">{transactionCosts.period_label || "Jul2001-Jun2025"}</strong> ({transactionCosts.n_periods || 24} July-June periods), including stress tests (post-dot-com, 2008 crisis). Using realized turnover from the backtest and a literature-calibrated transaction-cost model
+                    (equal-weighted) and reconstitute annually in July. The backtest spans{" "}
+                    <strong className="text-foreground">{transactionCosts.period_label || "N/A"}</strong> (
+                    {typeof transactionCosts.n_periods === "number" ? transactionCosts.n_periods : "N/A"} July-June periods), including stress tests (post-dot-com, 2008 crisis). Using realized turnover from the backtest and a literature-calibrated transaction-cost model
                     (Novy-Marx &amp; Velikov, 2016), estimated trading costs are{" "}
                     <strong className="text-foreground">{transactionCosts.annual_trading_cost_pct.toFixed(3)}%</strong> annually
                     (large-cap liquidity), yielding a net premium of{" "}
@@ -1324,7 +1334,7 @@ export function MainPaper() {
                           <span className="inline-flex items-center gap-1">
                             Delisting returns
                             <InfoTooltip title="Delisting Return Treatment" size={12}>
-                              We do not inject a separate “delisting return” into the annual return series. If a firm’s price history ends before the July–June window ends
+                              We do not inject a separate “delisting return” into the annual return series. If a firm’s price history ends before the July-June window ends
                               (e.g., merger/delisting), we compute the holding-period return to the last observed trading day and treat cash as earning 0% thereafter for the remainder of the window.
                               We also report a literature-calibrated sensitivity analysis for delisting uncertainty.
                             </InfoTooltip>
@@ -3086,7 +3096,7 @@ export function MainPaper() {
                   <li>
                     <strong className="text-foreground">Net of modeled costs:</strong>{" "}
                     {typeof transactionCosts?.net_rd_premium_pct === "number"
-                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% pp/yr vs SPY (${transactionCosts.period_label || "Jul2001-Jun2025"}); see Section 9`
+                      ? `net premium ${transactionCosts.net_rd_premium_pct.toFixed(2)}% pp/yr vs SPY (${transactionCosts.period_label || "N/A"}); see Section 9`
                       : "reported in the implementation section (Section 9)."}
                   </li>
                 </ul>
@@ -3482,7 +3492,7 @@ export function MainPaper() {
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            Net premium vs SPY (pp/yr, {transactionCosts.period_label || "Jul2001-Jun2025"})
+                            Net premium vs SPY (pp/yr, {transactionCosts.period_label || "N/A"})
                             <InfoTooltip term="net_premium_after_costs" size={12} />
                           </div>
                           <div className="font-semibold">
@@ -3694,7 +3704,7 @@ export function MainPaper() {
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             S&amp;P 500 (gross ann.)
                             <InfoTooltip title="S&P 500 Market Return" size={12}>
-                              SPY total-return proxy constructed from split-adjusted close prices plus dividends (reinvested), compounded on the July–June
+                              SPY total-return proxy constructed from split-adjusted close prices plus dividends (reinvested), compounded on the July-June
                               convention used throughout the paper.
                             </InfoTooltip>
                           </div>
@@ -3777,7 +3787,7 @@ export function MainPaper() {
                               This allows a fair comparison of the R&amp;D tilt vs. an uninformed equal-weight strategy in the same universe.
                             </li>
                             <li>
-                              <strong>S&amp;P 500:</strong> SPY total-return proxy (split-adjusted close + dividends), compounded on the July–June convention.
+                              <strong>S&amp;P 500:</strong> SPY total-return proxy (split-adjusted close + dividends), compounded on the July-June convention.
                               This is the primary investable benchmark used in the paper.
                             </li>
                             <li>
@@ -3863,12 +3873,12 @@ export function MainPaper() {
                       <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">❄️</span>
-                          <span className="font-semibold text-foreground">Jan – Mar</span>
+                          <span className="font-semibold text-foreground">Jan-Mar</span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">10-Ks filing window</p>
                         <ul className="text-xs text-muted-foreground space-y-1">
                           <li>• Most Dec fiscal-year 10-Ks filed</li>
-                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• <strong className="text-foreground">Do nothing</strong> - hold positions</li>
                           <li>• Optionally: collect R&D data as filings come in</li>
                         </ul>
                       </div>
@@ -3877,7 +3887,7 @@ export function MainPaper() {
                       <div className="p-4 rounded-lg border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">🌱</span>
-                          <span className="font-semibold text-foreground">Apr – Jun</span>
+                          <span className="font-semibold text-foreground">Apr-Jun</span>
                           <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-700 dark:text-emerald-300">
                             ACTION
                           </Badge>
@@ -3895,12 +3905,12 @@ export function MainPaper() {
                       <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">☀️</span>
-                          <span className="font-semibold text-foreground">Jul – Sep</span>
+                          <span className="font-semibold text-foreground">Jul-Sep</span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">New holding period starts</p>
                         <ul className="text-xs text-muted-foreground space-y-1">
                           <li>• Portfolio is set for 12 months</li>
-                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• <strong className="text-foreground">Do nothing</strong> - hold positions</li>
                           <li>• Ignore quarterly noise</li>
                         </ul>
                       </div>
@@ -3909,11 +3919,11 @@ export function MainPaper() {
                       <div className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900/50">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">🍂</span>
-                          <span className="font-semibold text-foreground">Oct – Dec</span>
+                          <span className="font-semibold text-foreground">Oct-Dec</span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">Continue holding</p>
                         <ul className="text-xs text-muted-foreground space-y-1">
-                          <li>• <strong className="text-foreground">Do nothing</strong> – hold positions</li>
+                          <li>• <strong className="text-foreground">Do nothing</strong> - hold positions</li>
                           <li>• Dec: consider tax-loss harvesting if applicable</li>
                           <li>• Prepare for next year's data collection</li>
                         </ul>
@@ -4048,7 +4058,7 @@ export function MainPaper() {
                     <div className="p-4 rounded-lg border">
                       <p className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400 text-white text-xs">3</span>
-                        During the Year (Jul – May)
+                        During the Year (Jul-May)
                       </p>
                       <ul className="text-sm text-muted-foreground space-y-2">
                         <li className="flex items-start gap-2">
@@ -4167,7 +4177,7 @@ export function MainPaper() {
                       },
                       {
                         q: "What if a stock gets acquired mid-year?",
-                        a: "Take the cash from the acquisition and hold it until the next rebalance. Don't try to replace the position mid-year – that's extra trading cost with no expected benefit.",
+                        a: "Take the cash from the acquisition and hold it until the next rebalance. Don't try to replace the position mid-year because that's extra trading cost with no expected benefit.",
                       },
                       {
                         q: "Should I use sector caps?",
@@ -4179,7 +4189,7 @@ export function MainPaper() {
                       },
                       {
                         q: "Can I add this to my existing portfolio?",
-                        a: "Yes – treat it as a 'sleeve'. Allocate 10-30% of your equity allocation to R&D Alpha, keep the rest in index funds. This reduces tracking error while capturing some of the premium.",
+                        a: "Yes. Treat it as a 'sleeve'. Allocate 10-30% of your equity allocation to R&D Alpha, keep the rest in index funds. This reduces tracking error while capturing some of the premium.",
                       },
                       {
                         q: "What about taxes?",
@@ -4194,7 +4204,7 @@ export function MainPaper() {
                       },
                       {
                         q: "What if I miss the June rebalance?",
-                        a: "Rebalance when you can. A few weeks delay won't materially affect returns. The key is annual rebalancing with fresh R&D data – the exact date matters less than consistency.",
+                        a: "Rebalance when you can. A few weeks delay won't materially affect returns. The key is annual rebalancing with fresh R&D data; the exact date matters less than consistency.",
                       },
                     ].map((faq, i) => (
                       <div key={i} className="p-3 rounded-lg border bg-muted/30">

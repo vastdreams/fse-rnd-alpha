@@ -31,7 +31,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   net_premium_after_costs: {
     title: "Net Premium After Costs (vs SPY)",
     explanation:
-      "The RD20 strategy CAGR spread vs SPY CAGR (S&P 500 total-return proxy via split-adjusted close + dividends) after subtracting strategy trading costs. The backtest period is Jul2001-Jun2025 (24 July-June periods), matching the HML_RD characteristic premium sample and including stress tests (post-dot-com, 2008 crisis). This is NOT the HML_RD factor—it's a benchmark-relative, implementable excess return available to a real investor.",
+      "The RD20 strategy CAGR spread vs SPY CAGR (S&P 500 total-return proxy via split-adjusted close + dividends) after subtracting strategy trading costs. The backtest period is the period shown in the current publication snapshot, matching the characteristic premium sample and including major stress regimes. This is NOT the HML_RD factor. It is a benchmark-relative, implementable excess return available to a real investor.",
     formula: "Net Premium (pp/yr) = Strategy CAGR (net of costs) − SPY CAGR",
   },
   premium_capture_rate: {
@@ -92,7 +92,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   hml_premium: {
     title: "HML_RD Premium (High-Minus-Low R&D)",
     explanation:
-      "The within-universe return spread between the highest R&D quintile (Q5) and lowest R&D quintile (Q1) portfolios. Computed over non-overlapping July-June periods (Jul2001-Jun2025, N=24). A positive HML_RD means high-R&D firms outperformed low-R&D firms within the same universe for the same period. This is a characteristic premium, not a benchmark-relative strategy return.",
+      "The within-universe return spread between the highest R&D quintile (Q5) and lowest R&D quintile (Q1) portfolios. Computed over non-overlapping July-June periods in the publication snapshot sample. A positive HML_RD means high-R&D firms outperformed low-R&D firms within the same universe for the same period. This is a characteristic premium, not a benchmark-relative strategy return.",
     formula: "HML_RD = Q5 Return − Q1 Return (within-universe)",
   },
   quintile: {
@@ -189,7 +189,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   newey_west: {
     title: "Newey-West Standard Errors",
     explanation:
-      "A statistical correction that accounts for autocorrelation and heteroskedasticity in time-series data. Because returns can be correlated across time, standard errors without this adjustment may be too small, leading to overstated significance. For the annual series we report a baseline lag=1 estimate and include a reviewer-friendly robustness panel for lags 0–3.",
+      "A statistical correction that accounts for autocorrelation and heteroskedasticity in time-series data. Because returns can be correlated across time, standard errors without this adjustment may be too small, leading to overstated significance. For the annual series we report a baseline lag=1 estimate and include a reviewer-friendly robustness panel for lags 0-3.",
     formula: "HAC-adjusted SE = √(Var + 2×Cov_lag1)",
   },
   rolling_window: {
@@ -200,7 +200,7 @@ export const METRIC_EXPLANATIONS: Record<string, { title: string; explanation: s
   non_overlapping: {
     title: "Non-Overlapping Returns",
     explanation:
-      "Non-overlapping windows reduce mechanical overlap between observations (unlike rolling windows). This improves inference quality, but time-series dependence can still exist (regimes, volatility clustering), so we still use Newey–West standard errors on the annual series.",
+      "Non-overlapping windows reduce mechanical overlap between observations (unlike rolling windows). This improves inference quality, but time-series dependence can still exist (regimes, volatility clustering), so we still use Newey-West standard errors on the annual series.",
   },
   overlapping_windows: {
     title: "Overlapping Windows (Descriptive Only)",

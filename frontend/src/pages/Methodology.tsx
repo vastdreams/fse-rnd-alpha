@@ -600,8 +600,8 @@ export function Methodology() {
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                   <p className="text-sm font-semibold text-red-500 mb-2">Look-ahead bias (calendar-year risk)</p>
                   <p className="text-xs text-muted-foreground">
-                    Calendar-year (Jan–Dec) sorts can inadvertently use accounting data that wasn’t public at the start of the return window.
-                    Our primary analysis uses the July–June convention to mitigate this.
+                    Calendar-year (Jan-Dec) sorts can inadvertently use accounting data that wasn’t public at the start of the return window.
+                    Our primary analysis uses the July-June convention to mitigate this.
                   </p>
                 </div>
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
@@ -609,7 +609,7 @@ export function Methodology() {
                   <p className="text-xs text-muted-foreground">
                     Rolling k-year windows overlap by k-1 years, violating the independence assumption of 
                     standard statistical tests. We treat rolling windows as descriptive context; primary inference uses monthly spanning tests and
-                    cross-sectional regressions, with the annual non-overlapping series reported for economic context (Newey–West adjusted).
+                    cross-sectional regressions, with the annual non-overlapping series reported for economic context (Newey-West adjusted).
                   </p>
                 </div>
                 <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -650,7 +650,7 @@ export function Methodology() {
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm font-semibold text-blue-500 mb-2">Rebalancing Assumption</p>
                   <p className="text-xs text-muted-foreground">
-                    We use <strong>annual formation/reconstitution in July</strong> (Fama–French convention) with equal-weight portfolios.
+                    We use <strong>annual formation/reconstitution in July</strong> (Fama-French convention) with equal-weight portfolios.
                     Rolling windows are reported as descriptive and do not re-sort annually by design.
                   </p>
                 </div>
