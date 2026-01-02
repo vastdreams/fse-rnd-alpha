@@ -9,23 +9,24 @@
 
 ## 📊 Research Summary
 
-This project presents evidence that companies with higher R&D intensity (R&D expenditure as a percentage of revenue) generate statistically significant excess returns over extended time horizons.
+This project documents an economically meaningful annual R&D-intensity premium (HML\_RD, Q5–Q1) and statistically significant monthly factor evidence (FF5 spanning), and provides an implementable strategy backtest (RD20 vs SPY) with explicit transaction costs.
 
 ### Key Findings
 
 | Metric | Value |
 |--------|-------|
-| **Annual R&D Premium** | +7.55% (t-stat: 2.78) |
-| **Win Rate** | 71% (17/24 years positive) |
-| **Net-of-Cost Premium** | +5.33% annually |
-| **Statistical Significance** | p = 0.0107 |
+| **Annual HML\_RD premium (Q5–Q1)** | +3.73%/yr (Newey–West p = 0.2793; 30 annual observations) |
+| **Monthly factor spanning (FF5 alpha)** | +4.37%/yr (p = 0.0028; statistically significant) |
+| **Monthly Fama–MacBeth (RD coefficient)** | +0.019 (p = 0.0737; marginal at 10%) |
+| **RD20 net premium vs SPY (after costs)** | +7.52%/yr (Jul2001–Jun2025; 24 July–June periods) |
 
 ### Methodology Highlights
 
 - **Return Convention**: July-June (Fama-French) to avoid look-ahead bias
 - **Universe**: Point-in-time S&P 500 constituents
-- **Sample Period (primary annual inference)**: Jul2001–Jun2025 (24 annual periods)
-- **Delisting Adjustment**: Literature-calibrated (Shumway 1997)
+- **Annual HML sample**: Jul1995–Jun2025 (30 annual observations; economic context)
+- **Primary inference**: Monthly factor spanning tests + monthly Fama–MacBeth regressions (higher power)
+- **Exits / delistings (Tier-1)**: Cash-after-exit return construction + explicit delisting sensitivity (not CRSP dlret)
 
 ---
 
