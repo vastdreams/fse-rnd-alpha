@@ -421,9 +421,16 @@ export function Whitepaper() {
   // Investable (ETFlike) backtest metrics (20-stock equal-weight, annual reconstitution)
   const invPortfolioNet = investableBacktest?.portfolio_performance_net
   const invBenchmarkNet = investableBacktest?.benchmark_performance_net
-  // Prefer excess vs SPY (investable benchmark) over excess vs EW cohort
-  const invExcessVsSPY = typeof investableBacktest?.excess_vs_sp500 === "number" ? investableBacktest.excess_vs_sp500 : undefined
-  const invExcessNet = typeof investableBacktest?.excess_return_net === "number" ? investableBacktest.excess_return_net : undefined
+  const invSp500Annualized =
+    typeof investableBacktest?.sp500_performance?.annualized_return === "number"
+      ? investableBacktest.sp500_performance.annualized_return
+      : undefined
+
+  // Net excess vs SPY (primary benchmark in the paper): portfolio_net - SPY_total_return_proxy
+  const invNetExcessVsSPY =
+    typeof invPortfolioNet?.annualized_return === "number" && typeof invSp500Annualized === "number"
+      ? invPortfolioNet.annualized_return - invSp500Annualized
+      : undefined
   const invNHoldings = typeof investableBacktest?.meta?.n_holdings === "number" ? investableBacktest.meta.n_holdings : 20
   const invTurnoverAvg = typeof investableBacktest?.turnover?.avg_turnover_pct === "number" ? investableBacktest.turnover.avg_turnover_pct : undefined
   const invTurnoverMax = typeof investableBacktest?.turnover?.max_turnover_pct === "number" ? investableBacktest.turnover.max_turnover_pct : undefined
@@ -607,10 +614,10 @@ export function Whitepaper() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <MetricCard
             value={
-              typeof invExcessVsSPY === "number"
-                ? `+${invExcessVsSPY.toFixed(1)}%`
-                : typeof netPremium === "number"
-                  ? `+${netPremium.toFixed(1)}%`
+              typeof netPremium === "number"
+                ? `+${netPremium.toFixed(1)}%`
+                : typeof invNetExcessVsSPY === "number"
+                  ? `+${invNetExcessVsSPY.toFixed(1)}%`
                   : "…"
             }
             label="Net excess vs SPY /yr"
@@ -749,11 +756,21 @@ export function Whitepaper() {
             accent="emerald"
           />
           <MetricCard
-            value={typeof invBenchmarkNet?.annualized_return === "number" ? `${invBenchmarkNet.annualized_return.toFixed(1)}%` : "…"}
-            label="Benchmark ann. (net)"
+            value={typeof invSp500Annualized === "number" ? `${invSp500Annualized.toFixed(1)}%` : "…"}
+            label="SPY ann. (gross)"
             accent="blue"
           />
-          <MetricCard value={typeof invExcessNet === "number" ? `+${invExcessNet.toFixed(1)} pp` : "…"} label="Net excess /yr" accent="purple" />
+          <MetricCard
+            value={
+              typeof netPremium === "number"
+                ? `+${netPremium.toFixed(1)} pp`
+                : typeof invNetExcessVsSPY === "number"
+                  ? `+${invNetExcessVsSPY.toFixed(1)} pp`
+                  : "…"
+            }
+            label="Net excess vs SPY /yr"
+            accent="purple"
+          />
           <MetricCard value={typeof invTurnoverAvg === "number" ? `${invTurnoverAvg.toFixed(0)}%` : "…"} label="Turnover (avg)" accent="amber" />
         </div>
 
@@ -1780,15 +1797,15 @@ export function Whitepaper() {
         <div style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", border: "2px solid #059669", borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: "#065f46", marginBottom: 6 }}>Investable edge survives costs</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#047857", lineHeight: 1 }}>
-            {typeof invExcessNet === "number"
-              ? `+${invExcessNet.toFixed(2)} pp/yr`
-              : typeof netPremium === "number"
-                ? `+${netPremium.toFixed(2)}%`
+            {typeof netPremium === "number"
+              ? `+${netPremium.toFixed(2)} pp/yr`
+              : typeof invNetExcessVsSPY === "number"
+                ? `+${invNetExcessVsSPY.toFixed(2)} pp/yr`
                 : "…"}
           </div>
           <div style={{ fontSize: 12, color: "#065f46", marginTop: 8 }}>
-            {typeof invPortfolioNet?.annualized_return === "number" && typeof invExcessVsSPY === "number"
-              ? `RD20 strategy: ${invPortfolioNet.annualized_return.toFixed(2)}% vs SPY: ${(invPortfolioNet.annualized_return - invExcessVsSPY).toFixed(2)}% (${backtestPeriodLabel}).`
+            {typeof invPortfolioNet?.annualized_return === "number" && typeof invSp500Annualized === "number"
+              ? `RD20 strategy: ${invPortfolioNet.annualized_return.toFixed(2)}% vs SPY: ${invSp500Annualized.toFixed(2)}% (${backtestPeriodLabel}).`
               : typeof netPremium === "number"
                 ? `RD20 strategy spread vs SPY (net of costs): +${netPremium.toFixed(2)}% pp/yr (${backtestPeriodLabel}).`
                 : "RD20 strategy spread vs SPY: … (net of costs)."}

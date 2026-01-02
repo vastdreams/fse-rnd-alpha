@@ -596,11 +596,23 @@ export function MainPaper() {
       })
   }, [investableBacktest])
 
-  const investableExcessNetPp = useMemo(() => {
+  const investableNetExcessVsSp500Pp = useMemo(() => {
     const bt = investableBacktest as any
-    const v = bt?.excess_return_net
-    return typeof v === "number" ? v : undefined
-  }, [investableBacktest])
+    const portfolioNetAnnualized = bt?.portfolio_performance_net?.annualized_return
+    const sp500Annualized = bt?.sp500_performance?.annualized_return
+
+    // Primary (publication): net-of-cost portfolio vs SPY total-return proxy (close + dividends)
+    if (typeof portfolioNetAnnualized === "number" && typeof sp500Annualized === "number") {
+      return portfolioNetAnnualized - sp500Annualized
+    }
+
+    // Fallback: transaction-cost table (net vs SPY)
+    const tx = transactionCosts as any
+    const netPremiumFromCostsTable = tx?.net_rd_premium_pct
+    if (typeof netPremiumFromCostsTable === "number") return netPremiumFromCostsTable
+
+    return undefined
+  }, [investableBacktest, transactionCosts])
 
   const investableTurnoverAvgPct = useMemo(() => {
     const bt = investableBacktest as any
@@ -3663,7 +3675,7 @@ export function MainPaper() {
                     <>
                       <div className="grid md:grid-cols-5 gap-4 text-sm">
                         <div className="p-3 rounded border bg-muted/30">
-                          <div className="text-xs text-muted-foreground">Portfolio (annualized)</div>
+                          <div className="text-xs text-muted-foreground">Portfolio (gross ann.)</div>
                           <div className="font-semibold text-green-600 dark:text-green-400">
                             {typeof (investableBacktest as any)?.portfolio_performance?.annualized_return === "number"
                               ? `${(investableBacktest as any).portfolio_performance.annualized_return.toFixed(2)}%`
@@ -3671,7 +3683,7 @@ export function MainPaper() {
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
-                          <div className="text-xs text-muted-foreground">EW Cohort (annualized)</div>
+                          <div className="text-xs text-muted-foreground">EW Cohort (gross ann.)</div>
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.benchmark_performance?.annualized_return === "number"
                               ? `${(investableBacktest as any).benchmark_performance.annualized_return.toFixed(2)}%`
@@ -3680,10 +3692,10 @@ export function MainPaper() {
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            S&amp;P 500 (annualized)
+                            S&amp;P 500 (gross ann.)
                             <InfoTooltip title="S&P 500 Market Return" size={12}>
-                              Market return from Fama-French factors (MKT-RF + RF). This is the value-weighted return of all NYSE/AMEX/NASDAQ
-                              stocks, which closely tracks the S&amp;P 500 index return.
+                              SPY total-return proxy constructed from split-adjusted close prices plus dividends (reinvested), compounded on the July–June
+                              convention used throughout the paper.
                             </InfoTooltip>
                           </div>
                           <div className="font-semibold">
@@ -3693,7 +3705,7 @@ export function MainPaper() {
                           </div>
                         </div>
                         <div className="p-3 rounded border bg-muted/30">
-                          <div className="text-xs text-muted-foreground">Excess vs S&amp;P 500</div>
+                          <div className="text-xs text-muted-foreground">Excess vs S&amp;P 500 (gross)</div>
                           <div className="font-semibold">
                             {typeof (investableBacktest as any)?.excess_vs_sp500 === "number"
                               ? `${(investableBacktest as any).excess_vs_sp500 >= 0 ? "+" : ""}${(investableBacktest as any).excess_vs_sp500.toFixed(2)}%`
@@ -3722,7 +3734,7 @@ export function MainPaper() {
                           {typeof (investableBacktest as any)?.portfolio_performance_net?.annualized_return === "number" &&
                           typeof (investableBacktest as any)?.benchmark_performance_net?.annualized_return === "number" &&
                           typeof (investableBacktest as any)?.excess_return_net === "number"
-                            ? `Portfolio net annualized ${(investableBacktest as any).portfolio_performance_net.annualized_return.toFixed(2)}%, benchmark net annualized ${(investableBacktest as any).benchmark_performance_net.annualized_return.toFixed(2)}%, net excess ${(investableBacktest as any).excess_return_net.toFixed(2)} pp.`
+                            ? `Portfolio net annualized ${(investableBacktest as any).portfolio_performance_net.annualized_return.toFixed(2)}%, EW cohort net annualized ${(investableBacktest as any).benchmark_performance_net.annualized_return.toFixed(2)}%, net excess vs EW cohort ${(investableBacktest as any).excess_return_net.toFixed(2)} pp.`
                             : "Net-of-cost performance is computed by applying an annual trading cost proportional to realized turnover using literature-calibrated cost parameters."}
                         </p>
                       </div>
@@ -3765,8 +3777,8 @@ export function MainPaper() {
                               This allows a fair comparison of the R&amp;D tilt vs. an uninformed equal-weight strategy in the same universe.
                             </li>
                             <li>
-                              <strong>S&amp;P 500:</strong> Value-weighted market return from Fama-French data (MKT-RF + RF).
-                              This is the standard investable benchmark that practitioners compare against.
+                              <strong>S&amp;P 500:</strong> SPY total-return proxy (split-adjusted close + dividends), compounded on the July–June convention.
+                              This is the primary investable benchmark used in the paper.
                             </li>
                             <li>
                               <strong>Excess return:</strong> Portfolio return minus benchmark return. Positive values indicate the R&amp;D tilt
@@ -4078,9 +4090,9 @@ export function MainPaper() {
                           <TrendingUp className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                           <span>
                             <strong className="text-foreground">Long-term edge:</strong>{" "}
-                            {typeof investableExcessNetPp === "number"
-                              ? `+${investableExcessNetPp.toFixed(1)} pp/yr net excess (historical backtest)`
-                              : "Net excess is reported in the investable backtest results."}
+                            {typeof investableNetExcessVsSp500Pp === "number"
+                              ? `${investableNetExcessVsSp500Pp >= 0 ? "+" : ""}${investableNetExcessVsSp500Pp.toFixed(1)} pp/yr net vs S&P 500 (historical backtest)`
+                              : "Net excess vs S&P 500 is reported in the investable backtest results."}
                           </span>
                         </li>
                         <li className="flex items-start gap-2">
