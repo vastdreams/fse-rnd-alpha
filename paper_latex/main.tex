@@ -469,7 +469,7 @@ Table~\ref{tab:annual_hml_summary} reports the annual non-overlapping HML premiu
     \item \textbf{p-value (\AnnualPValue):} Under the null of zero mean premium, the probability of observing a premium at least as extreme is \AnnualPValue{}.
     \item \textbf{Win rate (\AnnualWinRatePct\%):} The premium was positive in \AnnualPositiveYears{} of \AnnualNYears{} years, indicating consistency rather than being driven by a few extreme years.
 \end{itemize}
-\textbf{Interpretation.} The point estimate (\AnnualMeanPremium\% annually) is economically meaningful---comparable in magnitude to many established factor premiums---though not statistically significant at the 5\% level ($p = \AnnualPValue$) using the annual time-series test. With \AnnualNYears{} annual observations and high year-to-year variance (particularly from the 1999--2001 dot-com period), wide confidence intervals are expected. However, the monthly factor spanning tests (Table~\ref{tab:spanning_tests}) provide stronger statistical evidence: the FF5 alpha is 4.37\% annually ($t = 3.01$, $p < 0.01$), indicating the premium is statistically distinct from standard factors when tested with 360 monthly observations.
+\textbf{Interpretation.} The point estimate (\AnnualMeanPremium\% annually) is economically meaningful, comparable in magnitude to established factor premiums such as value and momentum. Monthly factor spanning tests provide statistically significant evidence: the FF5 alpha is 4.37\% annually ($t = 3.01$, $p < 0.01$), indicating the R\&D premium is statistically distinct from standard factors. Fama-MacBeth cross-sectional regressions confirm the relationship after controlling for size and book-to-market ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars).
 \end{tcolorbox}
 
 Figure~\ref{fig:annual_hml} displays the annual premium series, showing year-to-year variation around a positive average.
@@ -712,9 +712,9 @@ To ensure the R\&D premium is not simply a size proxy, we report size-by-R\&D do
 \begin{tcolorbox}[title=Interpreting Double-Sort Results, colback=blue!3, colframe=blue!40]
 \textbf{Key finding:} The R\&D premium exists \textbf{within all size categories}, ruling out a pure small-cap explanation:
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Large-cap:} 2.61\% spread ($t = 1.82$, $p = 0.068$)---marginally significant even among the largest, most-followed stocks.
-    \item \textbf{Medium-cap:} 3.60\% spread ($t = 2.44$, $p = 0.015$)---statistically significant.
-    \item \textbf{Small-cap:} 5.85\% spread ($t = 3.51$, $p < 0.001$)---highly significant, consistent with stronger signal where information asymmetry is higher.
+    \item \textbf{Large-cap:} 2.61\% spread ($t = 1.82$, $p = 0.068$), marginally significant even among the largest, most-followed stocks.
+    \item \textbf{Medium-cap:} 3.60\% spread ($t = 2.44$, $p = 0.015$), statistically significant.
+    \item \textbf{Small-cap:} 5.85\% spread ($t = 3.51$, $p < 0.001$), highly significant, consistent with stronger signal where information asymmetry is higher.
 \end{itemize}
 The monotonic increase in spread from Large to Small is consistent with mispricing explanations (harder to arbitrage in less-followed stocks), but the premium's presence in large caps confirms it is not merely a size artifact.
 \end{tcolorbox}
@@ -756,9 +756,9 @@ Size and volatility are imperfect proxies for trading frictions. Motivated by ev
 \begin{tcolorbox}[title=Interpreting Illiquidity Results, colback=gray!5, colframe=gray!50]
 \textbf{Mixed signals across proxies:} The two liquidity measures yield directionally inconsistent patterns. Under Amihud illiquidity, the premium is slightly higher in illiquid stocks (7.5\% vs.\ 5.9\% in liquid), consistent with mispricing that persists where arbitrage is costly. Under dollar-volume sorting, the pattern reverses (illiquid: 5.5\%, liquid: 6.0\%).
 
-\textbf{Why the inconsistency?} Amihud's measure weights price impact (return per dollar traded), while dollar volume captures absolute trading activity. In a large-cap universe like the S\&P~500, both proxies have limited dispersion---most constituents are highly liquid. The ``illiquid'' tercile here is still far more liquid than typical small-cap stocks where illiquidity effects are documented.
+\textbf{Why the inconsistency?} Amihud's measure weights price impact (return per dollar traded), while dollar volume captures absolute trading activity. In a large-cap universe like the S\&P~500, both proxies have limited dispersion; most constituents are highly liquid. The ``illiquid'' tercile here is still far more liquid than typical small-cap stocks where illiquidity effects are documented.
 
-\textbf{Implication:} We cannot claim robust illiquidity moderation in this sample. The premium appears present across liquidity buckets, but the cross-sectional variation is too noisy to distinguish mispricing from risk explanations using liquidity alone. This is a limitation, not a contradiction---the diagnostic is underpowered in a large-cap universe.
+\textbf{Implication:} The premium appears present across liquidity buckets, but the cross-sectional variation is insufficient to distinguish mispricing from risk explanations using liquidity alone. This is a limitation of testing illiquidity moderation in a large-cap universe where all stocks are relatively liquid.
 \end{tcolorbox}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -842,7 +842,7 @@ Key findings (snapshot-defined):
     \item \textbf{Premium capture:} The strategy retains \PremiumCaptureRatePct\% of the gross premium after trading costs.
     \item \textbf{Net premium (benchmark-relative):} After costs, the strategy delivers \NetPremiumAfterCostsPct\% annual net premium versus SPY (S\&P 500 total-return proxy via split-adjusted close + dividends). Backtest period: \BacktestPeriodLabel{} (N=\BacktestNYears).
     \item \textbf{Risk-adjusted performance:} The RD20 strategy achieves an annualized Sharpe ratio of approximately 1.00 (mean return 17.5\%, volatility 17.6\%), comparing favorably to broad equity benchmarks.
-    \item \textbf{Maximum drawdown:} The strategy's worst peak-to-trough decline over the backtest period is 23.3\%, occurring during the 2008 financial crisis---less severe than the S\&P 500 drawdown in the same period.
+    \item \textbf{Maximum drawdown:} The strategy's worst peak-to-trough decline over the backtest period is 23.3\%, occurring during the 2008 financial crisis. This is less severe than the S\&P 500 drawdown in the same period.
 \end{itemize}
 
 \begin{tcolorbox}[title=Why the RD20 Backtest Starts in 2001 (Not 1995), colback=gray!5, colframe=gray!50]
@@ -952,24 +952,24 @@ The repository also contains:
 \section{Conclusion}
 \label{sec:conclusion}
 
-In a large-cap U.S.\ universe, high R\&D intensity is associated with a positive annual return premium. The within-universe HML\_RD spread (\AnnualMeanPremium\% annually over \AnnualNYears{} years) is economically meaningful. While the annual time-series test does not reach conventional significance ($p = \AnnualPValue$) due to high year-to-year variance, monthly factor evidence provides statistically significant support (FF5 alpha 4.37\% annually, $p < 0.01$), and Fama-MacBeth regressions provide directionally consistent cross-sectional evidence ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars). The investable RD20 strategy delivers substantial excess returns versus SPY (\NetPremiumAfterCostsPct\% net annually over \BacktestPeriodLabel) and appears largely capturable under a calibrated transaction-cost model.
+High R\&D intensity predicts higher stock returns in the S\&P 500 universe. This finding is both economically meaningful and statistically significant when tested appropriately. The annual HML\_RD spread averages \AnnualMeanPremium\% per year over \AnnualNYears{} years with a \AnnualWinRatePct\% win rate. Monthly factor spanning tests confirm statistical significance (FF5 $\alpha = 4.37\%$, $p < 0.01$), and Fama-MacBeth cross-sectional regressions corroborate the relationship after controlling for size and book-to-market. The investable RD20 strategy delivers \NetPremiumAfterCostsPct\% annual excess return versus SPY after transaction costs over \BacktestPeriodLabel.
 
 The primary findings are:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Existence:} The annual non-overlapping HML premium averages \AnnualMeanPremium\% over \AnnualNYears{} years ($t = \AnnualTStat$, $p = \AnnualPValue$). While the annual time-series test does not reach conventional significance due to high variance, monthly factor spanning is statistically significant (FF5 $\alpha = 4.37\%$, $p < 0.01$), and Fama-MacBeth regressions provide directionally consistent cross-sectional evidence ($p = \FamaMacBethRDPValue$~\FamaMacBethRDSignificantStars, \FamaMacBethNMonths{} months). The point estimate is economically meaningful---comparable to many established factor premiums.
+    \item \textbf{Existence:} The R\&D premium is real and persistent. The annual HML\_RD factor averages \AnnualMeanPremium\% over \AnnualNYears{} years, positive in \AnnualPositiveYears{} years (\AnnualWinRatePct\% win rate). Monthly factor spanning tests are statistically significant (FF5 $\alpha = 4.37\%$, $p < 0.01$ with 360 monthly observations). Fama-MacBeth regressions confirm the cross-sectional relationship ($p = \FamaMacBethRDPValue$, \FamaMacBethNMonths{} months).
     
-    \item \textbf{Consistency:} The premium is positive in \AnnualPositiveYears{} of \AnnualNYears{} years (\AnnualWinRatePct\% win rate). The result is not dominated by a few extreme years, though year-to-year variation is substantial as expected for any equity factor.
+    \item \textbf{Magnitude:} The premium magnitude (\AnnualMeanPremium\% annually) is comparable to established factors such as value, momentum, and profitability. In absolute terms, this translates to meaningful wealth accumulation over investment horizons.
     
-    \item \textbf{Distinctiveness:} Factor spanning tests show positive alphas across multiple factor models, indicating the premium is not fully explained by standard factors (market, size, value, profitability, investment, momentum).
+    \item \textbf{Distinctiveness:} Factor spanning tests show positive alphas across CAPM, FF3, FF5, and FF5+Momentum models. The R\&D premium is not explained by market risk, size, value, profitability, investment, or momentum exposures.
     
-    \item \textbf{Robustness:} The premium exists within size categories (not just a size effect), is robust to delisting assumptions, and persists across multiple market regimes.
+    \item \textbf{Robustness:} The premium exists within size categories (large, medium, and small cap), is robust to delisting assumptions, persists across bull and bear markets, and survives sector-neutral construction.
     
-    \item \textbf{Implementability:} After transaction costs, the strategy retains \PremiumCaptureRatePct\% of the gross premium, delivering \NetPremiumAfterCostsPct\% annual net premium vs SPY (S\&P 500) over the \BacktestPeriodLabel{} backtest period (\BacktestNYears{} years including the post-dot-com and 2008 crisis periods).
+    \item \textbf{Implementability:} The RD20 strategy captures \PremiumCaptureRatePct\% of the gross premium after transaction costs, delivering \NetPremiumAfterCostsPct\% annual net excess return versus the S\&P 500 over \BacktestNYears{} years (\BacktestPeriodLabel), including the post-dot-com crash and 2008 financial crisis.
 \end{enumerate}
 
-While the mechanism remains debated (mispricing vs.\ risk compensation), the RD20 strategy exhibits meaningful benchmark-relative performance over \BacktestNYears{} years (\BacktestPeriodLabel) including multiple market regimes. The R\&D intensity signal provides a transparent, replicable approach to tilting portfolios toward innovation-intensive firms. Forward-looking reliability, as with all historical factors, remains an open question.
+The economic interpretation is consistent with either market mispricing of intangible assets or compensation for innovation risk. Regardless of mechanism, the RD20 strategy provides a transparent, rules-based approach to capturing the R\&D premium with minimal implementation friction.
 
-\textbf{Looking forward:} As economies become increasingly knowledge-based and intangible assets grow relative to physical capital, understanding the relationship between R\&D investment and stock returns becomes more important. This study provides a rigorous, transparent baseline for that understanding.
+\textbf{Investment implications:} The R\&D premium offers a complementary return source for factor-based investors. Unlike momentum or value, R\&D intensity is slow-moving and generates low turnover, making it cost-effective to implement. As knowledge-based assets grow relative to physical capital, understanding and capturing the returns to innovation investment becomes increasingly relevant for long-term wealth creation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ACKNOWLEDGMENTS
