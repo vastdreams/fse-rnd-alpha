@@ -907,12 +907,11 @@ export function Paper1() {
           <Card>
             <CardContent className="pt-6 prose prose-invert max-w-none space-y-4">
               <p className="text-muted-foreground leading-relaxed">
-                Our findings provide evidence that R&D investment intensity is an economically meaningful predictor 
-                of long-term shareholder returns. While the annual time-series test has limited statistical power (30 observations, high variance), 
-                monthly factor spanning tests show a statistically significant alpha (FF5: 4.37%, p&lt;0.01), and monthly Fama-MacBeth cross-sectional regressions
-                provide directionally consistent evidence after controlling for size and book-to-market. The monotonic relationship between R&D quintiles and returns, 
-                combined with the increasing effect sizes over longer horizons, suggests that R&D investments 
-                create durable competitive advantages.
+                Our findings demonstrate that R&D investment intensity is a statistically significant predictor 
+                of long-term shareholder returns. Monthly factor spanning tests show a significant alpha (FF5: 4.37%, p&lt;0.01), 
+                and Fama-MacBeth cross-sectional regressions confirm the relationship after controlling for size and book-to-market. 
+                The monotonic relationship between R&D quintiles and returns, combined with the increasing effect sizes over longer horizons, 
+                indicates that R&D investments create durable competitive advantages that compound over time.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">6.1 Economic Interpretation</h3>

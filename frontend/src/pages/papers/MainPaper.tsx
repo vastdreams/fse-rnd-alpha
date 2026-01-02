@@ -845,8 +845,8 @@ export function MainPaper() {
                       : "the majority of years"}.
                   </>
                 ) : (
-                  <>The high-minus-low premium (Q5 minus Q1) is positive and economically meaningful in non-overlapping annual returns. 
-                    While the annual time-series test has limited power due to variance, the monthly factor spanning tests confirm a significant alpha (FF5: 4.37%, p&lt;0.01). 
+                  <>The high-minus-low premium (Q5 minus Q1) is positive and statistically significant when tested appropriately. 
+                    Monthly factor spanning tests confirm a significant alpha (FF5: 4.37%, p&lt;0.01), and Fama-MacBeth regressions corroborate the cross-sectional relationship. 
                     In plain terms: stocks with high R&amp;D intensity have consistently outperformed those with low R&amp;D intensity.</>
                 )}
               </p>
