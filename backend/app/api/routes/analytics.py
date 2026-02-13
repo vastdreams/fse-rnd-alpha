@@ -1,11 +1,4 @@
-"""
-Analytics API Routes
-
-Tracks page views, session duration, and visitor behavior.
-Stores in PostgreSQL for reliable analytics.
-
-Publication: https://research.finsoeasy.com
-"""
+"""Analytics API: page views, session duration, visitor behavior (PostgreSQL)."""
 
 import logging
 import hashlib
@@ -24,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class PageViewRequest(BaseModel):
-    """Request to track a page view."""
     page_path: str
     page_title: Optional[str] = None
     referrer: Optional[str] = None
@@ -33,20 +25,17 @@ class PageViewRequest(BaseModel):
 
 
 class UpdateDurationRequest(BaseModel):
-    """Request to update time spent on page."""
     session_id: str
     page_path: str
     duration_seconds: int
 
 
 class PageViewResponse(BaseModel):
-    """Response after tracking page view."""
     success: bool
     view_id: int
 
 
 def get_client_ip(request: Request) -> str:
-    """Extract client IP from request headers."""
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -54,7 +43,6 @@ def get_client_ip(request: Request) -> str:
 
 
 def get_device_type(user_agent: str) -> str:
-    """Determine device type from user agent."""
     ua_lower = user_agent.lower()
     if "mobile" in ua_lower or "android" in ua_lower or "iphone" in ua_lower:
         return "mobile"
@@ -69,15 +57,10 @@ async def track_pageview(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Track a page view.
-    Called by frontend when user navigates to a page.
-    """
+    """Track a page view."""
     user_agent = request.headers.get("user-agent", "")
     ip_address = get_client_ip(request)
     device_type = get_device_type(user_agent)
-    
-    # Insert page view
     result = await db.execute(
         text("""
             INSERT INTO page_views 
@@ -98,8 +81,6 @@ async def track_pageview(
         }
     )
     view_id = result.scalar()
-    
-    # Update or create visitor session
     await db.execute(
         text("""
             INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, total_visits)
@@ -110,21 +91,13 @@ async def track_pageview(
         """),
         {"visitor_id": data.visitor_id, "now": datetime.utcnow()}
     )
-    
     logger.info(f"Page view tracked: {data.page_path} by {data.visitor_id[:8]}...")
-    
     return PageViewResponse(success=True, view_id=view_id)
 
 
 @router.post("/analytics/duration")
-async def update_duration(
-    data: UpdateDurationRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Update the duration spent on a page.
-    Called by frontend when user leaves page or periodically.
-    """
+async def update_duration(data: UpdateDurationRequest, db: AsyncSession = Depends(get_db)):
+    """Update the duration spent on a page."""
     await db.execute(
         text("""
             UPDATE page_views 
@@ -142,7 +115,6 @@ async def update_duration(
             "ended_at": datetime.utcnow()
         }
     )
-    
     return {"success": True}
 
 
@@ -152,19 +124,12 @@ async def get_analytics_summary(
     db: AsyncSession = Depends(get_db),
     days: int = 30
 ):
-    """
-    Get analytics summary for admin dashboard.
-    """
+    """Get analytics summary for admin dashboard."""
     since = datetime.utcnow() - timedelta(days=days)
-    
-    # Total views and unique visitors
     totals = await db.execute(
         text("""
-            SELECT 
-                COUNT(*) as total_views,
-                COUNT(DISTINCT visitor_id) as unique_visitors,
-                COUNT(DISTINCT session_id) as total_sessions,
-                AVG(duration_seconds) as avg_duration
+            SELECT COUNT(*) as total_views, COUNT(DISTINCT visitor_id) as unique_visitors,
+                COUNT(DISTINCT session_id) as total_sessions, AVG(duration_seconds) as avg_duration
             FROM page_views
             WHERE created_at >= :since
               AND visitor_id NOT IN (SELECT visitor_id FROM visitor_sessions WHERE is_blocked = true)
@@ -172,47 +137,28 @@ async def get_analytics_summary(
         {"since": since}
     )
     totals_row = totals.fetchone()
-    
-    # Views by page
     pages = await db.execute(
         text("""
-            SELECT 
-                page_path,
-                COUNT(*) as views,
-                COUNT(DISTINCT visitor_id) as unique_visitors,
+            SELECT page_path, COUNT(*) as views, COUNT(DISTINCT visitor_id) as unique_visitors,
                 AVG(duration_seconds) as avg_duration
             FROM page_views
             WHERE created_at >= :since
               AND visitor_id NOT IN (SELECT visitor_id FROM visitor_sessions WHERE is_blocked = true)
-            GROUP BY page_path
-            ORDER BY views DESC
-            LIMIT 20
+            GROUP BY page_path ORDER BY views DESC LIMIT 20
         """),
         {"since": since}
     )
     pages_data = [
-        {
-            "page": row[0],
-            "views": row[1],
-            "unique_visitors": row[2],
-            "avg_duration": round(row[3] or 0, 1)
-        }
+        {"page": row[0], "views": row[1], "unique_visitors": row[2], "avg_duration": round(row[3] or 0, 1)}
         for row in pages.fetchall()
     ]
-    
-    # Views by day
     daily = await db.execute(
         text("""
-            SELECT 
-                DATE(created_at) as date,
-                COUNT(*) as views,
-                COUNT(DISTINCT visitor_id) as unique_visitors
+            SELECT DATE(created_at) as date, COUNT(*) as views, COUNT(DISTINCT visitor_id) as unique_visitors
             FROM page_views
             WHERE created_at >= :since
               AND visitor_id NOT IN (SELECT visitor_id FROM visitor_sessions WHERE is_blocked = true)
-            GROUP BY DATE(created_at)
-            ORDER BY date DESC
-            LIMIT 30
+            GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30
         """),
         {"since": since}
     )
@@ -220,13 +166,9 @@ async def get_analytics_summary(
         {"date": str(row[0]), "views": row[1], "unique_visitors": row[2]}
         for row in daily.fetchall()
     ]
-    
-    # Device breakdown
     devices = await db.execute(
         text("""
-            SELECT 
-                device_type,
-                COUNT(*) as count
+            SELECT device_type, COUNT(*) as count
             FROM page_views
             WHERE created_at >= :since
               AND visitor_id NOT IN (SELECT visitor_id FROM visitor_sessions WHERE is_blocked = true)
@@ -235,7 +177,6 @@ async def get_analytics_summary(
         {"since": since}
     )
     devices_data = {row[0]: row[1] for row in devices.fetchall()}
-    
     return {
         "period_days": days,
         "totals": {
@@ -256,27 +197,16 @@ async def get_visitors(
     db: AsyncSession = Depends(get_db),
     limit: int = 100
 ):
-    """
-    Get list of all visitors with their activity.
-    """
+    """Get list of all visitors with their activity."""
     result = await db.execute(
         text("""
-            SELECT 
-                vs.visitor_id,
-                vs.first_seen,
-                vs.last_seen,
-                vs.total_visits,
-                vs.is_blocked,
-                vs.notes,
+            SELECT vs.visitor_id, vs.first_seen, vs.last_seen, vs.total_visits, vs.is_blocked, vs.notes,
                 (SELECT ip_address FROM page_views WHERE visitor_id = vs.visitor_id ORDER BY created_at DESC LIMIT 1) as last_ip,
                 (SELECT device_type FROM page_views WHERE visitor_id = vs.visitor_id ORDER BY created_at DESC LIMIT 1) as device
-            FROM visitor_sessions vs
-            ORDER BY vs.last_seen DESC
-            LIMIT :limit
+            FROM visitor_sessions vs ORDER BY vs.last_seen DESC LIMIT :limit
         """),
         {"limit": limit}
     )
-    
     visitors = [
         {
             "visitor_id": row[0],
@@ -290,7 +220,6 @@ async def get_visitors(
         }
         for row in result.fetchall()
     ]
-    
     return {"count": len(visitors), "visitors": visitors}
 
 
@@ -301,10 +230,7 @@ async def block_visitor(
     current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Block a visitor from analytics (e.g., yourself).
-    Their data remains but is excluded from reports.
-    """
+    """Block a visitor from analytics (excluded from reports)."""
     await db.execute(
         text("""
             UPDATE visitor_sessions 
@@ -313,7 +239,6 @@ async def block_visitor(
         """),
         {"visitor_id": visitor_id, "notes": notes or "Blocked by admin"}
     )
-    
     return {"success": True, "visitor_id": visitor_id, "blocked": True}
 
 
@@ -332,7 +257,6 @@ async def unblock_visitor(
         """),
         {"visitor_id": visitor_id}
     )
-    
     return {"success": True, "visitor_id": visitor_id, "blocked": False}
 
 
@@ -342,34 +266,21 @@ async def get_visitor_history(
     current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get detailed page view history for a specific visitor.
-    """
+    """Get detailed page view history for a specific visitor."""
     result = await db.execute(
         text("""
-            SELECT 
-                page_path, page_title, referrer, device_type, 
+            SELECT page_path, page_title, referrer, device_type, 
                 duration_seconds, created_at, ip_address
-            FROM page_views
-            WHERE visitor_id = :visitor_id
-            ORDER BY created_at DESC
-            LIMIT 200
+            FROM page_views WHERE visitor_id = :visitor_id
+            ORDER BY created_at DESC LIMIT 200
         """),
         {"visitor_id": visitor_id}
     )
-    
     history = [
         {
-            "page": row[0],
-            "title": row[1],
-            "referrer": row[2],
-            "device": row[3],
-            "duration": row[4],
-            "timestamp": row[5].isoformat() if row[5] else None,
-            "ip": row[6]
+            "page": row[0], "title": row[1], "referrer": row[2], "device": row[3],
+            "duration": row[4], "timestamp": row[5].isoformat() if row[5] else None, "ip": row[6]
         }
         for row in result.fetchall()
     ]
-    
     return {"visitor_id": visitor_id, "page_views": history}
-

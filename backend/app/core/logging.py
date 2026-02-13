@@ -1,28 +1,7 @@
 """
 PATH: backend/app/core/logging.py
-PURPOSE:
-  - Structured logging with JSON output for production
-  - Specialized logging methods for formulas, API calls, and computation chains
-  - Audit trail generation for AI-friendly debugging
-
-ROLE IN ARCHITECTURE:
-  - Core utility module used by all services
-  - Provides consistent logging format across application
-
-MAIN EXPORTS:
-  - StructuredLogger: Enhanced logger class
-  - get_logger: Factory function for logger instances
-  - JSONFormatter: JSON formatting for production logs
-
-NON-RESPONSIBILITIES:
-  - Does not handle log storage/rotation (infrastructure concern)
-  - Does not filter sensitive data (caller responsibility)
-
-NOTES FOR FUTURE AI:
-  - Use log_formula() for any mathematical computation
-  - Use log_api() for HTTP request/response logging
-  - Use log_step() for multi-step computation chains
-  - All logs include correlation_id for request tracing
+PURPOSE: Structured logging with JSON output, specialized methods for formulas/API/computation chains
+EXPORTS: StructuredLogger, get_logger, set_request_id, get_request_id, log_execution_time, log_async_execution_time
 """
 
 import json
@@ -37,138 +16,80 @@ from typing import Any, Callable, Dict, Optional, TypeVar
 
 from app.core.config import settings
 
-# Context variable for request tracking
 request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 
 
-# ==============================================================================
-# JSON Formatter
-# ==============================================================================
-
 class JSONFormatter(logging.Formatter):
-    """
-    JSON formatter for structured logging in production.
-    
-    Produces machine-parseable logs that can be ingested by
-    log aggregation systems (ELK, Datadog, etc.)
-    """
-    
+    """JSON formatter for structured logging in production."""
+
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON."""
         log_data: Dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
         }
-        
-        # Add request ID from context if available
         request_id = request_id_var.get()
         if request_id:
             log_data["request_id"] = request_id
-        
-        # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
-        
-        # Add extra fields from record (structured data)
+        _skip = {
+            "name", "msg", "args", "created", "filename", "funcName",
+            "levelname", "levelno", "lineno", "module", "msecs",
+            "pathname", "process", "processName", "relativeCreated",
+            "stack_info", "exc_info", "exc_text", "thread", "threadName",
+            "message", "asctime",
+        }
         for key, value in record.__dict__.items():
-            if key not in [
-                "name", "msg", "args", "created", "filename", "funcName",
-                "levelname", "levelno", "lineno", "module", "msecs",
-                "pathname", "process", "processName", "relativeCreated",
-                "stack_info", "exc_info", "exc_text", "thread", "threadName",
-                "message", "asctime"
-            ]:
-                # Serialize non-primitive types
+            if key not in _skip:
                 try:
                     json.dumps(value)
                     log_data[key] = value
                 except TypeError:
                     log_data[key] = str(value)
-        
         return json.dumps(log_data, default=str)
 
 
-# ==============================================================================
-# Structured Logger Class
-# ==============================================================================
-
 class StructuredLogger:
-    """
-    Enhanced logger with specialized methods for R&D research application.
-    
-    Provides:
-    - Formula execution logging with input/output audit trail
-    - API request/response logging with timing
-    - Multi-step computation chain logging
-    - Automatic request ID propagation
-    """
-    
+    """Enhanced logger with specialized methods for R&D research application."""
+
     def __init__(self, name: str, use_json: Optional[bool] = None):
-        """
-        Initialize structured logger.
-        
-        Args:
-            name: Logger name (typically module path)
-            use_json: Force JSON format (None = auto based on environment)
-        """
         self.logger = logging.getLogger(name)
         self.name = name
-        
         if not self.logger.handlers:
             self._setup_handlers(use_json)
-    
+
     def _setup_handlers(self, use_json: Optional[bool]) -> None:
-        """Configure log handlers based on environment."""
-        # Determine format based on environment
         if use_json is None:
             use_json = not settings.DEBUG
-        
         handler = logging.StreamHandler(sys.stdout)
-        
         if use_json:
             formatter = JSONFormatter()
         else:
             formatter = logging.Formatter(
                 "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
-        
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        
-        # Set log level
         self.logger.setLevel(logging.DEBUG if settings.DEBUG else logging.INFO)
-    
-    # --------------------------------------------------------------------------
-    # Standard Logging Methods
-    # --------------------------------------------------------------------------
-    
+
     def debug(self, message: str, **kwargs: Any) -> None:
-        """Log debug message with optional structured data."""
         self.logger.debug(message, extra=kwargs)
-    
+
     def info(self, message: str, **kwargs: Any) -> None:
-        """Log info message with optional structured data."""
         self.logger.info(message, extra=kwargs)
-    
+
     def warning(self, message: str, **kwargs: Any) -> None:
-        """Log warning message with optional structured data."""
         self.logger.warning(message, extra=kwargs)
-    
+
     def error(self, message: str, **kwargs: Any) -> None:
-        """Log error message with optional structured data."""
         self.logger.error(message, extra=kwargs)
-    
+
     def exception(self, message: str, **kwargs: Any) -> None:
-        """Log exception with traceback."""
         self.logger.exception(message, extra=kwargs)
-    
-    # --------------------------------------------------------------------------
-    # Specialized Logging Methods
-    # --------------------------------------------------------------------------
-    
+
     def log_formula(
         self,
         formula_name: str,
@@ -176,19 +97,8 @@ class StructuredLogger:
         output: Any,
         duration_ms: float = 0.0,
         valid: bool = True,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
-        """
-        Log formula execution for audit trail.
-        
-        Args:
-            formula_name: Name from FORMULA_REGISTRY
-            inputs: Dictionary of input values
-            output: Computed result
-            duration_ms: Execution time in milliseconds
-            valid: Whether output passed validation
-            error: Validation error message if any
-        """
         self.logger.info(
             f"Formula: {formula_name}",
             extra={
@@ -200,9 +110,9 @@ class StructuredLogger:
                 "output_valid": valid,
                 "validation_error": error,
                 "duration_ms": round(duration_ms, 3),
-            }
+            },
         )
-    
+
     def log_api(
         self,
         endpoint: str,
@@ -211,22 +121,9 @@ class StructuredLogger:
         duration_ms: float,
         request_size: int = 0,
         response_size: int = 0,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
-        """
-        Log API request/response.
-        
-        Args:
-            endpoint: API endpoint path
-            method: HTTP method (GET, POST, etc.)
-            status_code: HTTP response status
-            duration_ms: Request processing time
-            request_size: Request body size in bytes
-            response_size: Response body size in bytes
-            error: Error message if request failed
-        """
         level = logging.INFO if status_code < 400 else logging.ERROR
-        
         self.logger.log(
             level,
             f"{method} {endpoint} -> {status_code}",
@@ -239,27 +136,17 @@ class StructuredLogger:
                 "request_size_bytes": request_size,
                 "response_size_bytes": response_size,
                 "error": error,
-            }
+            },
         )
-    
+
     def log_step(
         self,
         step_name: str,
         step_number: int,
         total_steps: int,
         data: Optional[Dict[str, Any]] = None,
-        duration_ms: float = 0.0
+        duration_ms: float = 0.0,
     ) -> None:
-        """
-        Log a step in a multi-step computation chain.
-        
-        Args:
-            step_name: Description of the step
-            step_number: Current step number (1-indexed)
-            total_steps: Total steps in chain
-            data: Any relevant data for this step
-            duration_ms: Time spent on this step
-        """
         self.logger.info(
             f"Step {step_number}/{total_steps}: {step_name}",
             extra={
@@ -270,27 +157,17 @@ class StructuredLogger:
                 "total_steps": total_steps,
                 "step_data": data or {},
                 "duration_ms": round(duration_ms, 3),
-            }
+            },
         )
-    
+
     def log_db_query(
         self,
         operation: str,
         table: str,
         rows_affected: int = 0,
         duration_ms: float = 0.0,
-        query_params: Optional[Dict[str, Any]] = None
+        query_params: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """
-        Log database query execution.
-        
-        Args:
-            operation: Query type (SELECT, INSERT, UPDATE, DELETE)
-            table: Primary table involved
-            rows_affected: Number of rows returned/affected
-            duration_ms: Query execution time
-            query_params: Sanitized query parameters (no sensitive data)
-        """
         self.logger.debug(
             f"DB {operation} on {table}: {rows_affected} rows",
             extra={
@@ -300,25 +177,16 @@ class StructuredLogger:
                 "rows_affected": rows_affected,
                 "duration_ms": round(duration_ms, 3),
                 "query_params": query_params or {},
-            }
+            },
         )
-    
+
     def log_cache(
         self,
         operation: str,
         key: str,
         hit: bool,
-        duration_ms: float = 0.0
+        duration_ms: float = 0.0,
     ) -> None:
-        """
-        Log cache operation.
-        
-        Args:
-            operation: Cache operation (GET, SET, DELETE)
-            key: Cache key (sanitized)
-            hit: Whether cache hit occurred
-            duration_ms: Operation time
-        """
         self.logger.debug(
             f"Cache {operation}: {'HIT' if hit else 'MISS'}",
             extra={
@@ -327,38 +195,15 @@ class StructuredLogger:
                 "cache_key": key,
                 "cache_hit": hit,
                 "duration_ms": round(duration_ms, 3),
-            }
+            },
         )
 
 
-# ==============================================================================
-# Factory Functions
-# ==============================================================================
-
 def get_logger(name: str, use_json: Optional[bool] = None) -> StructuredLogger:
-    """
-    Get a structured logger instance.
-    
-    Args:
-        name: Logger name (typically __name__ of calling module)
-        use_json: Force JSON format (None = auto based on environment)
-    
-    Returns:
-        StructuredLogger instance
-    """
     return StructuredLogger(name, use_json)
 
 
 def set_request_id(request_id: Optional[str] = None) -> str:
-    """
-    Set request ID in context for log correlation.
-    
-    Args:
-        request_id: Existing ID or None to generate new UUID
-    
-    Returns:
-        The request ID being used
-    """
     if request_id is None:
         request_id = str(uuid.uuid4())[:8]
     request_id_var.set(request_id)
@@ -366,28 +211,14 @@ def set_request_id(request_id: Optional[str] = None) -> str:
 
 
 def get_request_id() -> Optional[str]:
-    """Get current request ID from context."""
     return request_id_var.get()
 
-
-# ==============================================================================
-# Decorators
-# ==============================================================================
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
 def log_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
-    """
-    Decorator to log function execution time.
-    
-    Usage:
-        logger = get_logger(__name__)
-        
-        @log_execution_time(logger)
-        def my_function():
-            ...
-    """
+    """Decorator to log function execution time."""
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -399,7 +230,7 @@ def log_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
                     f"Function {func.__name__} completed",
                     function=func.__name__,
                     duration_ms=round(duration_ms, 3),
-                    success=True
+                    success=True,
                 )
                 return result
             except Exception as e:
@@ -409,7 +240,7 @@ def log_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
                     function=func.__name__,
                     duration_ms=round(duration_ms, 3),
                     success=False,
-                    error=str(e)
+                    error=str(e),
                 )
                 raise
         return wrapper  # type: ignore
@@ -417,16 +248,7 @@ def log_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
 
 
 def log_async_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
-    """
-    Decorator to log async function execution time.
-    
-    Usage:
-        logger = get_logger(__name__)
-        
-        @log_async_execution_time(logger)
-        async def my_async_function():
-            ...
-    """
+    """Decorator to log async function execution time."""
     def decorator(func: F) -> F:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -438,7 +260,7 @@ def log_async_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
                     f"Async function {func.__name__} completed",
                     function=func.__name__,
                     duration_ms=round(duration_ms, 3),
-                    success=True
+                    success=True,
                 )
                 return result
             except Exception as e:
@@ -448,9 +270,8 @@ def log_async_execution_time(logger: StructuredLogger) -> Callable[[F], F]:
                     function=func.__name__,
                     duration_ms=round(duration_ms, 3),
                     success=False,
-                    error=str(e)
+                    error=str(e),
                 )
                 raise
         return wrapper  # type: ignore
     return decorator
-

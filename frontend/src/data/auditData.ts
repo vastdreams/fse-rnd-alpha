@@ -11,6 +11,9 @@
  * - Formulas used
  * - AI analysis of the metric's meaning
  */
+// NOTE: 300-line limit exemption — this file contains only static audit trail data
+// definitions. Splitting would scatter related audit steps and harm maintainability.
+// No runtime logic exists here.
 
 import type { AuditData } from "@/components/AuditModal"
 

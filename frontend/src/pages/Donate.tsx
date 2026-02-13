@@ -5,7 +5,6 @@ import { Heart, Coffee, Globe, BookOpen, Shield, Zap, ExternalLink, RefreshCw, L
 import { cn } from "@/lib/utils"
 import { useSearchParams } from "react-router-dom"
 
-// API base URL - in production nginx proxies /api to backend, in dev use localhost:8000
 const API_BASE = import.meta.env.VITE_API_URL || ""
 
 const donationTiers = [
@@ -23,13 +22,10 @@ export function Donate() {
   const [error, setError] = useState<string | null>(null)
   const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null)
   const [searchParams] = useSearchParams()
-  
   const isSuccess = searchParams.get("success") === "true"
   const isCanceled = searchParams.get("canceled") === "true"
 
   const finalAmount = customAmount ? parseInt(customAmount) : selectedAmount
-
-  // Check if Stripe is configured
   useEffect(() => {
     fetch(`${API_BASE}/api/donations/config`)
       .then(res => res.json())
@@ -42,7 +38,6 @@ export function Donate() {
       setError("Please select or enter a valid amount")
       return
     }
-    
     setIsLoading(true)
     setError(null)
     
@@ -57,15 +52,11 @@ export function Donate() {
           cancel_url: `${window.location.origin}/donate?canceled=true`,
         }),
       })
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.detail || `HTTP ${response.status}`)
       }
-      
       const data = await response.json() as { checkout_url: string; session_id: string }
-      
-      // Redirect to Stripe checkout
       window.location.href = data.checkout_url
     } catch (err: unknown) {
       console.error("Donation error:", err)
@@ -81,8 +72,6 @@ export function Donate() {
     { icon: Shield, title: "Data Quality", description: "Maintain premium data feeds for accurate, reliable research" },
     { icon: Zap, title: "New Alphas", description: "Fund research into additional asymmetric alpha strategies" },
   ]
-
-  // Show success message if redirected from Stripe
   if (isSuccess) {
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-6">
@@ -104,10 +93,8 @@ export function Donate() {
       </div>
     )
   }
-
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-8">
-      {/* Canceled notice */}
       {isCanceled && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
           <p className="text-amber-800 dark:text-amber-200">
@@ -115,8 +102,6 @@ export function Donate() {
           </p>
         </div>
       )}
-      
-      {/* Header */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500">
           <Heart className="w-8 h-8 text-white" />
@@ -129,14 +114,12 @@ export function Donate() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Donation Selection */}
         <Card>
           <CardHeader>
             <CardTitle>Choose an Amount</CardTitle>
             <CardDescription>Every contribution helps maintain and expand our research</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Preset amounts */}
             <div className="grid grid-cols-2 gap-3">
               {donationTiers.map((tier) => (
                 <button
@@ -169,8 +152,6 @@ export function Donate() {
                 </button>
               ))}
             </div>
-
-            {/* Custom amount */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Custom Amount</label>
               <div className="relative">
@@ -188,8 +169,6 @@ export function Donate() {
                 />
               </div>
             </div>
-
-            {/* Recurring toggle */}
             <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
               <div className="flex items-center gap-3">
                 <RefreshCw className={cn("w-5 h-5", isRecurring ? "text-pink-500" : "text-muted-foreground")} />
@@ -213,16 +192,12 @@ export function Donate() {
                 />
               </button>
             </div>
-
-            {/* Error message */}
             {error && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
               </div>
             )}
-
-            {/* Donate button */}
             <Button 
               onClick={handleDonate}
               disabled={!finalAmount || isLoading || stripeConfigured === false}
@@ -236,9 +211,7 @@ export function Donate() {
               ) : (
                 <>
                   <Heart className="w-5 h-5 mr-2" />
-                  {isRecurring ? "Donate " : "Donate "}
-                  {finalAmount ? `$${finalAmount}` : ""}
-                  {isRecurring && "/month"}
+                  Donate {finalAmount ? `$${finalAmount}` : ""}{isRecurring && "/month"}
                 </>
               )}
             </Button>
@@ -248,14 +221,11 @@ export function Donate() {
                 Payment processing is being set up. Please check back soon or contact us directly.
               </p>
             )}
-            
             <p className="text-xs text-center text-muted-foreground">
               Secure payment via Stripe. {isRecurring ? "Cancel anytime." : "One-time donation."}
             </p>
           </CardContent>
         </Card>
-
-        {/* Impact */}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg">Your Impact</h3>
           {impactAreas.map((area) => (
@@ -271,8 +241,6 @@ export function Donate() {
           ))}
         </div>
       </div>
-
-      {/* Future plans */}
       <Card className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border dark:border-slate-700">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
@@ -295,8 +263,6 @@ export function Donate() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Alternative support */}
       <div className="text-center space-y-4 pt-4 border-t">
         <p className="text-muted-foreground">Other ways to support our research</p>
         <div className="flex justify-center gap-4">
