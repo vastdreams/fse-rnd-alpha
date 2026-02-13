@@ -301,17 +301,17 @@ async def ingest_historical_sp500(use_fmp: bool = True):
                 if not symbol:
                     continue
                 
-                        record = SP500HistoricalConstituent(
-                            symbol=symbol,
+                record = SP500HistoricalConstituent(
+                    symbol=symbol,
                     added_date=span["added_date"],
                     removed_date=span.get("removed_date"),
                     removal_reason=span.get("removal_reason"),
                     company_name=span.get("company_name"),
                     sector=span.get("sector"),
                     membership_source=data_source,
-                        )
-                        session.add(record)
-                        records_created += 1
+                )
+                session.add(record)
+                records_created += 1
                 
                 if span.get("removed_date"):
                     with_removal += 1
