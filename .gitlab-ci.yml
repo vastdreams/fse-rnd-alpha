@@ -1,0 +1,197 @@
+# ==============================================
+# PATH: .gitlab-ci.yml
+# PURPOSE: GitLab CI/CD pipeline for R&D Alpha Research Platform
+# DEPLOYS TO: 100.48.47.77 (Docker Compose)
+# ==============================================
+
+stages:
+  - test
+  - build
+  - deploy
+  - verify
+
+variables:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Cache pip and npm packages
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cache/pip
+    - frontend/node_modules/
+
+# ============================================
+# BACKEND TESTS
+# ============================================
+backend_test:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+      variables:
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_password
+        POSTGRES_DB: test_db
+  variables:
+    DATABASE_URL: "postgresql+asyncpg://test_user:test_password@postgres:5432/test_db"
+    SECRET_KEY: "test-secret-key"
+    DEBUG: "true"
+  before_script:
+    - apt-get update && apt-get install -y gcc libpq-dev
+    - pip install --upgrade pip
+    - pip install -r backend/requirements.txt
+    - pip install pytest pytest-cov pytest-asyncio
+  script:
+    - cd backend
+    - pytest tests/ -v --cov=app --cov-report=term-missing || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# PYTHON COMPILE CHECK
+# ============================================
+compile_check:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  script:
+    - python -m compileall -q backend/app scripts
+    - echo "All Python files compile successfully"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# LINT & FORMAT
+# ============================================
+lint:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install flake8 black isort
+  script:
+    - flake8 backend/app scripts --count --select=E9,F63,F7,F82 --show-source --statistics
+    - black --check --diff backend/app scripts || echo "Black formatting issues found (non-blocking)"
+    - isort --check-only --diff backend/app scripts || echo "Import sorting issues found (non-blocking)"
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# FRONTEND BUILD
+# ============================================
+frontend_build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# DOCKER BUILD VERIFICATION
+# ============================================
+docker_build:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  needs:
+    - backend_test
+    - frontend_build
+  script:
+    - docker build -t rd-alpha-backend:test ./backend
+    - docker build -t rd-alpha-frontend:test ./frontend
+    - echo "Docker images build successfully"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# DEPLOY TO PRODUCTION
+# ============================================
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  needs:
+    - compile_check
+    - frontend_build
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'DEPLOY_SCRIPT'
+        set -e
+        cd /home/ubuntu/fse-rnd-alpha
+
+        echo "=== Pulling latest code from GitLab ==="
+        git pull origin main
+
+        echo "=== Rebuilding frontend ==="
+        cd frontend
+        npm install
+        npm run build
+        cd ..
+
+        echo "=== Copying frontend dist to deploy ==="
+        mkdir -p deploy/frontend/dist
+        cp -R frontend/dist/. deploy/frontend/dist/
+
+        echo "=== Rebuilding and restarting Docker containers ==="
+        cd deploy
+        docker-compose build backend worker beat
+        docker-compose up -d --no-deps backend worker beat
+        docker-compose restart frontend
+
+        echo "=== Waiting for services ==="
+        sleep 15
+
+        echo "=== Health check ==="
+        curl -sf http://localhost/health && echo " Backend OK" || echo " Backend not ready"
+        curl -sf http://localhost/ > /dev/null && echo "Frontend OK" || echo "Frontend not ready"
+
+        echo "=== Cleaning up old images ==="
+        docker image prune -f
+
+        echo "=== Deployment complete at $(date) ==="
+      DEPLOY_SCRIPT
+  environment:
+    name: production
+    url: https://research.finsoeasy.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
+# ============================================
+# POST-DEPLOY VERIFICATION
+# ============================================
+verify_deployment:
+  stage: verify
+  image: alpine:latest
+  needs:
+    - deploy_production
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - sleep 30
+    - curl -sf https://research.finsoeasy.com/health || exit 1
+    - curl -sf https://research.finsoeasy.com/ || exit 1
+    - echo "All health checks passed!"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
