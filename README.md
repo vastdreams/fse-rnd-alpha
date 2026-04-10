@@ -45,6 +45,13 @@ Features:
 
 ## 📁 Repository Structure
 
+**Current runtime paths**
+
+- `backend/` contains the active FastAPI application used by production containers.
+- `frontend/` contains the active React + Vite SPA served by nginx.
+- `deploy/` contains the production Docker Compose stack, nginx config, and SSL/certbot wiring.
+- Root `src/` contains older research modules retained in the repo, but it is not part of the current `backend/` or `frontend/` Docker build contexts.
+
 ```
 fse-rnd-alpha/
 ├── backend/                    # FastAPI Python backend
@@ -98,7 +105,7 @@ fse-rnd-alpha/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── src/                        # Core research modules (Python)
+├── src/                        # Older research toolkit retained in repo
 │   ├── ai/                     # AI agents for R&D extraction
 │   │   ├── agents/
 │   │   │   ├── rd_factor_agent.py   # R&D signal extraction
