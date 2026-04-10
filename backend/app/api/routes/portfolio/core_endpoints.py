@@ -24,7 +24,7 @@ router = APIRouter()
 async def get_rd_etf_holdings(
     session: AsyncSession = Depends(get_db),
     n: int = Query(20, ge=5, le=50),
-    method: str = Query("rd_alpha", pattern="^(rd_alpha|quality_adjusted|highest_rd|balanced)$"),
+    method: str = Query("rd_alpha", pattern="^(rd_alpha|pnl_efficiency|quality_adjusted|highest_rd|balanced)$"),
     sector: Optional[str] = None,
     year: Optional[int] = Query(None, ge=1995, le=2030, description="Point-in-time year for ETF selection"),
     use_july_june: bool = Query(True, description="Use July-June returns for backtest alignment")
@@ -36,6 +36,7 @@ async def get_rd_etf_holdings(
     - n: Number of holdings (default 20)
     - method: Selection method (rd_alpha is now the default - recommended)
         - rd_alpha: Research-based sector-agnostic scoring (RECOMMENDED)
+        - pnl_efficiency: PNL operating efficiency scoring
         - quality_adjusted: R&D intensity * data quality
         - highest_rd: Pure R&D intensity ranking
         - balanced: Diversified across sectors

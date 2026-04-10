@@ -1,0 +1,476 @@
+% PATH: paper_latex/labor_efficiency/main.tex
+% PURPOSE:
+%   Submission-ready LaTeX manuscript for the Labor Efficiency Alpha study.
+%   Full skeleton with literature/data/methods sections drafted; empirical
+%   sections explicitly gated on the labor-data pipeline reaching readiness.
+%
+% DEPENDENCIES:
+%   - references.bib (curated BibTeX references)
+%   - data/metrics.tex (auto-generated macros, when available)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=25mm,top=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\setstretch{1.08}
+
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.15em}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\usepackage{xurl}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
+\usepackage[square,numbers,sort&compress]{natbib}
+\bibliographystyle{unsrtnat}
+\usepackage{orcidlink}
+
+% Placeholder macros
+\IfFileExists{data/metrics.tex}{\input{data/metrics.tex}}{%
+  \newcommand{\SnapshotId}{PENDING--DATA-PIPELINE}
+  \newcommand{\AnnualSeriesStart}{TBD}
+  \newcommand{\AnnualSeriesEnd}{TBD}
+  \newcommand{\AnnualNYears}{TBD}
+  \newcommand{\DataTier}{Tier-1 (FMP) + Annual Report Extraction}
+  \newcommand{\UniverseSize}{S\&P 500}
+  \newcommand{\NSectors}{11}
+  \newcommand{\MinSectorSize}{5}
+  \newcommand{\WinsorizationLimit}{3.0}
+}
+
+\title{\textbf{Labor Efficiency Alpha: Human-Capital Productivity and Long-Term Stock Returns}}
+\author{%
+    Abhishek Sehgal\,\orcidlink{0009-0000-9424-4695}\\[1pt]
+    {\footnotesize ORCID: \href{https://orcid.org/0009-0000-9424-4695}{0009-0000-9424-4695}}\\[2pt]
+    \small FSE Research \& Investments Pty Ltd%
+    \thanks{ABN: 35 688 556 747. Address: 50 Murray St, Pyrmont, Sydney, NSW 2009, Australia. Email: \href{mailto:abhishek@finsoeasy.com}{abhishek@finsoeasy.com}. Web: \href{https://research.finsoeasy.com}{research.finsoeasy.com}. Research supported by Eye Dream Pty Ltd trading as Finsoeasy (ABN: 95 650 714 060).}%
+    \\[1pt]
+    {\footnotesize \href{https://research.finsoeasy.com}{research.finsoeasy.com}}%
+}
+\date{February 2026\quad$\cdot$\quad Version 0.1 (Working Paper---Empirical Sections Gated)}
+
+\begin{document}
+\maketitle
+\vspace{-1em}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ABSTRACT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+\noindent\textbf{Objective.}
+We test whether labor-input efficiency---measured by revenue per employee and revenue per dollar of payroll---predicts cross-sectional equity returns in a large-cap U.S.\ universe. Where the companion P\&L Efficiency Alpha paper examines cost-structure ratios derived solely from income statements, this study introduces human-capital metrics that require employee count and compensation data sourced from annual reports, XBRL filings, and supplemental disclosures. We hypothesize that firms generating more revenue per labor unit earn a premium because the market underprices operational productivity advantages, particularly when those advantages are persistent and sector-relative.
+
+\noindent\textbf{Method.}
+At each annual formation date, we compute two primary labor efficiency ratios---revenue per employee (RPE) and revenue per dollar of payroll (RPP)---from the most recently available annual filings. We normalize within GICS sectors using z-scores (winsorized at $\pm\WinsorizationLimit\sigma$) and form a composite labor efficiency score. Quintile sorts, Fama-MacBeth cross-sectional regressions \citep{fama_macbeth_1973}, factor-spanning tests against FF5+MOM \citep{fama_french_2015, carhart_1997}, and bivariate sorts with the P\&L efficiency composite test the independent return-prediction power of human-capital efficiency.
+
+\noindent\textbf{Results.}
+\textit{[GATED: Empirical results require the labor-data pipeline (employee count and payroll extraction from annual reports and XBRL filings) to be operational. This section will be completed once the data panel passes coverage and QA checks. See Section~\ref{sec:data_engineering} for the prerequisite workstream.]}
+
+\noindent\textbf{Interpretation.}
+This study extends the profitability anomaly literature by introducing labor-input channels that are orthogonal to P\&L cost-structure measures. The revenue-per-employee and revenue-per-payroll signals capture a dimension of operational quality that aggregated profitability metrics miss: the efficiency of human-capital deployment. If labor efficiency provides incremental alpha beyond standard profitability factors and the P\&L composite, it would suggest that the market underprices human-capital productivity, consistent with the intangible-mispricing hypothesis.
+\end{abstract}
+
+\vspace{0.1em}
+\noindent\textbf{Keywords:} Labor efficiency; human capital; employee productivity; payroll intensity; factor investing; equity returns.\\
+\textbf{JEL:} G11; G12; J24; M41.
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=\textbf{Data Readiness Gate}]
+\textbf{Status}: Empirical sections are gated on completion of the labor-data engineering workstream.\\
+\textbf{Required}: A symbol-by-year panel of (a) employee count and (b) total payroll/compensation expense for S\&P 500 constituents, covering at least 15 formation years with $\ge$70\% coverage per year.\\
+\textbf{Source pipeline}: Annual report extraction $\rightarrow$ XBRL parsing $\rightarrow$ NLP fallback for non-XBRL filers $\rightarrow$ Panel construction $\rightarrow$ QA and reconciliation.\\
+\textbf{Current status}: Pipeline not yet operational. Employee count is reported inconsistently; payroll is available for a subset of filers via XBRL tags (e.g., \texttt{us-gaap:LaborAndRelatedExpense}).
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1. INTRODUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+The relationship between human capital and firm value has long been recognized in economics and finance, yet direct labor-input metrics remain underutilized in quantitative equity research. While the profitability anomaly literature \citep{novy_marx_2013, fama_french_2006, fama_french_2015} documents robust return premiums for profitable firms, the mechanisms through which firms achieve superior profitability are less well understood. In particular, labor productivity---the efficiency with which firms convert labor inputs into revenue---represents a fundamental but largely untested dimension of operational quality in asset pricing.
+
+This paper contributes to the emerging literature on human-capital risk and asset prices by constructing firm-level labor efficiency measures from disclosed employee count and payroll data. Our approach is motivated by several converging insights:
+
+First, \citet{belo_lin_bazdresch_2014} show that labor hiring predicts stock returns in the cross section, with firms that increase employment underperforming those that reduce it. Their investment-based explanation connects labor adjustments to expected profitability. Our study complements this work by examining the \textit{level} of labor efficiency rather than changes in employment.
+
+Second, \citet{donangelo_2014} demonstrates that labor mobility creates a source of systematic risk that is priced in the cross section. Firms with mobile labor forces face higher operating leverage because wages are quasi-fixed in the short run. \citet{donangelo_gourio_kehrig_palacios_2019} extend this to show that ``labor leverage''---the ratio of labor costs to total costs---predicts returns, with high-labor-leverage firms earning a risk premium. Our revenue-per-payroll measure captures the inverse of labor cost intensity.
+
+Third, \citet{edmans_2011} provides direct evidence that employee satisfaction predicts stock returns, with the ``100 Best Companies to Work For'' portfolio earning a significant alpha. This suggests that human-capital quality is underpriced, possibly because it is difficult to quantify from standard financial statements. Our labor efficiency metrics offer a quantitative, scalable alternative to survey-based measures.
+
+Fourth, recent regulatory changes have increased the availability of labor data. The SEC's 2020 Modernization of Regulation S-K \citep{sec_regulation_sk_2020} requires public companies to disclose ``human capital resources'' information, though the specific metrics (employee count, turnover, compensation) remain largely voluntary. \citet{hales_matsunaga_2021} document the heterogeneity of these disclosures, finding that firms vary widely in the specificity and consistency of their labor-related reporting.
+
+The primary challenge for this research is data construction. Unlike revenue, CoGS, and SG\&A---which are required line items on the income statement---employee count and total payroll are not uniformly reported in structured financial data. We address this through a multi-source extraction pipeline that combines XBRL filings, SEC annual report text, and supplemental disclosures. Section~\ref{sec:data_engineering} details this pipeline and its quality-assurance protocols.
+
+The remainder of this paper is organized as follows. Section~\ref{sec:literature} reviews the human-capital, labor risk, and productivity literatures. Section~\ref{sec:hypotheses} states our hypotheses. Section~\ref{sec:data} describes data sources and sample construction. Section~\ref{sec:extraction} details the labor-data extraction methodology. Section~\ref{sec:variables} defines the efficiency variables. Section~\ref{sec:design} outlines the empirical design. Section~\ref{sec:measurement} discusses measurement error. Sections~\ref{sec:results}--\ref{sec:portfolio} present results and portfolio implications (gated on data readiness). Section~\ref{sec:limitations} discusses limitations. Section~\ref{sec:conclusion} concludes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2. LITERATURE REVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Literature Review}\label{sec:literature}
+
+\subsection{Human Capital and Asset Prices}
+
+The theoretical link between labor and asset prices is well established. In production-based models, labor is a key input that interacts with capital to determine firm value. \citet{kuehn_simutin_wang_2017} develop a labor capital asset pricing model (LCAPM) where firms' exposure to labor market conditions creates a priced risk factor. They show that firms with high labor-to-capital ratios earn higher average returns, compensating for the risk that labor costs are difficult to adjust in downturns.
+
+\citet{donangelo_2014} focuses on labor mobility, showing that firms in industries with mobile workers face higher operating leverage (and therefore higher systematic risk) because they cannot easily reduce wages when revenues decline. \citet{donangelo_gourio_kehrig_palacios_2019} operationalize this intuition with a direct ``labor leverage'' measure---the ratio of labor costs to total value added---and confirm that it commands a cross-sectional return premium.
+
+\citet{ochoa_2013} examines the interaction between macroeconomic volatility and labor heterogeneity, showing that firms employing different mixes of skilled and unskilled labor differ in their sensitivity to aggregate shocks, which maps into return differentials.
+
+\subsection{Employee Satisfaction, Productivity, and Returns}
+
+A parallel literature examines whether measures of human-capital quality predict returns. \citet{edmans_2011} shows that employee satisfaction (as measured by the ``Best Companies'' list) predicts stock returns, suggesting the market does not fully incorporate human-capital quality into prices. \citet{edmans_2012} extends this result and discusses the causal mechanisms linking job satisfaction to firm performance.
+
+\citet{belo_lin_bazdresch_2014} take an investment approach, showing that changes in labor employment predict returns through their effect on expected profitability. High-hiring firms underperform because rapid hiring signals declining marginal products of labor, while stable or declining headcount signals efficiency. Our study complements this by examining the \textit{level} of labor productivity (revenue per employee) rather than changes.
+
+\subsection{Payroll and Compensation Efficiency}
+
+The accounting literature documents that labor-related expenses contain information about future profitability. \citet{banker_huang_natarajan_2011} show that equity incentive plans create long-term value through their effect on SG\&A expenditures, including labor costs. \citet{anderson_banker_janakiraman_2003} document that labor costs exhibit ``stickiness''---rising faster with revenue increases than they fall with decreases---which creates persistent within-sector heterogeneity in payroll efficiency.
+
+From a labor economics perspective, \citet{lazear_shaw_2007} provide a comprehensive review of how firms structure compensation and how compensation efficiency affects firm performance. \citet{abowd_kramarz_margolis_1999} decompose wages into firm effects and worker effects, showing that both contribute to productivity differences across firms.
+
+\subsection{Data Availability and Measurement Challenges}
+
+A critical constraint for labor-efficiency research is data availability. \citet{sec_regulation_sk_2020} represents a watershed moment: beginning November 2020, SEC registrants must describe their ``human capital resources,'' though specific quantitative metrics remain at the registrant's discretion. \citet{hales_matsunaga_2021} analyze early compliance and find substantial heterogeneity in disclosure granularity, with larger firms providing more quantitative detail.
+
+For historical data, employee count is sometimes reported in 10-K filings (Item 1) but is not a required XBRL-tagged field for all filers. Total payroll or compensation expense is available for some firms via XBRL tags (\texttt{us-gaap:LaborAndRelatedExpense}, \texttt{us-gaap:ShareBasedCompensation}, \texttt{us-gaap:EmployeeBenefitsAndShareBasedCompensation}) but coverage varies significantly. \citet{debreceny_farewell_2005} document data-quality issues in early XBRL filings, including inconsistent tagging and errors, which persist in labor-related fields.
+
+\citet{belo_lin_li_zhao_2017} address a related measurement challenge by using Bureau of Labor Statistics (BLS) industry-level wage data to proxy for firm-level labor costs when direct disclosure is unavailable. We take a different approach, building a firm-level extraction pipeline from SEC filings with explicit coverage thresholds.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3. HYPOTHESES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hypotheses}\label{sec:hypotheses}
+
+\begin{description}[style=nextline]
+    \item[H1: Revenue-per-Employee Premium]
+    Firms in the top quintile of sector-relative revenue per employee earn higher subsequent returns than firms in the bottom quintile, after controlling for standard risk factors and P\&L cost-structure efficiency.
+
+    \item[H2: Revenue-per-Payroll Premium]
+    Firms in the top quintile of sector-relative revenue per dollar of payroll earn higher subsequent returns than bottom-quintile firms. This test is conditional on payroll data covering $\ge$70\% of the universe.
+
+    \item[H3: Incremental to P\&L Efficiency]
+    The labor efficiency composite provides statistically significant alpha after controlling for the P\&L efficiency composite, indicating that human-capital productivity contains return-predictive information beyond cost-structure margins.
+
+    \item[H4: Combined PNL + Labor Signal]
+    A unified signal combining P\&L cost-structure efficiency and labor-input efficiency outperforms either signal alone, supporting the view that operational quality is multi-dimensional.
+
+    \item[H5: Persistent Productivity Advantage]
+    Firms that maintain top-quintile labor efficiency for multiple consecutive years earn a larger premium than transient high-efficiency firms, consistent with sustainable competitive advantages in human-capital deployment.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4. DATA SOURCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data Sources}\label{sec:data}
+
+\subsection{Primary Data: FMP Income Statements}
+
+Revenue and cost data (CoGS, SG\&A, operating income, net income) are obtained from Financial Modeling Prep (FMP), consistent with our companion P\&L Efficiency Alpha study. This provides the ``denominator'' for labor efficiency ratios.
+
+\subsection{Labor Data: Multi-Source Extraction}
+
+Employee count and payroll data are obtained from:
+
+\begin{enumerate}[nosep]
+    \item \textbf{XBRL Filings} (SEC EDGAR): Structured fields including \texttt{EntityNumberOfEmployees}, \texttt{LaborAndRelatedExpense}, and related tags.
+    \item \textbf{10-K Text Extraction}: NLP-based parsing of Item 1 (``Employees'') and Item 7 (management discussion) for employee count disclosures.
+    \item \textbf{FMP Company Profile}: The \texttt{fullTimeEmployees} field provides a current snapshot but lacks historical depth.
+    \item \textbf{Supplemental Sources}: Annual reports, proxy statements, and sustainability reports where available.
+\end{enumerate}
+
+\subsection{Return and Factor Data}
+
+Consistent with the P\&L study: daily split-adjusted prices and dividends from FMP, monthly Fama-French five factors plus momentum from the Ken French Data Library.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 5. LABOR-DATA EXTRACTION METHODOLOGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Labor-Data Extraction Methodology}\label{sec:extraction}
+
+\subsection{XBRL Pipeline}
+
+The primary extraction pipeline queries SEC EDGAR for annual 10-K filings and extracts XBRL-tagged labor fields:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Entity employee count}: Tag \texttt{dei:EntityNumberOfEmployees} (available in DEI header for most filers post-2010).
+    \item \textbf{Labor cost}: Tags including \texttt{us-gaap:LaborAndRelatedExpense}, \texttt{us-gaap:SalariesAndWages}, \texttt{us-gaap:ShareBasedCompensation}. Coverage varies; many firms do not tag a total-labor-cost figure.
+    \item \textbf{Filing metadata}: CIK, accession number, filing date, fiscal year end, for linking to FMP financial data.
+\end{enumerate}
+
+\subsection{NLP Fallback for Non-XBRL Employee Count}
+
+For filings where the XBRL employee count tag is missing or unreliable, we extract employee count from 10-K full text:
+
+\begin{enumerate}[nosep]
+    \item Identify the ``Employees'' or ``Human Capital'' section (typically Item 1, Part I).
+    \item Apply pattern matching for expressions like ``approximately [N] employees,'' ``[N] full-time equivalent employees,'' or ``total headcount of [N].''
+    \item Flag extractions with confidence scores; manual review for ambiguous cases.
+\end{enumerate}
+
+\subsection{Quality Assurance}
+
+\begin{itemize}[nosep]
+    \item \textbf{Year-over-year change filter}: Flag employee counts that change by more than 50\% year-over-year for manual review.
+    \item \textbf{Cross-source reconciliation}: Where both XBRL and text-extracted counts are available, check for consistency.
+    \item \textbf{Coverage threshold}: Require $\ge$70\% of S\&P 500 constituents to have employee count data in each formation year to proceed with empirical tests. Payroll coverage is expected to be lower and is gated at $\ge$50\%.
+    \item \textbf{Outlier detection}: Flag revenue-per-employee ratios below \$10,000 or above \$10,000,000 as potential data errors.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 6. VARIABLE DEFINITIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Variable Definitions}\label{sec:variables}
+
+For each firm $i$ in sector $s$ at formation date $t$:
+
+\begin{align}
+    \text{RPE}_{i,t} &= \frac{\text{Revenue}_{i,t}}{\text{EmployeeCount}_{i,t}} \label{eq:rpe} \\[4pt]
+    \text{RPP}_{i,t} &= \frac{\text{Revenue}_{i,t}}{\text{TotalPayroll}_{i,t}} \label{eq:rpp}
+\end{align}
+
+Each ratio is standardized within GICS sectors:
+
+\begin{equation}
+    z_{i,t}^{k} = \frac{r_{i,t}^{k} - \bar{r}_{s,t}^{k}}{\sigma_{s,t}^{k}}
+\end{equation}
+
+Winsorized at $\pm\WinsorizationLimit\sigma$. The labor efficiency composite:
+
+\begin{equation}
+    \text{LaborEff}_{i,t} = \begin{cases}
+        \frac{1}{2}(z_{i,t}^{\text{RPE}} + z_{i,t}^{\text{RPP}}) & \text{if both available} \\
+        z_{i,t}^{\text{RPE}} & \text{if only employee count available} \\
+        z_{i,t}^{\text{RPP}} & \text{if only payroll available}
+    \end{cases}
+\end{equation}
+
+\subsection{Combined PNL + Labor Signal}
+
+The unified operational efficiency composite:
+
+\begin{equation}
+    \text{OpEff}_{i,t} = \frac{1}{2}\,\text{PNLEff}_{i,t} + \frac{1}{2}\,\text{LaborEff}_{i,t}
+\end{equation}
+
+where $\text{PNLEff}_{i,t}$ is the P\&L efficiency composite from the companion paper.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 7. EMPIRICAL DESIGN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Empirical Design}\label{sec:design}
+
+\subsection{Portfolio Formation}
+
+Identical to the P\&L study: quintile sorts at July 1 formation dates using the labor efficiency composite. Equal-weighted portfolio returns over subsequent July-June year. The high-minus-low spread portfolio is denoted \textbf{HML\_LABOR}.
+
+\subsection{Statistical Tests}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Univariate quintile sorts} on the labor efficiency composite and each individual component (RPE, RPP).
+    \item \textbf{Bivariate dependent sorts}: first sort on P\&L efficiency, then within each P\&L quintile sort on labor efficiency (and vice versa) to test independence.
+    \item \textbf{Factor spanning}: Regress HML\_LABOR on FF5+MOM; then add HML\_PNL as an additional factor.
+    \item \textbf{Fama-MacBeth regressions}: Monthly cross-sectional regressions with labor efficiency, P\&L efficiency, size, B/M, and momentum as predictors.
+    \item \textbf{Persistence tests}: Quintile sorts on $\min(\text{LaborEff}_{t}, \text{LaborEff}_{t-1})$ to test the role of sustained efficiency.
+\end{enumerate}
+
+\subsection{Timing and Look-Ahead Discipline}
+
+The same July formation / June evaluation convention used in the P\&L study applies. Employee count and payroll from the annual report must have been filed before the July formation date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 8. MEASUREMENT ERROR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Measurement Error and Attenuation}\label{sec:measurement}
+
+Labor data is inherently noisier than income statement line items. Measurement error in employee count arises from: (i) part-time/full-time equivalence ambiguity; (ii) contractor versus employee classification; (iii) acquisition-driven step changes; (iv) mid-year reporting dates versus fiscal year-end counts. Measurement error in payroll arises from: (v) inconsistent inclusion/exclusion of stock-based compensation; (vi) separation of manufacturing labor (CoGS) from administrative labor (SG\&A); (vii) pension and benefit accruals.
+
+Classical measurement error in the sorting variable biases return spreads toward zero (attenuation bias), making our quintile-sort results conservative estimates of the true labor efficiency premium. We address this through: (a) winsorization of z-scores to reduce the influence of mismeasured extremes; (b) requiring minimum sector size to ensure stable cross-sectional distributions; (c) reporting results separately for the ``high-confidence'' subsample where both XBRL and text-extracted data agree.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 9. DATA ENGINEERING PREREQUISITE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data Engineering Workstream}\label{sec:data_engineering}
+
+\begin{tcolorbox}[colback=yellow!5!white,colframe=yellow!75!black,title=\textbf{Prerequisite Workstream}]
+The empirical sections of this paper cannot be completed until the labor-data panel is operational. The required engineering steps are:
+
+\begin{enumerate}[nosep]
+    \item \textbf{XBRL Ingestion}: Build a pipeline to download and parse annual 10-K XBRL filings from SEC EDGAR for all current and historical S\&P 500 constituents.
+    \item \textbf{Employee Count Extraction}: Extract \texttt{EntityNumberOfEmployees} from DEI headers; fall back to 10-K text extraction for missing values.
+    \item \textbf{Payroll Extraction}: Extract total labor cost from XBRL tags; map heterogeneous tag usage across firms.
+    \item \textbf{Panel Construction}: Create a symbol$\times$year panel linking employee count and payroll to FMP financial data via CIK$\leftrightarrow$ticker mapping.
+    \item \textbf{QA and Coverage Diagnostics}: Compute year-by-year coverage rates, flag outliers, reconcile cross-source discrepancies.
+    \item \textbf{Backfill Assessment}: Determine how far back reliable data extends; set the empirical sample start date based on the $\ge$70\% employee-count coverage threshold.
+    \item \textbf{Integration}: Expose the labor panel to the existing research API (PNL scorer, portfolio optimizer, factor tests) so that the labor composite can be computed alongside P\&L efficiency.
+\end{enumerate}
+
+\textbf{Estimated timeline}: 3--4 weeks from initiation to a QA-passing panel.\\
+\textbf{Go/no-go gate}: Empirical sections move from ``GATED'' to ``DRAFT'' only after the panel passes coverage checks.
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 10. CORE RESULTS (GATED)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Core Results}\label{sec:results}
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!50!black]
+\textbf{GATED}: This section requires the labor-data panel. Planned contents:
+
+\begin{itemize}[nosep]
+    \item Table~1: Quintile portfolio characteristics (average labor efficiency scores, sector composition, employee count distribution)
+    \item Table~2: Quintile return summary for RPE sorts, RPP sorts, and composite sorts
+    \item Table~3: Factor spanning regression results for HML\_LABOR (FF5+MOM and FF5+MOM+HML\_PNL)
+    \item Table~4: Fama-MacBeth regression coefficients with labor and P\&L efficiency jointly
+    \item Table~5: Bivariate dependent sort results (P\&L efficiency $\times$ labor efficiency)
+    \item Figure~1: Cumulative returns for labor-efficiency quintile portfolios
+    \item Figure~2: Coverage rates by year and sector
+\end{itemize}
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 11. ROBUSTNESS (GATED)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Robustness}\label{sec:robustness}
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!50!black]
+\textbf{GATED}: Planned robustness tests:
+
+\begin{enumerate}[nosep]
+    \item \textbf{RPE-only versus RPP-only}: Separate quintile sorts to determine which component drives the composite.
+    \item \textbf{High-confidence subsample}: Restrict to firm-years where employee count is confirmed by both XBRL and text extraction.
+    \item \textbf{Excluding tech/financials}: Industries where ``employee count'' is less meaningful (e.g., holding companies).
+    \item \textbf{Persistence conditioning}: Sort on min(LaborEff$_{t}$, LaborEff$_{t-1}$).
+    \item \textbf{Fama-MacBeth with industry FE}: Absorbing industry-level average labor efficiency.
+    \item \textbf{Transaction costs}: Net-of-cost HML\_LABOR spread.
+    \item \textbf{Size interactions}: Testing whether the labor efficiency premium is concentrated in smaller large-caps.
+\end{enumerate}
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 12. PORTFOLIO IMPLICATIONS (GATED)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Portfolio Implications}\label{sec:portfolio}
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!50!black]
+\textbf{GATED}: Implementable portfolio construction pending data. Will include:
+
+\begin{itemize}[nosep]
+    \item Combined PNL+Labor top-20 portfolio definition.
+    \item Gross and net performance versus SPY and the standalone PNL20 portfolio.
+    \item Turnover analysis and sector dynamics.
+    \item Comparison of signal persistence between P\&L and labor composites.
+\end{itemize}
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 13. EXPECTED ROBUSTNESS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Expected Robustness Challenges}\label{sec:expected_robustness}
+
+We anticipate several challenges that the empirical results will need to address:
+
+\begin{enumerate}
+    \item \textbf{Low payroll coverage}: If payroll coverage is below 50\% in early years, the RPP component may need to be dropped for earlier sample periods, reducing the composite to an RPE-only signal.
+
+    \item \textbf{Industry concentration}: Revenue per employee varies by orders of magnitude across industries (e.g., \$5M/employee in energy trading versus \$100K/employee in retail). Sector-relative z-scoring addresses this, but within-sector dispersion may be low in homogeneous industries.
+
+    \item \textbf{Acquisition artifacts}: Large acquisitions can cause step changes in employee count that do not reflect operational efficiency changes. Year-over-year change filters partially address this, but persistent M\&A noise may require explicit deal-date flagging.
+
+    \item \textbf{Contractor substitution}: Firms increasingly rely on contractors, temps, and gig workers who are not counted as employees. This trend creates a secular bias in RPE (fewer employees for the same output) that the sector-relative approach mitigates but does not eliminate.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 14. LIMITATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Limitations}\label{sec:limitations}
+
+\begin{enumerate}
+    \item \textbf{Data availability}: Employee count and payroll are not uniformly reported, creating a potentially non-random missing-data problem that could bias results.
+
+    \item \textbf{Measurement heterogeneity}: The definition of ``employee'' varies across firms (full-time, part-time, FTE, contractor inclusion). Payroll definitions are even more heterogeneous.
+
+    \item \textbf{Survivorship bias}: Same limitation as the P\&L study (Tier-1 uses current constituents).
+
+    \item \textbf{Single-country, large-cap scope}: Results may not generalize internationally or to small-cap stocks.
+
+    \item \textbf{Regulatory regime change}: The 2020 Regulation S-K change may improve data quality going forward but creates a structural break in the time series.
+
+    \item \textbf{Circular causation}: High revenue per employee may reflect industry dynamics (capital-intensive, technology-driven) rather than managerial skill in deploying labor.
+
+    \item \textbf{Delayed reporting}: Employee count is typically as-of fiscal year-end; payroll is the fiscal-year total. Using July formation dates assumes a 6-month lag, which may be insufficient for late filers.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 15. CONCLUSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}\label{sec:conclusion}
+
+This paper proposes and designs a comprehensive test of whether labor-input efficiency---measured by revenue per employee and revenue per dollar of payroll---predicts cross-sectional equity returns in the S\&P 500 universe. By constructing sector-relative composites and testing against both standard factor models and the companion P\&L efficiency composite, we aim to determine whether human-capital productivity represents a distinct, investable dimension of operational quality.
+
+The literature review and methodological framework are complete. The empirical results, robustness tests, and portfolio implications are explicitly gated on the completion of a labor-data engineering workstream that will construct a symbol-by-year panel of employee count and payroll from SEC filings. Upon completion of this data pipeline and passage of coverage QA checks, the empirical sections will be populated with snapshot-pinned results following the same reproducibility standards as our R\&D Alpha and P\&L Efficiency Alpha studies.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{references}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+
+\section{Variable Definitions}\label{app:variables}
+
+\begin{table}[H]
+\centering
+\caption{Variable Definitions}
+\begin{tabular}{lp{9cm}}
+\toprule
+\textbf{Variable} & \textbf{Definition} \\
+\midrule
+Revenue per Employee (RPE) & Revenue / Employee Count \\
+Revenue per Payroll (RPP) & Revenue / Total Payroll \\
+Labor Efficiency Composite & Equal-weighted average of within-sector z-scores (RPE and RPP where available) \\
+Combined OpEff & $0.5 \times \text{PNLEff} + 0.5 \times \text{LaborEff}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{XBRL Tags Used}\label{app:xbrl}
+
+\begin{table}[H]
+\centering
+\caption{XBRL Tags for Labor Data Extraction}
+\begin{tabular}{lp{7cm}l}
+\toprule
+\textbf{Tag} & \textbf{Description} & \textbf{Expected Coverage} \\
+\midrule
+\texttt{dei:EntityNumberOfEmployees} & Total employees (DEI header) & High (post-2010) \\
+\texttt{us-gaap:LaborAndRelatedExpense} & Total labor cost & Low-Medium \\
+\texttt{us-gaap:SalariesAndWages} & Salary expense & Medium \\
+\texttt{us-gaap:ShareBasedCompensation} & Stock-based comp & High (post-2006) \\
+\texttt{us-gaap:EmployeeBenefitsAndShareBasedCompensation} & Combined benefits + SBC & Low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Data Engineering Gantt Chart}\label{app:gantt}
+
+\textit{[PENDING: Visual timeline for the data engineering workstream phases.]}
+
+\end{document}

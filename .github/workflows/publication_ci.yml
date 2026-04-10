@@ -1,0 +1,162 @@
+# PATH: .github/workflows/publication_ci.yml
+# PURPOSE: Publication quality gates for PNL and Labor Efficiency Alpha papers.
+# Runs alongside the main CI pipeline to verify paper assets, reference audits,
+# and no-premature-claims gates.
+
+name: Publication Quality Gates
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'paper_latex/**'
+      - 'paper_references/**'
+      - 'PNL_*.md'
+      - 'PNL_*.cff'
+      - 'LABOR_*.md'
+      - 'LABOR_*.cff'
+      - 'backend/app/services/pnl_efficiency_scorer/**'
+      - 'backend/tests/test_pnl_*'
+      - 'scripts/verify_publication.py'
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  publication-checks:
+    name: Publication Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run publication verification
+        run: python scripts/verify_publication.py
+
+  pnl-tests:
+    name: PNL Efficiency Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run PNL efficiency tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/test_db
+          SECRET_KEY: test-secret-key
+        run: |
+          cd backend
+          pytest tests/test_pnl_efficiency.py tests/test_pnl_efficiency_extended.py -v --tb=short
+
+  reference-audit:
+    name: Reference Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PNL bibliography completeness
+        run: |
+          echo "Checking PNL references..."
+          BIB_COUNT=$(grep -c '@article\|@techreport\|@misc\|@book\|@inproceedings' paper_latex/pnl_efficiency/references.bib || echo 0)
+          echo "PNL bibliography has $BIB_COUNT entries"
+          if [ "$BIB_COUNT" -lt 20 ]; then
+            echo "::error::PNL bibliography has fewer than 20 entries ($BIB_COUNT)"
+            exit 1
+          fi
+
+      - name: Check Labor bibliography completeness
+        run: |
+          echo "Checking Labor references..."
+          BIB_COUNT=$(grep -c '@article\|@techreport\|@misc\|@book\|@inproceedings' paper_latex/labor_efficiency/references.bib || echo 0)
+          echo "Labor bibliography has $BIB_COUNT entries"
+          if [ "$BIB_COUNT" -lt 20 ]; then
+            echo "::error::Labor bibliography has fewer than 20 entries ($BIB_COUNT)"
+            exit 1
+          fi
+
+      - name: No premature labor claims in PNL paper
+        run: |
+          echo "Scanning PNL paper for premature labor claims..."
+          LABOR_HITS=$(grep -in 'employee count\|payroll\|headcount\|labor productivity\|revenue per employee' paper_latex/pnl_efficiency/main.tex | grep -iv 'companion\|excluded\|future work\|limitation\|phase 2\|not yet\|deferred' || true)
+          if [ -n "$LABOR_HITS" ]; then
+            echo "::error::Found premature labor claims in PNL paper:"
+            echo "$LABOR_HITS"
+            exit 1
+          fi
+          echo "No premature labor claims found"
+
+      - name: Labor paper gated sections check
+        run: |
+          echo "Checking labor paper gated sections..."
+          GATED_COUNT=$(grep -c 'GATED\|PENDING' paper_latex/labor_efficiency/main.tex || echo 0)
+          echo "Found $GATED_COUNT gated/pending markers"
+          if [ "$GATED_COUNT" -lt 3 ]; then
+            echo "::error::Labor paper should have at least 3 gated section markers"
+            exit 1
+          fi
+          echo "Labor paper gated sections properly marked"
+
+  asset-integrity:
+    name: Asset Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify PNL publication assets
+        run: |
+          MISSING=""
+          for f in paper_latex/pnl_efficiency/main.tex paper_latex/pnl_efficiency/references.bib PNL_DATA_PROVENANCE.md PNL_DATA_AVAILABILITY.md PNL_REFERENCE_AUDIT.md PNL_PUBLICATION_AUDIT.md PNL_CITATION.cff; do
+            if [ ! -f "$f" ]; then
+              MISSING="$MISSING $f"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing PNL assets:$MISSING"
+            exit 1
+          fi
+          echo "All PNL publication assets present"
+
+      - name: Verify Labor publication assets
+        run: |
+          MISSING=""
+          for f in paper_latex/labor_efficiency/main.tex paper_latex/labor_efficiency/references.bib LABOR_REFERENCE_AUDIT.md LABOR_PUBLICATION_AUDIT.md LABOR_CITATION.cff LABOR_DATA_ENGINEERING.md; do
+            if [ ! -f "$f" ]; then
+              MISSING="$MISSING $f"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing Labor assets:$MISSING"
+            exit 1
+          fi
+          echo "All Labor publication assets present"

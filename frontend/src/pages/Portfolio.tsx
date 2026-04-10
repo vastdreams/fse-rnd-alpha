@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FlaskConical, Scale } from "lucide-react"
+import type { AlphaFamily } from "@/lib/api/types"
 import { usePortfolioData } from "@/hooks/usePortfolioData"
 import {
   PortfolioHeader,
@@ -25,6 +26,7 @@ export function Portfolio() {
   const [selectedSector, setSelectedSector] = useState<string | undefined>()
   const [chartsReady, setChartsReady] = useState(false)
   const [activeTab, setActiveTab] = useState("holdings")
+  const [alphaFamily, setAlphaFamily] = useState<AlphaFamily>("rd_alpha")
   const [showMethodologyDetails, setShowMethodologyDetails] = useState(false)
 
   // Delay chart rendering to ensure container dimensions are calculated
@@ -37,7 +39,7 @@ export function Portfolio() {
     return () => cancelAnimationFrame(rafId)
   }, [activeTab])
 
-  const data = usePortfolioData(asOfYear, nHoldings, selectedSector)
+  const data = usePortfolioData(asOfYear, nHoldings, selectedSector, alphaFamily)
 
   if (data.isLoading) {
     return (
@@ -52,6 +54,25 @@ export function Portfolio() {
 
   return (
     <div className="space-y-8">
+      {/* Alpha Family Toggle */}
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-sm font-medium text-muted-foreground">Alpha:</span>
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          <button
+            className={`px-4 py-1.5 text-sm font-medium transition-colors ${alphaFamily === "rd_alpha" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
+            onClick={() => setAlphaFamily("rd_alpha")}
+          >
+            R&D Alpha
+          </button>
+          <button
+            className={`px-4 py-1.5 text-sm font-medium transition-colors ${alphaFamily === "pnl_efficiency" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
+            onClick={() => setAlphaFamily("pnl_efficiency")}
+          >
+            PNL Efficiency
+          </button>
+        </div>
+      </div>
+
       <PortfolioHeader
         data={data}
         asOfYear={asOfYear} setAsOfYear={setAsOfYear}

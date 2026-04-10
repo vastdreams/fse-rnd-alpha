@@ -16,6 +16,8 @@ from app.api.routes.research.fama_macbeth_routes import router as fm_router
 from app.api.routes.research.robustness import router as robust_router
 from app.api.routes.research.advanced_analysis import router as advanced_router
 from app.api.routes.research.top_journal import router as journal_router
+from app.api.routes.research.pnl_efficiency import router as pnl_router
+from app.api.routes.research.pnl_factor_tests import router as pnl_factor_tests_router
 
 router = APIRouter()
 router.include_router(cohort_router)
@@ -29,3 +31,5 @@ router.include_router(fm_router)
 router.include_router(robust_router)
 router.include_router(advanced_router)
 router.include_router(journal_router)
+router.include_router(pnl_router)
+router.include_router(pnl_factor_tests_router)

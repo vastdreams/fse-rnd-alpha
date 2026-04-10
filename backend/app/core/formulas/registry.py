@@ -386,4 +386,115 @@ FORMULA_REGISTRY: Dict[str, FormulaSpec] = {
         valid_range=(-1.0, 100.0),
         unit="ratio",
     ),
+
+    # --------------------------------------------------------------------------
+    # PNL Efficiency Alpha: Operating Efficiency Factors
+    # --------------------------------------------------------------------------
+
+    "cogs_to_revenue": FormulaSpec(
+        name="COGS to Revenue",
+        latex=r"\text{GrossEff} = 1 - \frac{\text{COGS}}{\text{Revenue}}",
+        description="Gross efficiency: complement of cost-of-goods-sold ratio, higher is more efficient",
+        inputs={
+            "cost_of_revenue": "Cost of goods sold from income statement ($)",
+            "revenue": "Total revenue from income statement ($)",
+        },
+        output="Gross efficiency ratio [0, 1]",
+        derivation_steps=[
+            "1. Extract COGS (cost_of_revenue) from FMP income statement",
+            "2. Extract revenue from FMP income statement",
+            "3. Compute ratio: 1 - (COGS / revenue)",
+            "4. Higher values indicate better gross margin efficiency",
+        ],
+        paper_reference="PNL Efficiency Alpha - Phase 1",
+        valid_range=(0.0, 1.0),
+        unit="ratio",
+        notes=[
+            "Equivalent to gross margin when COGS is reported correctly",
+            "Sector-relative z-scoring removes cross-sector differences",
+        ],
+    ),
+
+    "sga_to_revenue": FormulaSpec(
+        name="SGA to Revenue",
+        latex=r"\text{OverheadEff} = 1 - \frac{\text{SGA}}{\text{Revenue}}",
+        description="Overhead efficiency: complement of SGA-to-revenue ratio",
+        inputs={
+            "sga_expenses": "Selling, general and administrative expenses ($)",
+            "revenue": "Total revenue from income statement ($)",
+        },
+        output="Overhead efficiency ratio [0, 1]",
+        derivation_steps=[
+            "1. Extract SGA from FMP income statement",
+            "2. Compute ratio: 1 - (SGA / revenue)",
+            "3. Higher values indicate leaner overhead structure",
+        ],
+        paper_reference="PNL Efficiency Alpha - Phase 1",
+        valid_range=(-1.0, 1.0),
+        unit="ratio",
+    ),
+
+    "opex_to_revenue": FormulaSpec(
+        name="OpEx to Revenue",
+        latex=r"\text{OpEff} = 1 - \frac{\text{OpEx}}{\text{Revenue}}",
+        description="Operating efficiency: complement of total operating expenses ratio",
+        inputs={
+            "operating_expenses": "Total operating expenses ($)",
+            "revenue": "Total revenue from income statement ($)",
+        },
+        output="Operating efficiency ratio",
+        derivation_steps=[
+            "1. Extract operating_expenses from FMP income statement",
+            "2. Compute ratio: 1 - (OpEx / revenue)",
+            "3. Higher values indicate better operating leverage",
+        ],
+        paper_reference="PNL Efficiency Alpha - Phase 1",
+        valid_range=(-2.0, 1.0),
+        unit="ratio",
+    ),
+
+    "net_margin": FormulaSpec(
+        name="Net Margin (Profit Conversion)",
+        latex=r"\text{ProfitConv} = \frac{\text{Net Income}}{\text{Revenue}}",
+        description="Profit conversion: fraction of revenue retained as net income",
+        inputs={
+            "net_income": "Net income from income statement ($)",
+            "revenue": "Total revenue from income statement ($)",
+        },
+        output="Net margin ratio",
+        derivation_steps=[
+            "1. Extract net_income and revenue from FMP income statement",
+            "2. Compute ratio: net_income / revenue",
+        ],
+        paper_reference="PNL Efficiency Alpha - Phase 1",
+        valid_range=(-1.0, 1.0),
+        unit="ratio",
+    ),
+
+    "pnl_efficiency_score": FormulaSpec(
+        name="PNL Efficiency Score",
+        latex=r"\text{PNL}_{\text{eff}} = \frac{1}{4}\sum_{c \in C} z_{\text{sector}}(c)",
+        description="Equal-weight average of four sector-relative z-scored P&L efficiency components",
+        inputs={
+            "gross_efficiency_z": "Sector-relative z-score of gross efficiency",
+            "overhead_efficiency_z": "Sector-relative z-score of overhead efficiency",
+            "operating_efficiency_z": "Sector-relative z-score of operating efficiency",
+            "profit_conversion_z": "Sector-relative z-score of profit conversion",
+        },
+        output="Composite PNL efficiency z-score",
+        derivation_steps=[
+            "1. Compute raw ratios for each component from FMP income statements",
+            "2. Within each GICS sector-year, compute z-scores for each component",
+            "3. Winsorize z-scores at +/- 3 standard deviations",
+            "4. Average the four z-scores with equal weight",
+            "5. Rank companies by composite z-score within the full cross-section",
+        ],
+        paper_reference="PNL Efficiency Alpha - Phase 1",
+        valid_range=(-3.0, 3.0),
+        unit="z-score",
+        notes=[
+            "Positive score = more efficient than sector median",
+            "Does NOT include payroll or employee count - those are Phase 2",
+        ],
+    ),
 }

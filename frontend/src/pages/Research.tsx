@@ -14,6 +14,7 @@ import {
   CompaniesTab,
   PapersTab,
   MethodologyTab,
+  PnlEfficiencyTab,
 } from "@/components/research"
 
 export function Research() {
@@ -61,6 +62,7 @@ export function Research() {
           <TabsTrigger value="companies" className="flex-1 min-w-[120px]">Cohort Companies</TabsTrigger>
           <TabsTrigger value="papers" className="flex-1 min-w-[80px]">Papers</TabsTrigger>
           <TabsTrigger value="methodology" className="flex-1 min-w-[100px]">Methodology</TabsTrigger>
+          <TabsTrigger value="pnl-efficiency" className="flex-1 min-w-[120px]">PNL Efficiency</TabsTrigger>
         </TabsList>
 
         <TabsContent value="quintiles" className="space-y-4">
@@ -105,6 +107,10 @@ export function Research() {
 
         <TabsContent value="methodology" className="space-y-4">
           <MethodologyTab />
+        </TabsContent>
+
+        <TabsContent value="pnl-efficiency" className="space-y-4">
+          <PnlEfficiencyTab />
         </TabsContent>
       </Tabs>
     </div>

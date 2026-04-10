@@ -2,12 +2,13 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api, portfolioApi } from "@/lib/api"
+import type { AlphaFamily } from "@/lib/api/types"
 
 const CURRENT_YEAR = new Date().getFullYear()
 
 export type PortfolioData = ReturnType<typeof usePortfolioData>
 
-export function usePortfolioData(asOfYear: number, nHoldings: number, selectedSector?: string) {
+export function usePortfolioData(asOfYear: number, nHoldings: number, selectedSector?: string, alphaFamily: AlphaFamily = "rd_alpha") {
   // ── Frozen publication snapshot ──
   const { data: publicationSnapshot } = useQuery({
     queryKey: ["publicationSnapshot"],
@@ -41,14 +42,14 @@ export function usePortfolioData(asOfYear: number, nHoldings: number, selectedSe
 
   // ── Holdings ──
   const { data: holdings, isLoading: loadingHoldings } = useQuery({
-    queryKey: ["etfHoldings", nHoldings, selectedSector, asOfYear],
-    queryFn: () => portfolioApi.getETFHoldings(nHoldings, "rd_alpha", selectedSector, asOfYear),
+    queryKey: ["etfHoldings", nHoldings, selectedSector, asOfYear, alphaFamily],
+    queryFn: () => portfolioApi.getETFHoldings(nHoldings, alphaFamily, selectedSector, asOfYear),
   })
 
   // ── Forecast vs Actual ──
   const { data: forecastVsActual, isLoading: loadingForecast } = useQuery({
-    queryKey: ["forecastVsActual", asOfYear, nHoldings, selectedSector],
-    queryFn: () => portfolioApi.getForecastVsActual(asOfYear, nHoldings, "rd_alpha", selectedSector),
+    queryKey: ["forecastVsActual", asOfYear, nHoldings, selectedSector, alphaFamily],
+    queryFn: () => portfolioApi.getForecastVsActual(asOfYear, nHoldings, alphaFamily, selectedSector),
   })
 
   // ── Backtest ──
@@ -57,16 +58,16 @@ export function usePortfolioData(asOfYear: number, nHoldings: number, selectedSe
   const backtestEnd = Math.min(asOfYear, CURRENT_YEAR - 1)
 
   const { data: backtest, isLoading: loadingBacktest } = useQuery({
-    queryKey: ["backtest-full-chart", backtestStart, backtestEndForQuery, nHoldings, selectedSector],
-    queryFn: () => portfolioApi.backtest(backtestStart, backtestEndForQuery, nHoldings, "rd_alpha", selectedSector),
+    queryKey: ["backtest-full-chart", backtestStart, backtestEndForQuery, nHoldings, selectedSector, alphaFamily],
+    queryFn: () => portfolioApi.backtest(backtestStart, backtestEndForQuery, nHoldings, alphaFamily, selectedSector),
     staleTime: 5 * 60 * 1000,
   })
 
   // ── Supporting data ──
   const { data: sectors } = useQuery({ queryKey: ["portfolioSectors"], queryFn: portfolioApi.getSectors })
   const { data: sectorAllocation } = useQuery({
-    queryKey: ["sectorAllocation", nHoldings, asOfYear],
-    queryFn: () => portfolioApi.getSectorAllocation(nHoldings, "rd_alpha", asOfYear),
+    queryKey: ["sectorAllocation", nHoldings, asOfYear, alphaFamily],
+    queryFn: () => portfolioApi.getSectorAllocation(nHoldings, alphaFamily, asOfYear),
   })
   const { data: methodology } = useQuery({ queryKey: ["methodology"], queryFn: portfolioApi.getMethodology })
   const { data: rdAlphaHoldings } = useQuery({
@@ -206,7 +207,7 @@ export function usePortfolioData(asOfYear: number, nHoldings: number, selectedSe
 
   return {
     // Raw data
-    holdings, backtest, forecastVsActual, sectors, sectorAllocation,
+    holdings, backtest, forecastVsActual, sectors, sectorAllocation, alphaFamily,
     methodology, rdAlphaHoldings, sectorWeights, sp500Forecast,
     publicationSnapshot,
     // Publication metrics

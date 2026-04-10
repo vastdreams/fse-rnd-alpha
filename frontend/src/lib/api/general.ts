@@ -5,6 +5,9 @@
 
 import { fetchApi } from "./base"
 import type {
+  PnlEfficiencyScore,
+  PnlQuintile,
+  PnlMethodology,
   Company,
   CompanyDetail,
   RDSummary,
@@ -196,4 +199,21 @@ export const api = {
 
   getSectorNeutralPremiumSeries: (startYear: number = 1995, endYear: number = 2024) =>
     fetchApi<SectorNeutralResult>(`/api/research/sector-neutral-premium-series?start_year=${startYear}&end_year=${endYear}`),
+  // PNL Efficiency Alpha endpoints
+  getPnlScores: (year?: number, limit = 100, sector?: string) => {
+    let url = `/api/research/pnl-efficiency/scores?limit=${limit}`
+    if (year) url += `&year=${year}`
+    if (sector) url += `&sector=${sector}`
+    return fetchApi<PnlEfficiencyScore[]>(url)
+  },
+
+  getPnlQuintiles: (year?: number) => {
+    let url = "/api/research/pnl-efficiency/quintiles"
+    if (year) url += `?year=${year}`
+    return fetchApi<PnlQuintile[]>(url)
+  },
+
+  getPnlMethodology: () =>
+    fetchApi<PnlMethodology>("/api/research/pnl-efficiency/methodology"),
+
 }

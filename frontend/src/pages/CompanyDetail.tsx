@@ -7,8 +7,9 @@
 import { useParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { api, companyApi } from "@/lib/api"
+import type { PnlEfficiencyScore } from "@/lib/api/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText } from "lucide-react"
+import { FileText, BarChart3 } from "lucide-react"
 import {
   CompanyHeader,
   FinancialsTab,
@@ -38,6 +39,14 @@ export function CompanyDetail() {
     queryFn: () => companyApi.getAnnualReports(ticker!),
     enabled: !!ticker,
   })
+
+  const { data: pnlScores } = useQuery({
+    queryKey: ["pnlScore", ticker],
+    queryFn: () => api.getPnlScores(undefined, 500),
+    enabled: !!ticker,
+  })
+
+  const pnlScore = (pnlScores || []).find((s: PnlEfficiencyScore) => s.symbol === ticker)
 
   const formatNumber = (num: number | null | undefined) => {
     if (num === null || num === undefined) return "..."
@@ -86,6 +95,10 @@ export function CompanyDetail() {
           <TabsTrigger value="rd">R&D Analysis</TabsTrigger>
           <TabsTrigger value="returns">Returns</TabsTrigger>
           <TabsTrigger value="prices">Price Chart</TabsTrigger>
+          <TabsTrigger value="pnl-efficiency">
+            <BarChart3 className="h-4 w-4 mr-1" />
+            PNL Efficiency
+          </TabsTrigger>
           <TabsTrigger value="annual-reports">
             <FileText className="h-4 w-4 mr-1" />
             Annual Reports
@@ -106,6 +119,51 @@ export function CompanyDetail() {
 
         <TabsContent value="prices">
           <PriceChartTab prices={prices} />
+        </TabsContent>
+
+        <TabsContent value="pnl-efficiency">
+          {pnlScore ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Gross Efficiency</p>
+                  <p className="text-2xl font-bold">{(pnlScore.gross_efficiency * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Z-score: {pnlScore.gross_efficiency_z.toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Overhead Efficiency</p>
+                  <p className="text-2xl font-bold">{(pnlScore.overhead_efficiency * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Z-score: {pnlScore.overhead_efficiency_z.toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Operating Efficiency</p>
+                  <p className="text-2xl font-bold">{(pnlScore.operating_efficiency * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Z-score: {pnlScore.operating_efficiency_z.toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Profit Conversion</p>
+                  <p className="text-2xl font-bold">{(pnlScore.profit_conversion * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Z-score: {pnlScore.profit_conversion_z.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-lg border p-4 bg-gradient-to-br from-blue-500/10 to-blue-600/5">
+                  <p className="text-sm text-muted-foreground">Composite Score</p>
+                  <p className={`text-3xl font-bold ${pnlScore.composite_z > 0 ? "text-green-500" : "text-red-500"}`}>{pnlScore.composite_z.toFixed(3)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Sector Percentile</p>
+                  <p className="text-3xl font-bold">{pnlScore.sector_percentile.toFixed(0)}%</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Cross-Section Rank</p>
+                  <p className="text-3xl font-bold">#{pnlScore.selection_rank}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground p-8 text-center">PNL efficiency data not available for this company.</p>
+          )}
         </TabsContent>
 
         <TabsContent value="annual-reports">

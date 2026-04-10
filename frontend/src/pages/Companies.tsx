@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { exportToCSV } from "@/lib/export"
 import { useAppStore } from "@/store/appStore"
 import { analytics } from "@/lib/analytics"
+import type { PnlEfficiencyScore } from "@/lib/api/types"
 
 export function Companies() {
   // Use global search from app store (synced with navbar)
@@ -24,6 +25,16 @@ export function Companies() {
     queryKey: ["sectors"],
     queryFn: api.getSectors,
   })
+
+  const { data: pnlScores } = useQuery({
+    queryKey: ["pnlScoresForCompanies"],
+    queryFn: () => api.getPnlScores(undefined, 500),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const pnlScoreMap = new Map(
+    (pnlScores || []).map((s: PnlEfficiencyScore) => [s.symbol, s])
+  )
 
   const formatNumber = (num: number | null | undefined) => {
     if (num === null || num === undefined) return "..."
@@ -194,13 +205,14 @@ export function Companies() {
                 <TableHead className="text-right">Revenue</TableHead>
                 <TableHead className="text-right">R&D Expense</TableHead>
                 <TableHead className="text-right">R&D Intensity</TableHead>
+                <TableHead className="text-right">PNL Score</TableHead>
                 <TableHead className="text-right">Years</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCompanies?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No companies found matching "{searchQuery}"
                   </TableCell>
                 </TableRow>
@@ -237,6 +249,14 @@ export function Companies() {
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {(() => {
+                      const pnl = pnlScoreMap.get(company.symbol)
+                      if (!pnl) return <span className="text-muted-foreground">-</span>
+                      const color = pnl.composite_z > 0.5 ? "text-green-600 dark:text-green-400" : pnl.composite_z > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+                      return <span className={`font-bold ${color}`}>{pnl.composite_z.toFixed(2)}</span>
+                    })()}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">
                     {company.years_data}

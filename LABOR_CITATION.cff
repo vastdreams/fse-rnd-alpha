@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this research, please cite it as below."
+type: software
+title: "Labor Efficiency Alpha: Human-Capital Productivity and Long-Term Stock Returns"
+authors:
+  - family-names: "Sehgal"
+    given-names: "Abhishek"
+    orcid: "https://orcid.org/0009-0000-9424-4695"
+repository-code: "https://github.com/vastdreams/rd-alpha-research"
+url: "https://research.finsoeasy.com"
+abstract: >-
+  Research platform and working paper investigating whether labor-input
+  efficiency---measured by revenue per employee and revenue per dollar of
+  payroll---predicts cross-sectional equity returns in a large-cap U.S.
+  universe. Empirical sections are gated on the completion of a labor-data
+  extraction pipeline from annual reports and XBRL filings.
+keywords:
+  - labor efficiency
+  - human capital
+  - employee productivity
+  - payroll intensity
+  - factor investing
+  - equity returns
+license: MIT
+version: "0.1.0"
+date-released: "2026-02-27"
+
+preferred-citation:
+  type: report
+  authors:
+    - family-names: "Sehgal"
+      given-names: "Abhishek"
+      orcid: "https://orcid.org/0009-0000-9424-4695"
+  title: "Labor Efficiency Alpha: Human-Capital Productivity and Long-Term Stock Returns"
+  year: 2026
+  month: 2
+  version: "0.1"
+  institution: "FSE Research & Investments Pty Ltd"
+  url: "https://research.finsoeasy.com"
+  notes: "Working paper, Version 0.1. Empirical sections gated on labor-data pipeline. Research supported by Eye Dream Pty Ltd trading as Finsoeasy (ABN: 95 650 714 060)."

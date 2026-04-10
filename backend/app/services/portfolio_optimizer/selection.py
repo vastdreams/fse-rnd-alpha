@@ -49,9 +49,14 @@ class SelectionMixin:
         - "highest_rd": Pure R&D intensity ranking
         - "balanced": Diversified across sectors
         - "rd_alpha": Research-based sector-agnostic scoring (recommended)
+        - "pnl_efficiency": PNL operating efficiency scoring
         """
         if method == "rd_alpha":
             holdings, _ = await self._select_with_rd_alpha_scorer(n=n, as_of_year=None)
+            return holdings
+
+        if method == "pnl_efficiency":
+            holdings, _ = await self._select_with_pnl_efficiency_scorer(n=n, as_of_year=None)
             return holdings
 
         query = select(ResearchCohort).where(
@@ -162,6 +167,10 @@ class SelectionMixin:
             holdings, _ = await self._select_with_rd_alpha_scorer(n=n, as_of_year=as_of_year)
             return holdings
 
+        if method == "pnl_efficiency":
+            holdings, _ = await self._select_with_pnl_efficiency_scorer(n=n, as_of_year=as_of_year)
+            return holdings
+
         # Use PRIOR year's financial data to avoid look-ahead bias
         data_year = as_of_year - 1
 
@@ -225,6 +234,32 @@ class SelectionMixin:
 
         logger.info(f"Selected {len(holdings)} holdings for year {as_of_year} using FY{data_year} data")
         return holdings
+
+
+    async def _select_with_pnl_efficiency_scorer(
+        self,
+        n: int = 20,
+        as_of_year: Optional[int] = None,
+    ) -> Tuple[List[PortfolioHolding], Optional[Dict]]:
+        """Select companies using PNL Efficiency scoring engine."""
+        from app.services.pnl_efficiency_scorer import PnlEfficiencyScorer
+
+        scorer = PnlEfficiencyScorer(self.session)
+        all_scores = await scorer.calculate_scores(as_of_year=as_of_year)
+        selected = await scorer.apply_sector_constraints(all_scores, n_holdings=n)
+
+        holdings = []
+        for score in selected:
+            holdings.append(PortfolioHolding(
+                symbol=score.symbol,
+                name=score.name,
+                sector=score.sector,
+                weight=score.weight,
+                rd_intensity=0.0,
+                quality_score=score.sector_percentile,
+            ))
+
+        return holdings, None
 
     def _balance_by_sector(
         self,

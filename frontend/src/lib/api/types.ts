@@ -884,3 +884,51 @@ export interface AnnualReportsResponse {
     trend: string
   }
 }
+
+
+// ─── PNL Efficiency Alpha Types ─────────────────────────────────────────────
+
+export type AlphaFamily = "rd_alpha" | "pnl_efficiency"
+
+export interface PnlEfficiencyScore {
+  symbol: string
+  name: string
+  sector: string
+  industry: string | null
+  gross_efficiency: number
+  overhead_efficiency: number
+  operating_efficiency: number
+  profit_conversion: number
+  gross_efficiency_z: number
+  overhead_efficiency_z: number
+  operating_efficiency_z: number
+  profit_conversion_z: number
+  composite_z: number
+  sector_percentile: number
+  final_score: number
+  revenue: number
+  fiscal_year_used: number | null
+  selection_rank: number
+}
+
+export interface PnlQuintile {
+  quintile: number
+  label: string
+  n_companies: number
+  avg_composite_z: number
+  avg_gross_eff: number
+  avg_overhead_eff: number
+  avg_operating_eff: number
+  avg_profit_conv: number
+}
+
+export interface PnlMethodology {
+  name: string
+  components: Record<string, string>
+  scoring_method: string
+  normalization: string
+  winsorization: string
+  phase: string
+  excluded: string[]
+}
+

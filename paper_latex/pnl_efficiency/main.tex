@@ -1,0 +1,425 @@
+% PATH: paper_latex/pnl_efficiency/main.tex
+% PURPOSE:
+%   Submission-ready LaTeX manuscript for the PNL Efficiency Alpha study.
+%   Full structure: abstract, introduction, literature review, hypotheses, data,
+%   variable construction, empirical design, core results, robustness, portfolio
+%   implications, limitations, conclusion, references, appendices.
+%
+% DEPENDENCIES:
+%   - references.bib (curated BibTeX references)
+%   - data/metrics.tex (auto-generated macros from frozen snapshot, when available)
+%   - tables/*.tex (auto-generated tables)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=25mm,top=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\setstretch{1.08}
+
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.15em}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\usepackage{xurl}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
+\usepackage[square,numbers,sort&compress]{natbib}
+\bibliographystyle{unsrtnat}
+\usepackage{orcidlink}
+
+% Snapshot-pinned macros (will be auto-generated; placeholder definitions for compilation)
+\IfFileExists{data/metrics.tex}{\input{data/metrics.tex}}{%
+  \newcommand{\SnapshotId}{PENDING}
+  \newcommand{\SnapshotBuiltAt}{PENDING}
+  \newcommand{\DataTier}{Tier-1 (FMP)}
+  \newcommand{\ReturnConvention}{July-June}
+  \newcommand{\AnnualSeriesStart}{Jul2001}
+  \newcommand{\AnnualSeriesEnd}{Jun2025}
+  \newcommand{\AnnualNYears}{24}
+  \newcommand{\UniverseSize}{S\&P 500}
+  \newcommand{\NSectors}{11}
+  \newcommand{\MinSectorSize}{5}
+  \newcommand{\WinsorizationLimit}{3.0}
+}
+
+\title{\textbf{P\&L Efficiency Alpha: Operating Cost Structure and Long-Term Stock Returns}}
+\author{%
+    Abhishek Sehgal\,\orcidlink{0009-0000-9424-4695}\\[1pt]
+    {\footnotesize ORCID: \href{https://orcid.org/0009-0000-9424-4695}{0009-0000-9424-4695}}\\[2pt]
+    \small FSE Research \& Investments Pty Ltd%
+    \thanks{ABN: 35 688 556 747. Address: 50 Murray St, Pyrmont, Sydney, NSW 2009, Australia. Email: \href{mailto:abhishek@finsoeasy.com}{abhishek@finsoeasy.com}. Web: \href{https://research.finsoeasy.com}{research.finsoeasy.com}. Research supported by Eye Dream Pty Ltd trading as Finsoeasy (ABN: 95 650 714 060).}%
+    \\[1pt]
+    {\footnotesize \href{https://research.finsoeasy.com}{research.finsoeasy.com}}%
+}
+\date{February 2026\quad$\cdot$\quad Version 1.0 (Working Paper)}
+
+\begin{document}
+\maketitle
+\vspace{-1em}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ABSTRACT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+\noindent\textbf{Objective.}
+We investigate whether cross-sectional differences in profit-and-loss (P\&L) cost-structure efficiency predict subsequent equity returns among S\&P 500 large-cap stocks. We decompose operating efficiency into four standardized components---gross efficiency (1 $-$ CoGS/Revenue), overhead efficiency (1 $-$ SG\&A/Revenue), operating efficiency (Operating Income/Revenue), and profit conversion (Net Income/Operating Income)---and construct a sector-relative composite score to test whether firms that extract more profit per dollar of revenue earn a premium over comparable-sector peers.
+
+\noindent\textbf{Method.}
+At each annual formation date (July 1), we compute the four efficiency ratios from the most recently reported annual income statement, winsorize within-sector z-scores at $\pm\WinsorizationLimit\sigma$, and form quintile portfolios sorted on the equal-weighted composite. We evaluate subsequent July-June returns following \citet{fama_french_1993}. Statistical inference uses Fama-MacBeth cross-sectional regressions \citep{fama_macbeth_1973} and Newey-West adjusted standard errors \citep{newey_west_1987}. Factor-spanning tests control for the Fama-French five factors \citep{fama_french_2015} plus momentum \citep{carhart_1997}.
+
+\noindent\textbf{Results.}
+\textit{[PENDING: Results will be populated from the frozen publication snapshot once the factor test pipeline is finalized.]}
+
+\noindent\textbf{Implementation.}
+We map the signal into a concentrated long-only portfolio holding the top 20 stocks by composite PNL efficiency score, equal-weighted and reconstituted annually in July, subject to sector-weight constraints. Transaction costs follow the \citet{novy_marx_velikov_2016} calibration framework applied to realized turnover.
+
+\noindent\textbf{Interpretation.}
+This study contributes to the profitability anomaly literature \citep{novy_marx_2013, fama_french_2006} by decomposing the gross profitability premium into granular cost-structure channels and testing whether within-sector operating efficiency delivers incremental alpha beyond standard profitability factors. The analysis is associational rather than causal. This paper focuses exclusively on P\&L cost-structure efficiency; a companion paper examines labor-input efficiency (employee count and payroll per dollar of revenue) as a distinct human-capital channel.
+\end{abstract}
+
+\vspace{0.1em}
+\noindent\textbf{Keywords:} Operating efficiency; cost structure; profitability premium; factor investing; equity returns; DuPont decomposition.\\
+\textbf{JEL:} G11; G12; M41.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1. INTRODUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+A substantial body of evidence documents that profitable firms earn higher subsequent stock returns than less profitable peers. \citet{novy_marx_2013} demonstrates that gross profitability---revenues minus cost of goods sold, scaled by total assets---is a powerful cross-sectional return predictor, subsuming much of the traditional value premium. \citet{fama_french_2015} formalize this insight by adding a profitability factor (RMW) and an investment factor (CMA) to their canonical three-factor model. \citet{ball_gerakos_linnainmaa_nikolaev_2015} further show that cash-based operating profitability outperforms accrual-based measures, while \citet{asness_frazzini_pedersen_2019} synthesize multiple quality dimensions---including profitability, growth, and safety---into a unified ``quality minus junk'' framework.
+
+Despite this rich literature, the conventional profitability signal treats the income statement as a single aggregate: gross profit divided by assets (GP/A), operating profit, or net income. This aggregation obscures heterogeneity in \textit{how} firms generate profit. Two companies with identical gross profitability may have very different overhead structures, operating leverage, and profit-conversion rates. Understanding which layer of the income statement drives the cross-sectional return spread has both economic and portfolio-construction implications.
+
+We address this gap by decomposing the income statement into four efficiency layers, each measuring a distinct channel through which revenue converts to bottom-line profit:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Gross Efficiency}: $1 - \text{CoGS}/\text{Revenue}$, measuring direct production-cost control relative to peers.
+    \item \textbf{Overhead Efficiency}: $1 - \text{SG\&A}/\text{Revenue}$, capturing selling, general, and administrative expense discipline.
+    \item \textbf{Operating Efficiency}: $\text{Operating Income}/\text{Revenue}$, the combined operating margin after both direct and overhead costs.
+    \item \textbf{Profit Conversion}: $\text{Net Income}/\text{Operating Income}$, measuring the fraction of operating profit that survives interest, taxes, and non-operating items.
+\end{enumerate}
+
+Crucially, we normalize each ratio within GICS sectors before forming composites. This sector-relative approach avoids conflating industry-level cost structures (e.g., software versus manufacturing) with firm-level operational skill. A software firm with 80\% gross margin is not inherently more ``efficient'' than a manufacturer with 30\% gross margin; what matters for return prediction is whether a firm is more efficient than its within-sector peers.
+
+This research design connects to several strands of the finance and accounting literatures. The DuPont decomposition framework \citep{soliman_2008, fairfield_yohn_2001, nissim_penman_2001} has long been used to disaggregate return on equity into margin, turnover, and leverage components. \citet{ou_penman_1989} pioneered the use of financial statement ratios to predict stock returns. \citet{novy_marx_2011} documents that operating leverage---the sensitivity of operating profit to revenue shocks---creates systematic risk. \citet{anderson_banker_janakiraman_2003} show that SG\&A costs are ``sticky,'' rising faster with revenue increases than they fall with decreases, which creates persistent heterogeneity in overhead efficiency. These insights motivate our hypothesis that granular efficiency metrics contain return-predictive information beyond what aggregate profitability captures.
+
+The remainder of this paper is organized as follows. Section~\ref{sec:literature} reviews the profitability, operating leverage, and cost-structure literatures. Section~\ref{sec:hypotheses} states our hypotheses. Section~\ref{sec:data} describes the data sources and sample construction. Section~\ref{sec:variables} defines the efficiency variables and composite score. Section~\ref{sec:design} outlines the empirical design. Section~\ref{sec:results} presents the core results. Section~\ref{sec:robustness} discusses robustness tests. Section~\ref{sec:portfolio} presents portfolio implications. Section~\ref{sec:limitations} discusses limitations. Section~\ref{sec:conclusion} concludes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2. LITERATURE REVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Literature Review}\label{sec:literature}
+
+\subsection{The Profitability Premium}
+
+The cross-sectional relationship between profitability and stock returns is among the most robust findings in empirical asset pricing. \citet{haugen_baker_1996} first document that high-profitability firms earn higher returns, a result that challenges risk-based explanations since profitable firms are generally less risky in conventional frameworks.
+
+\citet{novy_marx_2013} demonstrates that gross profitability (GP/A) is a powerful predictor of future returns, showing that it subsumes much of the traditional HML value premium and that high-profitability firms outperform low-profitability firms by economically and statistically significant margins. This result is formalized in \citet{fama_french_2015}, where the RMW (robust minus weak operating profitability) factor enters the five-factor model.
+
+\citet{ball_gerakos_linnainmaa_nikolaev_2015} refine the profitability measure, showing that cash-based operating profitability outperforms accrual-based metrics, consistent with the view that accruals introduce noise. \citet{ball_gerakos_linnainmaa_nikolaev_2016} further decompose profitability into cash and accrual components, finding that the cash component drives the return predictability.
+
+A key limitation of this literature is that ``profitability'' is treated as a single aggregate---whether GP/A, operating income/assets, or net income/equity. Our study decomposes this aggregate into the individual cost layers that determine the level of profitability, testing whether specific cost channels carry distinct return information.
+
+\subsection{Operating Leverage and Cost Structure}
+
+\citet{lev_1974} and \citet{mandelker_rhee_1984} establish the theoretical link between operating leverage (the ratio of fixed to variable costs) and systematic risk. Firms with high operating leverage exhibit greater profit sensitivity to revenue fluctuations, increasing their exposure to macroeconomic shocks.
+
+\citet{novy_marx_2011} provides modern empirical evidence that operating leverage commands a risk premium. Firms with high cost-of-goods-sold-to-assets ratios (high variable costs, low operating leverage) earn lower returns, while firms with sticky cost structures and higher fixed costs earn a premium for bearing this risk. This result is directly relevant to our gross efficiency measure, which captures the complement of CoGS/Revenue.
+
+\citet{anderson_banker_janakiraman_2003} document SG\&A cost stickiness: costs rise proportionally with revenue increases but decline less than proportionally with revenue decreases. \citet{banker_byzalov_2014} extend this finding, showing that cost stickiness is a pervasive feature of corporate cost behavior rather than an artifact of aggregation. The persistence of overhead cost structures creates within-sector efficiency differentials that may not be fully priced by the market.
+
+\subsection{DuPont Analysis and Return Prediction}
+
+The DuPont framework decomposes return on equity into profit margin $\times$ asset turnover $\times$ leverage. \citet{soliman_2008} shows that changes in DuPont components predict future earnings and returns, with the profit margin and asset turnover components providing independent information. \citet{fairfield_yohn_2001} demonstrate that disaggregating ROE into margin and turnover improves forecast accuracy for changes in profitability. \citet{nissim_penman_2001} provide a comprehensive ratio analysis framework showing that financial statement ratios predict future profitability and stock returns.
+
+Our study takes the DuPont spirit of disaggregation and applies it to within-sector cost-structure efficiency. Rather than decomposing ROE, we decompose the path from revenue to net income, asking which cost-control channels matter most for cross-sectional return spreads.
+
+\subsection{Quality Factors}
+
+\citet{asness_frazzini_pedersen_2019} construct a comprehensive quality factor (QMJ) that combines profitability, growth, safety, and payout signals. They show that high-quality firms earn a significant premium, suggesting the market systematically undervalues operational excellence. Our PNL efficiency composite can be viewed as a focused quality sub-factor that isolates the cost-structure dimension of operational quality.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3. HYPOTHESES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hypotheses}\label{sec:hypotheses}
+
+Based on the theoretical and empirical motivations outlined above, we test the following hypotheses:
+
+\begin{description}[style=nextline]
+    \item[H1: Composite PNL Efficiency Premium]
+    Firms in the top quintile of the sector-relative PNL efficiency composite earn higher subsequent returns than firms in the bottom quintile, after controlling for standard risk factors.
+
+    \item[H2: Granular Component Contributions]
+    The four efficiency components (gross, overhead, operating, profit conversion) provide partially independent return-prediction information, such that the composite outperforms any single component.
+
+    \item[H3: Incremental to Known Profitability Factors]
+    The PNL efficiency composite retains a statistically significant alpha after controlling for the Fama-French five factors (including RMW, the standard profitability factor) and momentum.
+
+    \item[H4: Operating Efficiency as the Dominant Channel]
+    Operating efficiency and overhead efficiency contribute more to return spreads than gross efficiency or profit conversion, consistent with the hypothesis that discretionary cost control (SG\&A management) is less efficiently priced than production-cost advantages.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4. DATA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data}\label{sec:data}
+
+\subsection{Sample Universe}
+
+Our primary analysis universe comprises current S\&P 500 constituents with reported annual income statement data from Financial Modeling Prep (FMP). We gate index eligibility at each July formation date using reported addition dates, following the same Tier-1 convention as our companion R\&D Alpha study.
+
+\subsection{Primary Data Source}
+
+\begin{table}[H]
+\centering
+\caption{Primary Data Source: Financial Modeling Prep (FMP)}
+\begin{tabular}{ll}
+\toprule
+\textbf{Field} & \textbf{Value} \\
+\midrule
+Provider & Financial Modeling Prep (financialmodelingprep.com) \\
+License & Commercial API subscription \\
+Data Types & Income statements, daily prices, company profiles \\
+Coverage & Typically 1995--present (varies by company) \\
+Primary inference window & Jul 2001--Jun 2025 \\
+Update frequency & Daily (prices), quarterly (financials) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Income Statement Fields Used:}
+\begin{itemize}[nosep]
+    \item \texttt{cost\_of\_revenue} (Cost of Goods Sold)
+    \item \texttt{selling\_general\_and\_administrative} (SG\&A expenses)
+    \item \texttt{operating\_income} (Operating Income)
+    \item \texttt{net\_income} (Net Income)
+    \item \texttt{revenue} (Total Revenue)
+\end{itemize}
+
+\subsection{Secondary Data: Fama-French Factors}
+
+Monthly factor returns (MKT-RF, SMB, HML, RMW, CMA, MOM) are obtained from the Ken French Data Library at Dartmouth for use in factor-spanning regressions and Fama-MacBeth controls.
+
+\subsection{Sample Filters}
+
+Firm-years are excluded if: (i) revenue $\le 0$; (ii) the firm's GICS sector contains fewer than \MinSectorSize{} peers at the formation date; or (iii) any required income statement line item is missing. Financial firms (GICS sector 40) are included but analyzed with appropriate caveats given their distinct cost structures.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 5. VARIABLE CONSTRUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Variable Construction}\label{sec:variables}
+
+\subsection{Raw Efficiency Ratios}
+
+For each firm $i$ in sector $s$ at formation date $t$, we compute:
+
+\begin{align}
+    \text{GrossEff}_{i,t} &= 1 - \frac{\text{CoGS}_{i,t}}{\text{Revenue}_{i,t}} \label{eq:gross} \\[4pt]
+    \text{OverheadEff}_{i,t} &= 1 - \frac{\text{SG\&A}_{i,t}}{\text{Revenue}_{i,t}} \label{eq:overhead} \\[4pt]
+    \text{OperatingEff}_{i,t} &= \frac{\text{OperatingIncome}_{i,t}}{\text{Revenue}_{i,t}} \label{eq:operating} \\[4pt]
+    \text{ProfitConv}_{i,t} &= \frac{\text{NetIncome}_{i,t}}{\text{OperatingIncome}_{i,t}} \label{eq:conversion}
+\end{align}
+
+For firms with negative or zero operating income, profit conversion is set to zero to avoid undefined or misleading ratios.
+
+\subsection{Sector-Relative Z-Scoring}
+
+Each raw ratio is standardized within GICS sectors:
+
+\begin{equation}
+    z_{i,t}^{k} = \frac{r_{i,t}^{k} - \bar{r}_{s,t}^{k}}{\sigma_{s,t}^{k}}
+    \label{eq:zscore}
+\end{equation}
+
+where $r_{i,t}^{k}$ is the raw ratio for component $k$, and $\bar{r}_{s,t}^{k}$ and $\sigma_{s,t}^{k}$ are the within-sector mean and standard deviation. We winsorize z-scores at $\pm\WinsorizationLimit\sigma$ to limit the influence of extreme outliers.
+
+\subsection{Composite Score}
+
+The composite PNL efficiency score is the equal-weighted average of the four winsorized z-scores:
+
+\begin{equation}
+    \text{PNLEff}_{i,t} = \frac{1}{4}\sum_{k=1}^{4} z_{i,t}^{k}
+    \label{eq:composite}
+\end{equation}
+
+We use equal weighting as the baseline to avoid in-sample optimization of component weights. Robustness tests examine principal-component-weighted and information-coefficient-weighted alternatives (Section~\ref{sec:robustness}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 6. EMPIRICAL DESIGN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Empirical Design}\label{sec:design}
+
+\subsection{Portfolio Formation}
+
+At each July 1 formation date, we sort firms into quintile portfolios by the composite PNL efficiency score. Portfolio returns are computed as equal-weighted averages of constituent returns over the subsequent July-June year. The high-minus-low spread portfolio (Q5 $-$ Q1, henceforth \textbf{HML\_PNL}) captures the return to the PNL efficiency signal.
+
+\subsection{Timing Discipline}
+
+To avoid look-ahead bias:
+\begin{itemize}[nosep]
+    \item Formation occurs on July 1, ensuring that annual financial data for the prior fiscal year has been filed (assuming a 6-month reporting lag for calendar-year filers).
+    \item We use only the most recently reported annual income statement available before the formation date.
+    \item No future information is used in signal construction or portfolio assignment.
+\end{itemize}
+
+\subsection{Statistical Tests}
+
+\begin{enumerate}
+    \item \textbf{Quintile Sorts}: Time-series average returns for each quintile portfolio. T-statistics for the Q5$-$Q1 spread use Newey-West \citep{newey_west_1987} standard errors with lag selection following $\lfloor 4(T/100)^{2/9}\rfloor$.
+
+    \item \textbf{Factor Spanning}: Monthly time-series regression of HML\_PNL on FF5+MOM:
+    \begin{equation}
+        R_{t}^{\text{HML\_PNL}} = \alpha + \beta_1 \text{MKT-RF}_t + \beta_2 \text{SMB}_t + \beta_3 \text{HML}_t + \beta_4 \text{RMW}_t + \beta_5 \text{CMA}_t + \beta_6 \text{MOM}_t + \epsilon_t
+    \end{equation}
+    The key test is whether $\alpha \neq 0$, which would indicate that PNL efficiency captures return variation beyond known factors.
+
+    \item \textbf{Fama-MacBeth Regressions}: Monthly cross-sectional regressions of returns on lagged PNL efficiency scores and controls (size, book-to-market, momentum):
+    \begin{equation}
+        R_{i,t} = \gamma_{0,t} + \gamma_{1,t}\,\text{PNLEff}_{i,t-1} + \gamma_{2,t}\,\text{Size}_{i,t-1} + \gamma_{3,t}\,\text{B/M}_{i,t-1} + \gamma_{4,t}\,\text{Mom}_{i,t-1} + \epsilon_{i,t}
+    \end{equation}
+    Time-series averages of $\gamma_{1,t}$ provide the Fama-MacBeth premium estimate.
+
+    \item \textbf{Orthogonality to R\&D Alpha}: We test whether PNL efficiency and R\&D intensity provide independent return predictions by including both signals in bivariate sorts and Fama-MacBeth specifications.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 7. CORE RESULTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Core Results}\label{sec:results}
+
+\textit{[PENDING: This section will be populated from the frozen publication snapshot. It will contain:]}
+
+\begin{itemize}[nosep]
+    \item Table~1: Quintile portfolio characteristics (average efficiency scores, sector composition, market cap)
+    \item Table~2: Quintile return summary (mean, median, standard deviation, Sharpe ratio, Q5$-$Q1 spread)
+    \item Table~3: Factor spanning regression results (FF5+MOM alphas and betas)
+    \item Table~4: Fama-MacBeth regression coefficients
+    \item Figure~1: Cumulative quintile returns over the sample period
+    \item Figure~2: Rolling 3-year Q5$-$Q1 spread
+    \item Component-level analysis: which cost layer drives the composite premium
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 8. ROBUSTNESS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Robustness}\label{sec:robustness}
+
+\textit{[PENDING: Robustness tests to be completed after core results. Planned tests:]}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Alternative Weighting Schemes}: Information-coefficient-weighted and PCA-weighted composites versus equal-weighted baseline.
+    \item \textbf{Winsorization Sensitivity}: Results at $\pm 2\sigma$ and $\pm 5\sigma$ thresholds.
+    \item \textbf{Sector Exclusions}: Excluding financials (GICS 40) and utilities (GICS 55).
+    \item \textbf{Size Quintile Interactions}: Testing whether the PNL efficiency premium varies with firm size.
+    \item \textbf{Subsample Stability}: Pre/post-2010 and crisis-period (2008--2009) splits.
+    \item \textbf{Transaction Costs}: Net-of-cost Q5$-$Q1 spread under the \citet{novy_marx_velikov_2016} framework.
+    \item \textbf{Alternative Profitability Controls}: Including GP/A \citep{novy_marx_2013} and cash-based profitability \citep{ball_gerakos_linnainmaa_nikolaev_2015} as competing signals.
+    \item \textbf{Orthogonality to R\&D Alpha}: Bivariate dependent sorts on PNL efficiency and R\&D intensity.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 9. PORTFOLIO IMPLICATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Portfolio Implications}\label{sec:portfolio}
+
+\textit{[PENDING: Implementable portfolio construction and backtest results. Will include:]}
+
+\begin{itemize}[nosep]
+    \item PNL20 strategy definition: top 20 stocks by composite PNL efficiency, equal-weighted, July reconstitution, sector caps.
+    \item Gross and net performance versus SPY benchmark.
+    \item Turnover analysis and transaction-cost estimation.
+    \item Sector allocation dynamics and concentration analysis.
+    \item Comparison to standard profitability-tilted strategies (RMW-sorted portfolios).
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 10. LIMITATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Limitations}\label{sec:limitations}
+
+Several limitations merit discussion:
+
+\begin{enumerate}
+    \item \textbf{Survivorship and Index Composition}: Our Tier-1 data uses current S\&P 500 constituents with reported addition dates; historical removals are not tracked, introducing mild survivorship bias. Firms that exited the index are absent from the formation-date universe in years before their removal.
+
+    \item \textbf{Cost Classification Heterogeneity}: The boundary between CoGS and SG\&A varies across firms and sectors. Some companies report minimal SG\&A (rolling overhead into CoGS), while others exclude production labor from CoGS. This classification noise attenuates measured efficiency differentials.
+
+    \item \textbf{Profit Conversion Noise}: The net-income-to-operating-income ratio is affected by one-time items (impairments, asset sales, tax law changes) that may not reflect persistent operational skill.
+
+    \item \textbf{Large-Cap Bias}: Restricting to S\&P 500 limits generalizability to small-cap and international universes where efficiency differentials may be larger.
+
+    \item \textbf{Single Data Vendor}: Reliance on FMP as the sole Tier-1 data source introduces data-vendor risk. Future work will incorporate Compustat/CRSP as Tier-2 verification.
+
+    \item \textbf{No Causal Identification}: The analysis is associational. High efficiency could proxy for other firm characteristics (managerial quality, competitive moats, scale advantages) that independently predict returns.
+
+    \item \textbf{Exclusion of Labor Inputs}: This paper intentionally excludes employee count and payroll data, which are addressed in a companion study. The omission means we cannot distinguish between technology-driven efficiency (substituting capital for labor) and labor-exploitation-driven efficiency (extracting more output per worker). The companion labor efficiency paper will address this gap once the required data pipeline is operational.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 11. CONCLUSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}\label{sec:conclusion}
+
+\textit{[PENDING: Conclusion will summarize the key findings once empirical sections are complete. The expected structure:]}
+
+This paper decomposes the well-documented profitability premium into four granular P\&L efficiency channels---gross efficiency, overhead efficiency, operating efficiency, and profit conversion---and tests whether a sector-relative composite predicts cross-sectional equity returns in the S\&P 500 universe. By normalizing within GICS sectors, we isolate firm-level operational skill from industry-level cost structures, providing a cleaner test of whether the market fully prices operational efficiency differences among comparable peers.
+
+Our findings contribute to the profitability anomaly literature by showing [pending results], suggesting that the aggregate profitability signal masks heterogeneity in the return-predictive power of different cost channels. The sector-relative approach ensures that the signal is not a disguised sector bet, and robustness tests confirm [pending] after controlling for known factors and accounting for transaction costs.
+
+For practitioners, the PNL efficiency composite offers a transparent, implementable signal that complements existing profitability tilts. For researchers, the decomposition opens avenues for studying which dimensions of operational quality the market fails to fully price and why.
+
+A companion paper will extend this framework by incorporating labor-input efficiency (employee count and payroll per dollar of revenue), testing whether human-capital efficiency provides return-predictive information beyond P\&L cost ratios.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{references}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+
+\section{Variable Definitions}\label{app:variables}
+
+\begin{table}[H]
+\centering
+\caption{Variable Definitions}
+\begin{tabular}{lp{9cm}}
+\toprule
+\textbf{Variable} & \textbf{Definition} \\
+\midrule
+Gross Efficiency & $1 - \text{CoGS}/\text{Revenue}$ \\
+Overhead Efficiency & $1 - \text{SG\&A}/\text{Revenue}$ \\
+Operating Efficiency & $\text{Operating Income}/\text{Revenue}$ \\
+Profit Conversion & $\text{Net Income}/\text{Operating Income}$ (set to 0 if Operating Income $\le 0$) \\
+Composite PNL Efficiency & Equal-weighted average of within-sector z-scores (winsorized at $\pm 3\sigma$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Sector Distribution}\label{app:sectors}
+
+\textit{[PENDING: Table showing average number of firms per GICS sector at formation dates, sector-level mean efficiency scores, and coverage rates.]}
+
+\section{Snapshot Provenance}\label{app:snapshot}
+
+\textit{[PENDING: Snapshot ID, build timestamp, data tier, return convention, and exact data-retrieval dates will be recorded here for full reproducibility.]}
+
+\end{document}
