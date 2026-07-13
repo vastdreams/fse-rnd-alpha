@@ -176,9 +176,9 @@ publish_release_bundle:
     - mkdir release
     - bash scripts/create_release_bundle.sh --source-sha "$CI_COMMIT_SHA" --backend-image "$BACKEND_IMAGE" --frontend-image "$FRONTEND_IMAGE" --pipeline-id "$CI_PIPELINE_ID" --output-dir release
     - package_url="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/investor-platform/${RELEASE_VERSION}"
-    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.tar.gz "${package_url}/release-bundle.tar.gz"
-    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.sha256 "${package_url}/release-bundle.sha256"
-    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release.json "${package_url}/release.json"
+    - 'curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.tar.gz "${package_url}/release-bundle.tar.gz"'
+    - 'curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.sha256 "${package_url}/release-bundle.sha256"'
+    - 'curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release.json "${package_url}/release.json"'
     - printf 'RELEASE_VERSION=%s\nRELEASE_PACKAGE_URL=%s\n' "$RELEASE_VERSION" "$package_url" > release-published.env
   artifacts:
     paths:
