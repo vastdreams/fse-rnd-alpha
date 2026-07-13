@@ -314,3 +314,7 @@ printf 'Release descriptor checksum: %s\n' "${release_descriptor_sha}"
 if [[ -n "${previous_dir}" ]]; then
   printf 'Previous data retained at %s\n' "${previous_dir}"
 fi
+
+# Backend container runs as non-root and must read the restored tree.
+chmod -R a+rX "${DATA_DIR}"
+

@@ -89,7 +89,7 @@ fi
 # recorded by the immutable universe builder and must not be inferred from a
 # mutable active-version pointer.
 build_metadata="$(
-  psql "${PSQL_DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 -F $'\t' \
+  psql "${PSQL_DATABASE_URL}" -X -A -t -q -v ON_ERROR_STOP=1 -F $'\t' \
     -c "
       SELECT status,
              COALESCE(source_sha, ''),
@@ -228,7 +228,7 @@ archive_sha="$(checksum "${archive}")"
 # Binding the data manifest is the one permitted post-seal metadata update.
 # Re-staging exactly the same data is safe; changing its manifest is not.
 bound_manifest_sha="$(
-  psql "${PSQL_DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 \
+  psql "${PSQL_DATABASE_URL}" -X -A -t -q -v ON_ERROR_STOP=1 \
     -c "
       UPDATE universe_builds
          SET data_manifest_sha256 = '$(sql_literal "${manifest_sha}")'
