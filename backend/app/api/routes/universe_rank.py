@@ -13,7 +13,9 @@ Ship rules surfaced here:
 from __future__ import annotations
 
 import json
+import logging
 import math
+import os
 import time
 from datetime import date
 from typing import Optional
@@ -27,13 +29,22 @@ from app.api.deps import get_db
 from app.api.routes.auth import get_current_user
 from app.contracts.recipes import PRESET_RECIPES
 from app.contracts.research import MetricVector, RankRecipe
+from app.core.config import settings
 from app.services.company_meta_service import (
     description_map,
     identity_map,
     live_price_from_mos,
     panel_valuation,
 )
+from app.services.rank_row_invariants import (
+    assert_rank_rows_invariants,
+    audit_rank_rows,
+    compute_live_vs_target_pct,
+    compute_live_vs_target_usd,
+)
 from app.services.rank_service import RankEngine, RankRequest
+
+logger = logging.getLogger(__name__)
 
 
 def _valid_fair_value_band(panel: dict) -> bool:
@@ -146,18 +157,10 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
         r["quadrant"] = pan.get("quadrant")
         r["mos_live"] = mos
         # Dollar gap: median fair value − live price (positive = trading below FV / "cheap")
-        if price_live is not None and fair_med is not None:
-            r["vs_median_usd"] = fair_med - price_live
-            # Frozen MoS may use a different captured price basis than a newer
-            # FMP quote. Calculate the displayed quote gap independently.
-            r["vs_median_pct"] = (
-                (fair_med - price_live) / price_live
-                if isinstance(price_live, (int, float)) and price_live > 0
-                else None
-            )
-        else:
-            r["vs_median_usd"] = None
-            r["vs_median_pct"] = None
+        # Frozen MoS may use a different captured price basis than a newer
+        # FMP quote. Calculate the displayed quote gap independently.
+        r["vs_median_usd"] = compute_live_vs_target_usd(price_live, fair_med)
+        r["vs_median_pct"] = compute_live_vs_target_pct(price_live, fair_med)
         if v is not None:
             r["retention"] = v.retention.value
             r["rev_cagr"] = v.rev_cagr.value if v.rev_cagr.value is not None else pan.get("rev_cagr")
@@ -189,6 +192,20 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
             r["net_profit_usd"] = rev * npm
         else:
             r["net_profit_usd"] = None
+
+    # S3: always audit; fail closed when explicitly enabled (staging/CI).
+    violations = audit_rank_rows(rows)
+    if violations:
+        logger.warning(
+            "rank_row_invariant_violations",
+            extra={
+                "n_violations": len(violations),
+                "codes": [v.get("code") for v in violations[:20]],
+                "tickers": [v.get("ticker") for v in violations[:20]],
+            },
+        )
+        if settings.DEBUG or os.getenv("RANK_INVARIANT_FAIL_CLOSED") == "1":
+            assert_rank_rows_invariants(rows)
     return rows
 
 router = APIRouter()

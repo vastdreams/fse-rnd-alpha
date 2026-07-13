@@ -114,13 +114,95 @@ test("renders a non-empty What-to-Buy view after rank and stance data load", asy
     })
   })
 
-  await page.goto("/app/universe?mode=buy")
+  await page.goto("/app/universe?mode=buy&cleared=1")
 
-  await expect(page.getByText(/What to Buy — top 1 matching cleared BUY/)).toBeVisible()
+  await expect(page.getByText(/Cleared BUY shortlist/)).toBeVisible()
   await expect(page.getByText("MNDY", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("BUY", { exact: true }).first()).toBeVisible()
-  await expect(page.getByText("Research price basis", { exact: true })).toBeVisible()
-  await expect(page.getByText("quote stale")).toBeVisible()
+})
+
+test("defaults What-to-Buy to ranked candidates when no cleared BUY filter is set", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("fse_research_token", "test-token")
+    localStorage.setItem(
+      "fse_research_user",
+      JSON.stringify({ id: "test-user", email: "investor@example.com", role: "user" })
+    )
+  })
+  await page.route("**/api/analytics/**", async (route) => {
+    await route.fulfill({ status: 204 })
+  })
+  await page.route("**/api/auth/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "test-user",
+        email: "investor@example.com",
+        role: "user",
+        is_active: true,
+        email_verified: true,
+      }),
+    })
+  })
+  await page.route("**/api/books", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ books: [] }) })
+  })
+  await page.route("**/api/universe/rank**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        recipe: {
+          recipe_id: "R3",
+          name: "Research desk",
+          formula_human: "Improving quality + MoS cushion",
+          formula_exact: "opaque_exact",
+          hard_filters: [],
+          axes: [],
+          benchmark_vs: "test",
+          custom: false,
+        },
+        universe_version: universeVersion,
+        n_universe: 1,
+        n_ranked: 1,
+        rows,
+        note: "Research only",
+      }),
+    })
+  })
+  await page.route("**/api/universe/stances**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        universe_version: universeVersion,
+        stance_filter: null,
+        n_universe: 1,
+        n_analyzed: 1,
+        n: 1,
+        rows: [
+          {
+            ticker: "MNDY",
+            stance: "HOLD",
+            confidence: "low",
+            score: 50,
+            horizon_years: null,
+            implied_ann_return: null,
+            horizon_note: "Test only",
+            blockers: ["Catalyst clarity UNKNOWN"],
+            watermark: "Research only",
+          },
+        ],
+        note: "Research only",
+      }),
+    })
+  })
+
+  await page.goto("/app/universe?mode=buy")
+
+  await expect(page.getByText(/What to Buy — 1 ranked names/)).toBeVisible()
+  await expect(page.getByText(/Score card \(quality \+ why\)/i)).toBeVisible()
+  await expect(page.getByText("Score").first()).toBeVisible()
+  await expect(page.getByText("Why this score").first()).toBeVisible()
+  await expect(page.getByText("MNDY", { exact: true }).first()).toBeVisible()
 })
 
 test("applies shortlist filters and sorting to selection and CSV export", async ({ page }) => {
@@ -206,13 +288,14 @@ test("applies shortlist filters and sorting to selection and CSV export", async 
     })
   )
 
-  await page.goto("/app/universe?mode=buy")
+  await page.goto("/app/universe?mode=buy&cleared=1")
   const companyLinks = page.locator('a[href^="/app/company/"]')
   await expect(companyLinks.first()).toHaveText("ADBE")
-  await page.getByRole("button", { name: "MoS", exact: true }).click()
+  await page.getByRole("button", { name: "Sort: MoS" }).click()
   await expect(companyLinks.first()).toHaveText("MNDY")
 
-  await page.getByRole("button", { name: "Retention disclosed", exact: true }).click()
+  await page.getByRole("button", { name: "More filters", exact: true }).click()
+  await page.getByRole("button", { name: "Retention known", exact: true }).click()
   await expect(page.getByText("ADBE", { exact: true })).toHaveCount(0)
   await expect(page.getByRole("checkbox", { name: "Select MNDY" })).toBeChecked()
 
@@ -305,8 +388,6 @@ test("keeps the newest mode response and discloses derived stale quotes", async 
   await page.goto("/app/universe?mode=buy")
   await page.getByRole("button", { name: /R&D Alpha ETF/ }).click()
   await expect(page.getByText("FAST", { exact: true }).first()).toBeVisible()
-  await expect(page.getByText("research price basis")).toBeVisible()
-  await expect(page.getByText(/stale/).first()).toBeVisible()
   await page.waitForTimeout(450)
   await expect(page.getByText("SLOW", { exact: true })).toHaveCount(0)
 })
@@ -374,8 +455,101 @@ test("requests and displays scored plus excluded names in the full universe mode
   await page.goto("/app/universe?mode=all")
 
   await expect.poll(() => rankRequestUrl).toContain("include_excluded=true")
-  await expect(page.getByText(/R7 · test · 1 ranked of 2 · 1 also listed/)).toBeVisible()
+  await expect(page.getByText(/1 of 2 names pass this screen · 1 also listed/)).toBeVisible()
   await expect(page.getByText("MNDY", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("Also in universe — not scored on this composite (1)")).toBeVisible()
   await expect(page.getByText("OUT", { exact: true })).toBeVisible()
+})
+
+test("card contracts: compact revenue, fair band, no duplicate MoS when equal to vs-target", async ({
+  page,
+}) => {
+  const kspi = {
+    ...rows[0],
+    ticker: "KSPI",
+    name: "Joint Stock Co Kaspikz",
+    industry: "Infrastructure",
+    score: 9.877425,
+    contributions: { rd_prod: 4.5, mos_live: 4.5, roic: 0.4939 },
+    completeness_grade: "C",
+    price_live: 89.67,
+    fair_px_lo: 207.5951403270201,
+    fair_px_med: 249.77850114953984,
+    fair_px_hi: 291.9618619720595,
+    mos_live: 1.7855302905045147,
+    vs_median_pct: 1.7855302905045147,
+    revenue_usd: 9112728620,
+  }
+
+  await page.addInitScript(() => {
+    localStorage.setItem("fse_research_token", "test-token")
+    localStorage.setItem(
+      "fse_research_user",
+      JSON.stringify({ id: "test-user", email: "investor@example.com", role: "user" })
+    )
+  })
+  await page.route("**/api/analytics/**", (route) => route.fulfill({ status: 204 }))
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "test-user",
+        email: "investor@example.com",
+        role: "user",
+        is_active: true,
+        email_verified: true,
+      }),
+    })
+  )
+  await page.route("**/api/books", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ books: [] }) })
+  )
+  await page.route("**/api/universe/rank**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        recipe: {
+          recipe_id: "R3",
+          name: "Research desk",
+          formula_human: "Test",
+          formula_exact: "test",
+          hard_filters: [],
+          axes: [],
+          benchmark_vs: "test",
+          custom: false,
+        },
+        universe_version: universeVersion,
+        n_universe: 1,
+        n_ranked: 1,
+        rows: [kspi],
+        note: "Research only",
+      }),
+    })
+  )
+  await page.route("**/api/universe/stances**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        universe_version: universeVersion,
+        stance_filter: null,
+        n_universe: 1,
+        n_analyzed: 0,
+        n: 0,
+        rows: [],
+        note: "Research only",
+      }),
+    })
+  )
+
+  await page.goto("/app/universe?mode=buy")
+
+  const card = page.locator("article").filter({ hasText: "KSPI" }).first()
+  await expect(card).toBeVisible()
+  await expect(card.getByText("$9.11B")).toBeVisible()
+  await expect(card.getByText(/Fair band/i)).toBeVisible()
+  await expect(card.getByText(/Below fair band/i)).toBeVisible()
+  await expect(card.getByText(/vs target/i)).toBeVisible()
+  // Duplicate MoS is a trust bug when it equals live vs-target
+  await expect(card.getByText(/^MoS$/)).toHaveCount(0)
+  await expect(card.getByText(/Research MoS/)).toHaveCount(0)
 })

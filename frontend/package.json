@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:invariants": "vitest run src/lib/rankRowInvariants.test.ts src/lib/rankGolden.test.ts src/lib/aboveBandPolicy.test.ts src/components/research/ScreenerRow.test.tsx src/lib/fairBand.test.ts src/lib/formatMetrics.test.ts src/lib/universeFilters.test.ts",
     "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

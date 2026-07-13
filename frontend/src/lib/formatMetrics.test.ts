@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest"
-import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4 } from "@/lib/formatMetrics"
+import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4, formatUsdCompact } from "@/lib/formatMetrics"
 
 describe("research metric formatting", () => {
   it("uses comma-grouped USD and no more than four significant figures", () => {
     expect(formatUsd4(1234567890)).toBe("$1,235,000,000")
     expect(formatUsd4(22470000)).toBe("$22,470,000")
+  })
+
+  it("formats large USD as compact billions/millions", () => {
+    expect(formatUsdCompact(9113000000)).toBe("$9.11B")
+    expect(formatUsdCompact(22470000)).toBe("$22.5M")
+    expect(formatUsdCompact(null)).toBe("—")
   })
 
   it("makes rate units explicit", () => {
