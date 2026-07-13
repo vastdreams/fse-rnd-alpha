@@ -181,9 +181,14 @@ async def _create_empty_schema_database(
         check=True,
         capture_output=True,
     )
+    # Debian's current pg_dump can emit a PostgreSQL 18-only session setting
+    # while this release gate deliberately exercises the PostgreSQL 15 target.
+    # It is not schema content, so strip only that forward-incompatible prelude
+    # before loading the fixture into the supported server version.
+    schema_dump = dump.stdout.replace(b"SET transaction_timeout = 0;\n", b"")
     restored = subprocess.run(
         ["psql", target_url, "-v", "ON_ERROR_STOP=1"],
-        input=dump.stdout,
+        input=schema_dump,
         capture_output=True,
     )
     if restored.returncode:
