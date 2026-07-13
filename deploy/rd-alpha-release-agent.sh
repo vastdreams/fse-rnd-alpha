@@ -298,6 +298,9 @@ if [[ ! -d "${release_dir}" ]]; then
   cp "${work_dir}/release.json" "${staging_dir}/release.json"
   printf '%s  %s\n' "${bundle_sha256}" "${bundle_filename}" > "${staging_dir}/release-bundle.sha256"
   chmod -R go-w "${staging_dir}"
+  # umask 077 makes the tree root-only; Compose runs scripts from this
+  # directory inside a non-root backend container and must be able to read them.
+  chmod -R a+rX "${staging_dir}"
   mv "${staging_dir}" "${release_dir}"
   staging_dir=""
 else
