@@ -74,6 +74,14 @@ openssl req -x509 -newkey rsa:2048 -nodes \
   -subj "/CN=${release_gate_host}" \
   -days 1 >/dev/null 2>&1
 
+# Bind-mount sources resolve on the Docker daemon's filesystem. Under
+# Docker-in-Docker that is a separate machine from this job, so replicate the
+# generated fixtures onto the daemon at the same absolute path before compose
+# mounts them. Local Docker shares the filesystem, making this a no-op copy.
+tar -C "${work_dir}" -cf - data certs certbot-webroot |
+  docker run --rm -i -v "${work_dir}:/gate-work" alpine \
+    sh -c 'tar -C /gate-work -xf - && chmod 0777 /gate-work/data'
+
 cat > "${env_file}" <<EOF
 BACKEND_IMAGE=${BACKEND_IMAGE}
 FRONTEND_IMAGE=${FRONTEND_IMAGE}
