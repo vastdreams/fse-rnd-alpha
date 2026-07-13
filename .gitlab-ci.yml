@@ -76,6 +76,7 @@ release_contract:
     - DEBUG=true RANK_INVARIANT_FAIL_CLOSED=1 SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters python -c "import json,sys; from pathlib import Path; sys.path.insert(0,'backend'); from app.services.rank_row_invariants import assert_rank_rows_invariants; rows=json.loads(Path('frontend/src/fixtures/rank-golden.json').read_text())['rows']; assert_rank_rows_invariants(rows); print('golden_audit_ok', len(rows))"
     - python3 scripts/audit_formula_registry.py
     - python3 scripts/audit_decision_chains.py
+    - python3 scripts/check_coverage_thresholds.py --self-test
     - ./scripts/test_stage_data_release.sh
     - ./scripts/test_release_restore.sh
     - ./scripts/test_rollback_release.sh

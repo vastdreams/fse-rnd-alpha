@@ -240,23 +240,40 @@ export function StanceTab({
       <div className="rounded-xl border border-border bg-white p-4 sm:p-5">
         <h3 className="text-sm font-semibold text-black">Precedence examples</h3>
         <p className="mt-0.5 text-[11px] text-neutral-600">
-          Paper / desk rules this stance must clear (or fail explicitly).
+          Paper / desk checks. Only rows marked HARD affect BUY. Advisory rows are transparency —
+          never treat them as underwriting clearance.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {a.precedence_examples.map((p) => (
-            <div key={p.id} className="rounded-lg border border-neutral-100 px-3 py-2">
+            <div
+              key={p.id}
+              className={`rounded-lg border px-3 py-2 ${
+                p.gate_kind === "advisory" ? "border-amber-200 bg-amber-50/40" : "border-neutral-100"
+              }`}
+            >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium text-black">{p.label}</span>
-                <span
-                  className={`text-[10px] font-bold uppercase ${
-                    p.matched === true
-                      ? "text-emerald-700"
-                      : p.matched === false
-                        ? "text-rose-700"
-                        : "text-amber-700"
-                  }`}
-                >
-                  {p.matched === true ? "match" : p.matched === false ? "fail" : "unknown"}
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={`rounded border px-1 py-0.5 text-[9px] font-bold uppercase ${
+                      p.gate_kind === "advisory"
+                        ? "border-amber-300 text-amber-800"
+                        : "border-neutral-300 text-neutral-700"
+                    }`}
+                  >
+                    {p.gate_kind === "advisory" ? "advisory" : "hard"}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold uppercase ${
+                      p.matched === true
+                        ? "text-emerald-700"
+                        : p.matched === false
+                          ? "text-rose-700"
+                          : "text-amber-700"
+                    }`}
+                  >
+                    {p.matched === true ? "match" : p.matched === false ? "fail" : "unknown"}
+                  </span>
                 </span>
               </div>
               <p className="mt-0.5 text-[11px] text-neutral-600">{p.rule}</p>

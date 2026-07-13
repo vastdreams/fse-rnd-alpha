@@ -5,7 +5,13 @@
     "captured_at": "2026-07-13T21:55:06.985968+00:00",
     "source": "GET /api/universe/rank?mode=buy&limit=138 via ASGI admin override",
     "n_universe_ranked": 138,
-    "kill_active_note": "N/A \u2014 no kill_active=true rows in this R3 survivor set"
+    "kill_active_note": "N/A \u2014 no kill_active=true rows in this R3 survivor set",
+    "coverage_notes": {
+      "n_rows": 12,
+      "not_full_universe": true,
+      "kill_active_true": "N/A in this R3 sealed slice \u2014 no kill_active=true survivor present",
+      "authority": "edge-case seal for auditors; live enrich still audits all returned rows"
+    }
   },
   "rows": [
     {

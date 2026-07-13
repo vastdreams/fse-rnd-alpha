@@ -1,26 +1,37 @@
 {
   "schema_version": 1,
-  "title": "Decision chains — data-driven, fail-closed, first principles",
+  "title": "Decision chains \u2014 data-driven, fail-closed, first principles",
   "authority": "Code + sealed tests are authoritative. Precedence labels that are not hard gates are marked advisory. UNKNOWN is a product outcome, never filled with opinion.",
   "assumption_policy": {
     "imputation": "forbidden",
-    "missing_input": "UNKNOWN or exclude — never invent",
+    "missing_input": "UNKNOWN or exclude \u2014 never invent",
     "marketing_copy": "must match engine or is a bug (see test_recipe_engine_parity)"
   },
   "chains": [
     {
       "id": "D_STANCE_BUY",
       "name": "Research BUY stance",
-      "first_principles": "BUY is underwriting clearance, not attractiveness. Every hard gate is a measurable field; any missing critical input → UNKNOWN, not a guessed BUY.",
+      "first_principles": "BUY is underwriting clearance, not attractiveness. Every hard gate is a measurable field; any missing critical input \u2192 UNKNOWN, not a guessed BUY.",
       "engine": "backend/app/services/close_call_service.py",
-      "docs": ["docs/CLOSE_CALL_STANCE.md", "docs/FIRST_PRINCIPLES_PROVENANCE.md"],
-      "output_fields": ["stance", "confidence", "blockers", "flowchart", "implied_ann_return"],
+      "docs": [
+        "docs/CLOSE_CALL_STANCE.md",
+        "docs/FIRST_PRINCIPLES_PROVENANCE.md"
+      ],
+      "output_fields": [
+        "stance",
+        "confidence",
+        "blockers",
+        "flowchart",
+        "implied_ann_return"
+      ],
       "steps": [
         {
           "id": "F1",
           "label": "Kill criterion off",
           "gate_kind": "hard",
-          "data_fields": ["kill_active"],
+          "data_fields": [
+            "kill_active"
+          ],
           "formula_ids": [],
           "pass_if": "kill_active === false",
           "fail_if": "kill_active === true",
@@ -32,10 +43,12 @@
           "id": "F2",
           "label": "Completeness A|B",
           "gate_kind": "hard",
-          "data_fields": ["completeness_grade"],
+          "data_fields": [
+            "completeness_grade"
+          ],
           "formula_ids": [],
-          "pass_if": "completeness_grade ∈ {A,B}",
-          "fail_if": "completeness_grade ∈ {C,Incomplete} or missing",
+          "pass_if": "completeness_grade \u2208 {A,B}",
+          "fail_if": "completeness_grade \u2208 {C,Incomplete} or missing",
           "unknown_if": "grade missing",
           "on_unknown": "block_buy",
           "opinion": false
@@ -44,10 +57,15 @@
           "id": "F3",
           "label": "MoS live > 0",
           "gate_kind": "hard",
-          "data_fields": ["mos_live"],
-          "formula_ids": ["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+          "data_fields": [
+            "mos_live"
+          ],
+          "formula_ids": [
+            "F_MOS_LIVE",
+            "F_VS_MEDIAN_PCT"
+          ],
           "pass_if": "mos_live > 0",
-          "fail_if": "mos_live ≤ 0",
+          "fail_if": "mos_live \u2264 0",
           "unknown_if": "mos_live is null",
           "on_unknown": "block_buy",
           "opinion": false,
@@ -57,35 +75,49 @@
           "id": "F4",
           "label": "Catalyst named (L4 known)",
           "gate_kind": "hard",
-          "data_fields": ["L4.status", "dated_anchors"],
+          "data_fields": [
+            "L4.status",
+            "dated_anchors"
+          ],
           "formula_ids": [],
           "pass_if": "L4.status === known with dated anchors",
-          "fail_if": "n/a — absence is UNKNOWN not FAIL",
+          "fail_if": "n/a \u2014 absence is UNKNOWN not FAIL",
           "unknown_if": "L4.status !== known",
           "on_unknown": "block_buy",
           "opinion": false,
-          "note": "Will not invent news. No catalyst → UNKNOWN confidence."
+          "note": "Will not invent news. No catalyst \u2192 UNKNOWN confidence."
         },
         {
           "id": "F5",
-          "label": "Aggregate score ≥ 65",
+          "label": "Aggregate score \u2265 65",
           "gate_kind": "hard",
-          "data_fields": ["roi_runs[].score", "roi_runs[].weight"],
-          "formula_ids": ["F_STANCE_BUY_GATES"],
-          "pass_if": "agg_score ≥ 65",
+          "data_fields": [
+            "roi_runs[].score",
+            "roi_runs[].weight"
+          ],
+          "formula_ids": [
+            "F_STANCE_BUY_GATES"
+          ],
+          "pass_if": "agg_score \u2265 65",
           "fail_if": "agg_score < 65",
           "unknown_if": "no scored ROI runs",
           "on_unknown": "block_buy",
           "opinion": false,
-          "note": "agg = mean_w(scores)×10×coverage; coverage penalises missing weight mass."
+          "note": "agg = mean_w(scores)\u00d710\u00d7coverage; coverage penalises missing weight mass."
         },
         {
           "id": "F6",
           "label": "Stance emit",
           "gate_kind": "hard",
-          "data_fields": ["F1..F5", "confidence"],
-          "formula_ids": ["F_HOLD_HORIZON", "F_IMPLIED_ANN_RETURN"],
-          "pass_if": "all hard gates pass ∧ confidence ∈ {med,high} → BUY",
+          "data_fields": [
+            "F1..F5",
+            "confidence"
+          ],
+          "formula_ids": [
+            "F_HOLD_HORIZON",
+            "F_IMPLIED_ANN_RETURN"
+          ],
+          "pass_if": "all hard gates pass \u2227 confidence \u2208 {med,high} \u2192 BUY",
           "fail_if": "see OUT/HOLD/WATCH rules in engine",
           "unknown_if": "critical inputs unknown",
           "on_unknown": "emit_UNKNOWN",
@@ -95,30 +127,44 @@
       "advisory_not_gates": [
         {
           "id": "P2_FCF",
-          "label": "FCF+ core (paper spirit)",
-          "data_fields": ["fcfm_sbc"],
+          "label": "FCF+ check (advisory \u2014 not a BUY gate)",
+          "data_fields": [
+            "fcfm_sbc"
+          ],
           "gate_kind": "advisory",
-          "note": "Shown in precedence_examples for transparency. NOT a hard BUY gate in buy_ok. Do not assume FCF clears or blocks BUY."
+          "note": "Shown with ADVISORY badge in StanceTab. NOT in buy_ok. Match/fail must not be read as underwriting clearance."
         }
       ]
     },
     {
       "id": "D_RANK_R3",
       "name": "Universe R3 ranking",
-      "first_principles": "Rank is a cross-sectional robust-z of disclosed axes only. Missing axis → name excluded from that recipe (never imputed). Score is attractiveness under the recipe, not a BUY clearance.",
+      "first_principles": "Rank is a cross-sectional robust-z of disclosed axes only. Missing axis \u2192 name excluded from that recipe (never imputed). Score is attractiveness under the recipe, not a BUY clearance.",
       "engine": "backend/app/services/rank_service/engine.py",
-      "docs": ["docs/FIRST_PRINCIPLES_PROVENANCE.md", "contracts/formula-registry.json#F_SCORE_ROBUST_Z"],
-      "output_fields": ["rank", "score", "contributions", "completeness_grade", "kill_active"],
+      "docs": [
+        "docs/FIRST_PRINCIPLES_PROVENANCE.md",
+        "contracts/formula-registry.json#F_SCORE_ROBUST_Z"
+      ],
+      "output_fields": [
+        "rank",
+        "score",
+        "contributions",
+        "completeness_grade",
+        "kill_active"
+      ],
       "steps": [
         {
           "id": "R3_H1",
           "label": "Hard filter: not killed, not carved-out",
           "gate_kind": "hard",
-          "data_fields": ["kill_active", "carve_out"],
+          "data_fields": [
+            "kill_active",
+            "carve_out"
+          ],
           "formula_ids": [],
-          "pass_if": "kill_active==false ∧ carve_out==false",
+          "pass_if": "kill_active==false \u2227 carve_out==false",
           "fail_if": "otherwise excluded",
-          "unknown_if": "n/a — boolean filters",
+          "unknown_if": "n/a \u2014 boolean filters",
           "on_unknown": "exclude",
           "opinion": false
         },
@@ -126,10 +172,18 @@
           "id": "R3_H2",
           "label": "Required axes present (PIT)",
           "gate_kind": "hard",
-          "data_fields": ["rd_prod", "fcfm_sbc", "roic", "mos_live"],
-          "formula_ids": ["F_PASS_THROUGH_FUNDAMENTALS", "F_MOS_LIVE"],
+          "data_fields": [
+            "rd_prod",
+            "fcfm_sbc",
+            "roic",
+            "mos_live"
+          ],
+          "formula_ids": [
+            "F_PASS_THROUGH_FUNDAMENTALS",
+            "F_MOS_LIVE"
+          ],
           "pass_if": "all four axes knowable at as_of",
-          "fail_if": "any required axis None → exclude",
+          "fail_if": "any required axis None \u2192 exclude",
           "unknown_if": "axis missing or available_date > as_of",
           "on_unknown": "exclude",
           "opinion": false
@@ -138,21 +192,40 @@
           "id": "R3_H3",
           "label": "Weighted MAD robust-z score",
           "gate_kind": "hard",
-          "data_fields": ["rd_prod", "fcfm_sbc", "roic", "mos_live"],
-          "formula_ids": ["F_SCORE_ROBUST_Z", "F_SCORE_WITHOUT_DRIVERS"],
-          "pass_if": "score = Σ w·winsor±3((x-med)/(1.4826·MAD))",
+          "data_fields": [
+            "rd_prod",
+            "fcfm_sbc",
+            "roic",
+            "mos_live"
+          ],
+          "formula_ids": [
+            "F_SCORE_ROBUST_Z",
+            "F_SCORE_WITHOUT_DRIVERS"
+          ],
+          "pass_if": "score = \u03a3 w\u00b7winsor\u00b13((x-med)/(1.4826\u00b7MAD))",
           "fail_if": "n/a",
           "unknown_if": "n/a after H2",
           "on_unknown": "n/a",
           "opinion": false,
-          "weights": {"rd_prod": 1.5, "fcfm_sbc": 1.0, "roic": 1.0, "mos_live": 1.5}
+          "weights": {
+            "rd_prod": 1.5,
+            "fcfm_sbc": 1.0,
+            "roic": 1.0,
+            "mos_live": 1.5
+          }
         },
         {
           "id": "R3_H4",
           "label": "Enrich live vs-target (display)",
           "gate_kind": "derived",
-          "data_fields": ["price_live", "fair_px_med"],
-          "formula_ids": ["F_VS_MEDIAN_PCT", "F_VS_MEDIAN_USD"],
+          "data_fields": [
+            "price_live",
+            "fair_px_med"
+          ],
+          "formula_ids": [
+            "F_VS_MEDIAN_PCT",
+            "F_VS_MEDIAN_USD"
+          ],
           "pass_if": "vs_median_pct = (fair_px_med - price_live) / price_live",
           "fail_if": "invariant violation",
           "unknown_if": "price or fair missing",
@@ -164,8 +237,13 @@
         {
           "id": "ABOVE_BAND_FLAG",
           "label": "Above fair band (Option B)",
-          "data_fields": ["price_live", "fair_px_hi"],
-          "formula_ids": ["F_FAIR_BAND_ZONE"],
+          "data_fields": [
+            "price_live",
+            "fair_px_hi"
+          ],
+          "formula_ids": [
+            "F_FAIR_BAND_ZONE"
+          ],
           "gate_kind": "advisory",
           "note": "Does not exclude from R3. UI must flag. High score above band is quality/MoS axes, not a bargain claim."
         }
@@ -176,17 +254,31 @@
       "name": "Auto-sell / trim ceiling",
       "first_principles": "Exit maths from the sealed fair band vs live price. Not a forecast. Horizon buckets shared with stance.",
       "engine": "frontend/src/lib/sellCeiling.ts + backend/app/services/sell_ceiling.py",
-      "docs": ["docs/SELL_CEILING.md", "contracts/formula-registry.json#F_SELL_CEILING"],
-      "output_fields": ["sell_ceil", "zone", "upside_to_ceil", "horizon_years", "remaining_ann"],
+      "docs": [
+        "docs/SELL_CEILING.md",
+        "contracts/formula-registry.json#F_SELL_CEILING"
+      ],
+      "output_fields": [
+        "sell_ceil",
+        "zone",
+        "upside_to_ceil",
+        "horizon_years",
+        "remaining_ann"
+      ],
       "steps": [
         {
           "id": "S1",
           "label": "Band + live known",
           "gate_kind": "hard",
-          "data_fields": ["fair_px_med", "price_live"],
-          "formula_ids": ["F_FAIR_BAND_ORDER"],
-          "pass_if": "med>0 ∧ live>0",
-          "fail_if": "missing → zone=unknown",
+          "data_fields": [
+            "fair_px_med",
+            "price_live"
+          ],
+          "formula_ids": [
+            "F_FAIR_BAND_ORDER"
+          ],
+          "pass_if": "med>0 \u2227 live>0",
+          "fail_if": "missing \u2192 zone=unknown",
           "unknown_if": "any required null",
           "on_unknown": "null_ceiling",
           "opinion": false
@@ -195,9 +287,15 @@
           "id": "S2",
           "label": "Choose ceiling lens",
           "gate_kind": "hard",
-          "data_fields": ["price_live", "fair_px_med", "fair_px_hi"],
-          "formula_ids": ["F_SELL_CEILING"],
-          "pass_if": "live<med→med; med≤live<hi→hi; live≥hi→past_ceiling",
+          "data_fields": [
+            "price_live",
+            "fair_px_med",
+            "fair_px_hi"
+          ],
+          "formula_ids": [
+            "F_SELL_CEILING"
+          ],
+          "pass_if": "live<med\u2192med; med\u2264live<hi\u2192hi; live\u2265hi\u2192past_ceiling",
           "fail_if": "n/a",
           "unknown_if": "n/a after S1",
           "on_unknown": "n/a",
@@ -207,11 +305,16 @@
           "id": "S3",
           "label": "Horizon + implied ann.",
           "gate_kind": "derived",
-          "data_fields": ["upside_to_ceil"],
-          "formula_ids": ["F_HOLD_HORIZON", "F_IMPLIED_ANN_RETURN"],
-          "pass_if": "gap buckets 0.25/0.6 → 2y/3y; ann=(ceil/live)^(1/H)-1",
-          "fail_if": "past_ceiling → withhold horizon",
-          "unknown_if": "upside≤0",
+          "data_fields": [
+            "upside_to_ceil"
+          ],
+          "formula_ids": [
+            "F_HOLD_HORIZON",
+            "F_IMPLIED_ANN_RETURN"
+          ],
+          "pass_if": "gap buckets 0.25/0.6 \u2192 2y/3y; ann=(ceil/live)^(1/H)-1",
+          "fail_if": "past_ceiling \u2192 withhold horizon",
+          "unknown_if": "upside\u22640",
           "on_unknown": "null_horizon",
           "opinion": false
         }
@@ -221,20 +324,28 @@
     {
       "id": "D_FILTER_BELOW_TARGET",
       "name": "Universe filter: Below target vs Undervalued",
-      "first_principles": "Two filters, two fields. Never treat them as synonyms when mos≈vs — copy must stay distinct.",
+      "first_principles": "Two filters, two fields. Never treat them as synonyms when mos\u2248vs \u2014 copy must stay distinct.",
       "engine": "frontend/src/pages/portfolio/UniversePage.tsx",
-      "docs": ["contracts/formula-registry.json#F_VS_MEDIAN_PCT"],
-      "output_fields": ["filtered_rows"],
+      "docs": [
+        "contracts/formula-registry.json#F_VS_MEDIAN_PCT"
+      ],
+      "output_fields": [
+        "filtered_rows"
+      ],
       "steps": [
         {
           "id": "FLT1",
           "label": "Below target",
           "gate_kind": "hard",
-          "data_fields": ["vs_median_pct"],
-          "formula_ids": ["F_VS_MEDIAN_PCT"],
+          "data_fields": [
+            "vs_median_pct"
+          ],
+          "formula_ids": [
+            "F_VS_MEDIAN_PCT"
+          ],
           "pass_if": "vs_median_pct > 0",
-          "fail_if": "vs_median_pct ≤ 0 or null",
-          "unknown_if": "vs_median_pct null → exclude from filter",
+          "fail_if": "vs_median_pct \u2264 0 or null",
+          "unknown_if": "vs_median_pct null \u2192 exclude from filter",
           "on_unknown": "exclude",
           "opinion": false
         },
@@ -242,11 +353,15 @@
           "id": "FLT2",
           "label": "Undervalued (frozen MoS)",
           "gate_kind": "hard",
-          "data_fields": ["mos_live"],
-          "formula_ids": ["F_MOS_LIVE"],
+          "data_fields": [
+            "mos_live"
+          ],
+          "formula_ids": [
+            "F_MOS_LIVE"
+          ],
           "pass_if": "mos_live > 0",
-          "fail_if": "mos_live ≤ 0 or null",
-          "unknown_if": "mos_live null → exclude",
+          "fail_if": "mos_live \u2264 0 or null",
+          "unknown_if": "mos_live null \u2192 exclude",
           "on_unknown": "exclude",
           "opinion": false
         }

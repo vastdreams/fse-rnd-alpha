@@ -32,6 +32,13 @@ from app.services.decision_provenance import (
     enrich_flowchart_node,
     stance_decision_provenance,
 )
+from app.services.stance_scores import (
+    clip10 as _clip10,
+    score_fcfm,
+    score_roic,
+    score_rule40,
+    score_valuation_from_gap,
+)
 
 ENGINE_VERSION = "close_call_v1"
 
@@ -64,8 +71,11 @@ _PRECEDENCE: list[dict[str, str]] = [
     },
     {
         "id": "P2_FCF",
-        "label": "FCF+ core gate",
-        "rule": "SBC-adjusted FCF margin known and > 0 (paper G2 spirit)",
+        "label": "FCF+ check (advisory — not a BUY gate)",
+        "rule": (
+            "SBC-adjusted FCF margin known and > 0 (paper G2 spirit). "
+            "ADVISORY ONLY — not evaluated in buy_ok. Do not treat match/fail as underwriting."
+        ),
     },
     {
         "id": "P3_KILL",
@@ -90,10 +100,6 @@ def _mv(vec: Any, name: str) -> Optional[float]:
     if m is None:
         return None
     return getattr(m, "value", None) if hasattr(m, "value") else None
-
-
-def _clip10(x: float) -> float:
-    return round(max(0.0, min(10.0, x)), 2)
 
 
 def _detect_tape_event(bars: list[dict]) -> Optional[dict[str, Any]]:
@@ -198,8 +204,7 @@ def _score_valuation(mos: Optional[float], gap: Optional[float]) -> tuple[Option
     if mos is None and gap is None:
         return None, {}, ["mos_live", "gap_to_median"]
     g = mos if mos is not None else gap
-    # MoS 0 → 5, 50% → ~8.5, 100% → 10; negative MoS → low
-    s = _clip10(5.0 + (g or 0) * 7.0)
+    s = score_valuation_from_gap(g)
     contrib["mos_or_gap"] = s
     if mos is None:
         unk.append("mos_live")
@@ -210,26 +215,24 @@ def _score_quality(fcfm: Optional[float], rule40: Optional[float], roic: Optiona
     parts: list[float] = []
     contrib: dict[str, float] = {}
     unk: list[str] = []
-    if fcfm is None:
+    v_fcfm = score_fcfm(fcfm)
+    if v_fcfm is None:
         unk.append("fcfm_sbc")
     else:
-        # 0% → 3, 15% → 8, 25%+ → 10
-        v = _clip10(3.0 + fcfm * 40.0)
-        contrib["fcfm_sbc"] = v
-        parts.append(v)
-    if rule40 is None:
+        contrib["fcfm_sbc"] = v_fcfm
+        parts.append(v_fcfm)
+    v_r40 = score_rule40(rule40)
+    if v_r40 is None:
         unk.append("rule40")
     else:
-        v = _clip10(rule40 * 15.0)  # 40% → 6, 67% → 10
-        contrib["rule40"] = v
-        parts.append(v)
-    if roic is None:
+        contrib["rule40"] = v_r40
+        parts.append(v_r40)
+    v_roic = score_roic(roic)
+    if v_roic is None:
         unk.append("roic")
     else:
-        # Cap absurd ROIC; 20% → 6, 50% → 10
-        v = _clip10(min(roic, 1.0) * 12.0 + 2.0)
-        contrib["roic"] = v
-        parts.append(v)
+        contrib["roic"] = v_roic
+        parts.append(v_roic)
     if not parts:
         return None, contrib, unk
     return round(sum(parts) / len(parts), 2), contrib, unk

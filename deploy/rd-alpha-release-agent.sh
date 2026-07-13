@@ -263,6 +263,23 @@ actual_bundle_sha="$(sha256_of "${work_dir}/${bundle_filename}")"
   exit 1
 }
 
+# Optional HMAC over bundle_sha256 when RELEASE_HMAC_KEY is configured on the host.
+if [[ -n "${RELEASE_HMAC_KEY:-}" ]]; then
+  python3 - "${work_dir}/release.json" "${RELEASE_HMAC_KEY}" <<'PY'
+import hashlib, hmac, json, sys
+manifest = json.load(open(sys.argv[1]))
+key = sys.argv[2].encode()
+integrity = manifest.get("integrity") or {}
+mac = integrity.get("bundle_sha256_mac")
+if not mac:
+    raise SystemExit("RELEASE_HMAC_KEY set but release.json missing integrity.bundle_sha256_mac")
+expect = hmac.new(key, manifest["bundle_sha256"].encode(), hashlib.sha256).hexdigest()
+if not hmac.compare_digest(expect, mac):
+    raise SystemExit("Release HMAC verification failed")
+print("release_hmac_ok")
+PY
+fi
+
 tar -tzf "${work_dir}/${bundle_filename}" > "${work_dir}/bundle.list"
 python3 - "${work_dir}/bundle.list" <<'PY'
 import pathlib

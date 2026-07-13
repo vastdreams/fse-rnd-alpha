@@ -183,19 +183,31 @@ PRESET_RECIPES: list[RankRecipe] = [
     RankRecipe(
         recipe_id="R1",
         name="Resilient-cheap (Paper-2 H2)",
-        formula_human="Quality-resilient names trading below intrinsic value, tilted to exposed incumbents",
-        formula_exact="z(roic)+z(gm) >= q60 AND mos_live > 0, tilt by cohort; sector-neutral quintiles",
+        formula_human=(
+            "Equal-weight MAD robust-z of ROIC, gross margin, and MoS. "
+            "Missing axes exclude the name (never imputed)."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes roic×1, gm×1, mos_live×1; "
+            "hard: kill_active==False AND carve_out==False; FCF-side route only"
+        ),
         hard_filters=["kill_active == False", "carve_out == False"],
-        axes=["roic", "gm", "mos_live", "cohort"],
+        axes=["roic", "gm", "mos_live"],
         benchmark_vs="equal-weight SaaS · software benchmark · naive cheap-only",
     ),
     RankRecipe(
         recipe_id="R2",
         name="Table-20 survivors",
-        formula_human="Strict 12-gate paper filter; survivors ranked by margin of safety then R&D productivity",
-        formula_exact="table20_pass_count == 12 → sort by (mos_live desc, rd_prod desc)",
+        formula_human=(
+            "Hard filter table20_pass_count==12, then weighted MAD robust-z of MoS and R&D productivity."
+        ),
+        formula_exact=(
+            "hard: table20_pass_count==12 AND kill_active==False; "
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); axes mos_live×2, rd_prod×1"
+        ),
         hard_filters=["table20_pass_count == 12", "kill_active == False"],
-        axes=["table20_pass_count", "mos_live", "rd_prod"],
+        axes=["mos_live", "rd_prod"],
         benchmark_vs="relaxed 6-of-12 (labeled honestly if shown)",
     ),
     RankRecipe(
@@ -217,35 +229,59 @@ PRESET_RECIPES: list[RankRecipe] = [
     RankRecipe(
         recipe_id="R4",
         name="R&D Alpha ETF-style",
-        formula_human="Paper-1 R&D alpha score: intensity, sector adjustment, momentum, quality, scaled by volatility",
-        formula_exact="rd_alpha_score = f(rd_int, sector_adj, rd_mom, quality)/vol (Paper-1 path)",
-        hard_filters=["software universe"],
+        formula_human=(
+            "MAD robust-z of R&D intensity, momentum, capitalized R&D, and ROIC (×0.5). "
+            "Paper-1 constructs as axes — not a separate /vol ETF wrapper in this engine."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes rd_int×1, rd_mom×1, rd_capital×1, roic×0.5; hard: kill_active==False"
+        ),
+        hard_filters=["kill_active == False"],
         axes=["rd_int", "rd_mom", "rd_capital", "roic"],
         benchmark_vs="S&P 500 growth of $100 · equal-weight high-RD",
     ),
     RankRecipe(
         recipe_id="R5",
         name="Offering-quality leaders",
-        formula_human="Best product businesses within their segment: retention, margins, R&D conversion, Rule of 40, low concentration",
-        formula_exact="offering_quality_z = z(retention)+z(gm)+z(rd_prod)+z(rule40)-z(concentration), within segment",
-        hard_filters=["segment peers only"],
-        axes=["offering_quality_z", "retention", "gm", "rd_prod", "rule40", "concentration"],
+        formula_human=(
+            "MAD robust-z of offering_quality_z (×2), retention, Rule of 40, and concentration "
+            "(lower better). Missing axes exclude."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes offering_quality_z×2, retention×1, rule40×1, concentration×1(higher_better=False); "
+            "hard: kill_active==False"
+        ),
+        hard_filters=["kill_active == False"],
+        axes=["offering_quality_z", "retention", "rule40", "concentration"],
         benchmark_vs="segment peers only (HCM vs HCM, EX/CX vs EX/CX)",
     ),
     RankRecipe(
         recipe_id="R6",
         name="Stickiness × value",
-        formula_human="Disclosed retention rank multiplied by margin-of-safety rank; undisclosed retention is excluded",
-        formula_exact="rank(retention) × rank(mos_live); retention.value is None → excluded",
-        hard_filters=["retention disclosed"],
+        formula_human=(
+            "Equal-weight MAD robust-z of disclosed retention and MoS. "
+            "Undisclosed retention excludes the name (required axis)."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes retention×1, mos_live×1; hard: kill_active==False; retention required"
+        ),
+        hard_filters=["kill_active == False", "retention disclosed (required axis)"],
         axes=["retention", "mos_live"],
         benchmark_vs="value-without-stickiness",
     ),
     RankRecipe(
         recipe_id="R7",
         name="Quality-value-momentum composite",
-        formula_human="Classic QVM: sector-robust z of quality, value (MoS) and momentum",
-        formula_exact="z(roic,gm,fcfm_sbc) + z(mos_live) + z(ret_12m − ret_1m), winsorised MAD z per sector×period",
+        formula_human=(
+            "Equal-weight MAD robust-z of ROIC, GM, SBC-adj FCF margin, MoS, and 12m return."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes roic×1, gm×1, fcfm_sbc×1, mos_live×1, ret_12m×1; hard: kill_active==False"
+        ),
         hard_filters=["kill_active == False"],
         axes=["roic", "gm", "fcfm_sbc", "mos_live", "ret_12m"],
         benchmark_vs="single-factor sorts",
@@ -253,9 +289,16 @@ PRESET_RECIPES: list[RankRecipe] = [
     RankRecipe(
         recipe_id="R8",
         name="Pre-FCF path-to-profit",
-        formula_human="Separate route for pre-FCF names: runway, dilution, margin trajectory, burn improvement",
-        formula_exact="route=='pre_fcf' → sort by (runway_yrs desc, dilution_ann asc, Δgm desc)",
-        hard_filters=["route == pre_fcf", "never mixed into FCF+ MoS rank"],
+        formula_human=(
+            "Segregated pre-FCF route: MAD robust-z of runway, dilution (lower better), GM, rev CAGR. "
+            "Never mixed into FCF+ recipes."
+        ),
+        formula_exact=(
+            "hard: route==pre_fcf AND kill_active==False; "
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes runway_yrs×1, dilution_ann×1(higher_better=False), gm×1, rev_cagr×1"
+        ),
+        hard_filters=["route == pre_fcf", "kill_active == False", "never mixed into FCF+ MoS rank"],
         axes=["runway_yrs", "dilution_ann", "gm", "rev_cagr"],
         benchmark_vs="FCF+ recipes (explicitly segregated)",
     ),

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "title": "Research coverage floors (quality lane — evidence, not invent)",
+  "note": "Thresholds are minimums on sealed coverage reports. Missing domains fail closed.",
+  "domains": [
+    {"id": "filing_fetched", "min_coverage_pct": 50},
+    {"id": "fair_band_present", "min_coverage_pct": 40},
+    {"id": "stance_analyzed", "min_coverage_pct": 10}
+  ]
+}

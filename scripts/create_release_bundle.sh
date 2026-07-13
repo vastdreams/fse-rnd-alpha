@@ -140,6 +140,20 @@ sha256_of() {
 bundle_sha256="$(sha256_of "${bundle_path}")"
 printf '%s  %s\n' "${bundle_sha256}" "release-bundle.tar.gz" > "${checksum_path}"
 
+# Optional HMAC integrity (set RELEASE_HMAC_KEY in CI). Absent key → unsigned but checksummed.
+hmac_sha256=""
+if [[ -n "${RELEASE_HMAC_KEY:-}" ]]; then
+  hmac_sha256="$(
+    BUNDLE_SHA256="${bundle_sha256}" RELEASE_HMAC_KEY="${RELEASE_HMAC_KEY}" python3 - <<'PY'
+import hashlib, hmac, os
+key = os.environ["RELEASE_HMAC_KEY"].encode()
+msg = os.environ["BUNDLE_SHA256"].encode()
+print(hmac.new(key, msg, hashlib.sha256).hexdigest())
+PY
+  )"
+  printf '%s  %s\n' "${hmac_sha256}" "release-bundle.tar.gz" > "${OUTPUT_DIR}/release-bundle.hmac"
+fi
+
 migration_ledger_sha256="$(
   ROOT_DIR="${ROOT_DIR}" python3 - <<'PY'
 import hashlib
@@ -164,28 +178,27 @@ FRONTEND_IMAGE="${FRONTEND_IMAGE}" \
 PIPELINE_ID="${PIPELINE_ID}" \
 BUNDLE_SHA256="${bundle_sha256}" \
 MIGRATION_LEDGER_SHA256="${migration_ledger_sha256}" \
+HMAC_SHA256="${hmac_sha256}" \
 RELEASE_CREATED_AT="${RELEASE_CREATED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
 python3 - <<'PY' > "${manifest_path}"
 import json
 import os
 
-print(
-    json.dumps(
-        {
-            "schema_version": 1,
-            "source_sha": os.environ["SOURCE_SHA"],
-            "pipeline_id": int(os.environ["PIPELINE_ID"]),
-            "backend_image": os.environ["BACKEND_IMAGE"],
-            "frontend_image": os.environ["FRONTEND_IMAGE"],
-            "bundle_filename": "release-bundle.tar.gz",
-            "bundle_sha256": os.environ["BUNDLE_SHA256"],
-            "migration_ledger_sha256": os.environ["MIGRATION_LEDGER_SHA256"],
-            "created_at": os.environ["RELEASE_CREATED_AT"],
-        },
-        indent=2,
-        sort_keys=True,
-    )
-)
+manifest = {
+    "schema_version": 1,
+    "source_sha": os.environ["SOURCE_SHA"],
+    "pipeline_id": int(os.environ["PIPELINE_ID"]),
+    "backend_image": os.environ["BACKEND_IMAGE"],
+    "frontend_image": os.environ["FRONTEND_IMAGE"],
+    "bundle_filename": "release-bundle.tar.gz",
+    "bundle_sha256": os.environ["BUNDLE_SHA256"],
+    "migration_ledger_sha256": os.environ["MIGRATION_LEDGER_SHA256"],
+    "created_at": os.environ["RELEASE_CREATED_AT"],
+}
+hmac = os.environ.get("HMAC_SHA256") or ""
+if hmac:
+    manifest["integrity"] = {"alg": "hmac-sha256", "bundle_sha256_mac": hmac}
+print(json.dumps(manifest, indent=2, sort_keys=True))
 PY
 
 python3 - "${manifest_path}" <<'PY'

@@ -277,14 +277,17 @@ export function ScreenerRow({
             <Col
               label="Target"
               value={formatUsd4(r.fair_px_med)}
-              tip={formulaTip("F_FAIR_BAND_ORDER", "Research median fair value (price target).")}
+              tip={formulaTip(
+                "F_FAIR_BAND_ORDER",
+                "Sealed research median target (panel/vector). Not a live DCF workbench replay."
+              )}
             />
             <Col
               label="vs target"
               value={formatPercent4(r.vs_median_pct, true)}
               tip={formulaTip(
                 "F_VS_MEDIAN_PCT",
-                "Live gap. Positive = trading below target."
+                "Live gap vs sealed target. Positive = below target. May differ from frozen MoS (shown only when it disagrees)."
               )}
               tone={gapTone(r.vs_median_pct)}
             />
@@ -333,23 +336,51 @@ export function ScreenerRow({
             <Col
               label="Growth"
               value={formatPercent4(r.rev_cagr, true)}
-              tip="Revenue CAGR."
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "Revenue CAGR — sealed panel/vector pass-through (not re-derived in API)."
+              )}
               tone={r.rev_cagr != null && r.rev_cagr >= 0 ? "text-emerald-700" : "text-rose-700"}
             />
-            <Col label="Gross margin" value={formatPercent4(r.gm)} tip="Gross profit ÷ revenue." />
+            <Col
+              label="Gross margin"
+              value={formatPercent4(r.gm)}
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "Gross profit ÷ revenue — sealed pass-through (not re-derived in API)."
+              )}
+            />
             <Col
               label="FCF margin"
               value={formatPercent4(r.fcfm_sbc)}
-              tip="SBC-adjusted free cash flow ÷ revenue."
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "SBC-adjusted FCF ÷ revenue — sealed pass-through (not re-derived in API)."
+              )}
               tone={r.fcfm_sbc != null && r.fcfm_sbc >= 0 ? "text-emerald-700" : "text-rose-700"}
             />
-            <Col label="ROIC" value={formatPercent4(r.roic)} tip="Return on invested capital." />
+            <Col
+              label="ROIC"
+              value={formatPercent4(r.roic)}
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "ROIC — sealed pass-through (not re-derived in API)."
+              )}
+            />
             <Col
               label="R&D productivity"
               value={formatMultiple4(r.rd_prod)}
-              tip="Gross profit created per $1 of cumulative R&D."
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "GP per $1 cumulative R&D — sealed pass-through (Paper-1; not re-derived in API)."
+              )}
             />
-            <HoverTip tip="Disclosed net revenue retention. Missing means not disclosed — never estimated.">
+            <HoverTip
+              tip={formulaTip(
+                "F_PASS_THROUGH_FUNDAMENTALS",
+                "Disclosed NRR/retention. Missing = not disclosed — never estimated."
+              )}
+            >
               <div className="min-w-0">
                 <div className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">Retention</div>
                 <div className="mt-0.5 text-[13px] font-semibold leading-none text-neutral-800">
@@ -383,6 +414,7 @@ export function ScreenerRow({
               <p className="mt-1 text-[10px] leading-snug text-slate-500">{quality.baseline}</p>
               <p className="mt-1 text-[9px] leading-snug text-slate-400">
                 Provenance: D_RANK_R3 · no imputation · rank ≠ BUY
+                {bandFlag.active ? " · above fair band (flagged, not excluded)" : ""}
               </p>
             </div>
 

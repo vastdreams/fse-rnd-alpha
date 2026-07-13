@@ -282,6 +282,8 @@ export interface PrecedenceExample {
   rule: string
   matched: boolean | null
   evidence: string
+  gate_kind?: "hard" | "advisory"
+  opinion?: boolean
 }
 
 export interface StanceAggregate {
@@ -292,8 +294,19 @@ export interface StanceAggregate {
   horizon_note: string | null
   implied_ann_return: number | null
   blockers: string[]
-  flowchart: { id: string; label: string; result: string; detail: string }[]
+  flowchart: Array<{
+    id: string
+    label: string
+    result: string
+    detail: string
+    gate_kind?: string
+    data_fields?: string[]
+    formula_ids?: string[]
+    opinion?: boolean
+  }>
   precedence_examples: PrecedenceExample[]
+  decision_chain_id?: string
+  decision_provenance?: Record<string, unknown>
   engine_version: string
   watermark: string
 }

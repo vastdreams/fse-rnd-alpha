@@ -55,14 +55,29 @@ Literature binds for rank axes live in `backend/app/contracts/recipes.py` (`LITE
 ## Machine checks
 
 ```bash
+# Preferred local CI mirror:
+bash scripts/verify_finance_gates.sh
+
+# Or individually:
 python3 scripts/audit_formula_registry.py
 python3 scripts/audit_decision_chains.py
+python3 scripts/check_coverage_thresholds.py --self-test
 cd frontend && npm run test:invariants
-cd backend && DEBUG=true SECRET_KEY=… python3 -m pytest tests/test_formula_math.py tests/test_decision_chains.py tests/test_sell_ceiling.py tests/test_recipe_engine_parity.py -q
+cd backend && DEBUG=true SECRET_KEY=… python3 -m pytest \
+  tests/test_formula_math.py tests/test_decision_chains.py \
+  tests/test_sell_ceiling.py tests/test_recipe_engine_parity.py \
+  tests/test_stance_scores.py tests/test_rank_golden_audit.py -q
 ```
+
+## Release integrity
+
+- `release.json` always binds `bundle_sha256`.
+- When `RELEASE_HMAC_KEY` is set in CI/host, create also writes `integrity.bundle_sha256_mac`
+  and `release-bundle.hmac`; the release agent verifies HMAC before activation.
 
 ## Explicit non-claims
 
 - Universe fair band is **not** a live DCF replay (`F_DCF_TRIANGULATION` is the company workbench).  
 - Stance implied annualised return is **convergence maths**, not a forecast.  
 - Advisory precedence (P2_FCF) is transparency, not a silent hard gate.
+- Hotfix deploy is **not** finance-release proof.

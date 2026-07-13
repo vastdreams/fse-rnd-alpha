@@ -21,8 +21,9 @@ L0 tape event (SEP) → L1 dated anchors (verified catalog only) → L2 fundamen
 Otherwise: HOLD / WATCH / OUT / **UNKNOWN** with blockers. Horizon (1/2/3y) only on BUY|HOLD when gap known.
 
 ## Advisory (not a hard BUY gate)
-- **P2_FCF** (`fcfm_sbc > 0`) appears in `precedence_examples` for paper transparency.
-  It is **not** in `buy_ok`. Do not assume FCF clears or blocks BUY.
+- **P2_FCF** (`fcfm_sbc > 0`) is labeled **advisory — not a BUY gate** in API/UI (`gate_kind=advisory`).
+  It is **not** in `buy_ok`. StanceTab shows an ADVISORY badge. Match/fail ≠ underwriting clearance.
+- Curves: `backend/app/services/stance_scores.py` (golden-pinned in `test_stance_scores.py`).
 
 ## Surfaces
 - Company tab **Stance · BUY** + overview teaser
