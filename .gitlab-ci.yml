@@ -99,7 +99,7 @@ frontend_build:
   image: node:${NODE_VERSION}-alpine
   script:
     - cd frontend
-    - npm install
+    - npm ci --legacy-peer-deps
     # Skip tsc type-check (pre-existing errors from refactoring), build with Vite only
     - npx vite build --configLoader runner
   artifacts:
@@ -158,7 +158,7 @@ deploy_production:
 
         echo "=== Rebuilding frontend ==="
         cd frontend
-        npm install
+        npm ci --legacy-peer-deps
         npx vite build --configLoader runner
         cd ..
 
