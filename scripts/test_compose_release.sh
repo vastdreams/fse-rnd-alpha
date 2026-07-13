@@ -161,7 +161,7 @@ compose up -d backend worker beat frontend
 
 for _ in $(seq 1 45); do
   ready="$(
-    gate_curl 18443 -k -fsS "https://${release_gate_host}:18443/ready" || true
+    gate_curl 18443 -k -sS "https://${release_gate_host}:18443/ready" || true
   )"
   if rg -q '"ready":true' <<< "${ready}"; then
     break
