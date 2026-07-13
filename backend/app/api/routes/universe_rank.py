@@ -42,6 +42,7 @@ from app.services.rank_row_invariants import (
     compute_live_vs_target_pct,
     compute_live_vs_target_usd,
 )
+from app.services.decision_provenance import rank_row_provenance
 from app.services.rank_service import RankEngine, RankRequest
 
 logger = logging.getLogger(__name__)
@@ -192,6 +193,8 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
             r["net_profit_usd"] = rev * npm
         else:
             r["net_profit_usd"] = None
+
+        r["provenance"] = rank_row_provenance(r)
 
     # S3: always audit; fail closed when explicitly enabled (staging/CI).
     violations = audit_rank_rows(rows)

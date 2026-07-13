@@ -28,6 +28,10 @@ from app.contracts.research import (
     WaterfallClaim,
     WaterfallStage,
 )
+from app.services.decision_provenance import (
+    enrich_flowchart_node,
+    stance_decision_provenance,
+)
 
 ENGINE_VERSION = "close_call_v1"
 
@@ -582,6 +586,8 @@ def build_close_call_waterfall(
                 rule=p["rule"],
                 matched=matched,
                 evidence=evidence,
+                gate_kind="advisory" if p["id"] == "P2_FCF" else "hard",
+                opinion=False,
             )
         )
 
@@ -589,51 +595,151 @@ def build_close_call_waterfall(
     blockers: list[str] = []
     flowchart: list[dict] = []
 
-    def node(nid: str, label: str, result: str, detail: str) -> None:
-        flowchart.append({"id": nid, "label": label, "result": result, "detail": detail})
+    def node(
+        nid: str,
+        label: str,
+        result: str,
+        detail: str,
+        *,
+        formula_ids: Optional[list[str]] = None,
+        data_fields: Optional[list[str]] = None,
+        gate_kind: str = "hard",
+    ) -> None:
+        flowchart.append(
+            enrich_flowchart_node(
+                {"id": nid, "label": label, "result": result, "detail": detail},
+                formula_ids=formula_ids,
+                data_fields=data_fields,
+                gate_kind=gate_kind,
+            )
+        )
 
     # Step 1 kill
     if kill:
-        node("F1", "Kill criterion", "FAIL", "kill_active=true → cannot BUY")
+        node(
+            "F1",
+            "Kill criterion",
+            "FAIL",
+            "kill_active=true → cannot BUY",
+            data_fields=["kill_active"],
+        )
         blockers.append("Kill criterion active")
     elif kill_unknown:
-        node("F1", "Kill criterion", "UNKNOWN", "kill_active is missing → cannot BUY")
+        node(
+            "F1",
+            "Kill criterion",
+            "UNKNOWN",
+            "kill_active is missing → cannot BUY",
+            data_fields=["kill_active"],
+        )
         blockers.append("Kill criterion state unknown")
     else:
-        node("F1", "Kill criterion", "PASS", "kill_active=false")
+        node(
+            "F1",
+            "Kill criterion",
+            "PASS",
+            "kill_active=false",
+            data_fields=["kill_active"],
+        )
 
     # Step 2 completeness
     if grade in ("A", "B"):
-        node("F2", "Completeness A|B", "PASS", f"grade={grade}")
+        node(
+            "F2",
+            "Completeness A|B",
+            "PASS",
+            f"grade={grade}",
+            data_fields=["completeness_grade"],
+        )
     else:
-        node("F2", "Completeness A|B", "FAIL", f"grade={grade or 'unknown'}")
+        node(
+            "F2",
+            "Completeness A|B",
+            "FAIL",
+            f"grade={grade or 'unknown'}",
+            data_fields=["completeness_grade"],
+        )
         blockers.append(f"Completeness {grade or 'unknown'} — need A or B to BUY")
 
     # Step 3 MoS
     if mos is None:
-        node("F3", "MoS live > 0", "UNKNOWN", "mos_live missing")
+        node(
+            "F3",
+            "MoS live > 0",
+            "UNKNOWN",
+            "mos_live missing",
+            data_fields=["mos_live"],
+            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+        )
         blockers.append("MoS live unknown")
     elif mos > 0:
-        node("F3", "MoS live > 0", "PASS", f"mos_live={mos:.1%}")
+        node(
+            "F3",
+            "MoS live > 0",
+            "PASS",
+            f"mos_live={mos:.1%}",
+            data_fields=["mos_live"],
+            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+        )
     else:
-        node("F3", "MoS live > 0", "FAIL", f"mos_live={mos:.1%} — no margin of safety")
+        node(
+            "F3",
+            "MoS live > 0",
+            "FAIL",
+            f"mos_live={mos:.1%} — no margin of safety",
+            data_fields=["mos_live"],
+            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+        )
         blockers.append("Live MoS ≤ 0")
 
     # Step 4 catalyst
     if l4.status == "known":
-        node("F4", "Catalyst named", "PASS", l4.summary)
+        node(
+            "F4",
+            "Catalyst named",
+            "PASS",
+            l4.summary,
+            data_fields=["L4.status", "dated_anchors"],
+        )
     else:
-        node("F4", "Catalyst named", "UNKNOWN", l4.unknown_reason or l4.summary)
+        node(
+            "F4",
+            "Catalyst named",
+            "UNKNOWN",
+            l4.unknown_reason or l4.summary,
+            data_fields=["L4.status", "dated_anchors"],
+        )
         blockers.append("Catalyst clarity UNKNOWN — will not invent why the tape moved")
 
     # Step 5 score
     if agg_score is None:
-        node("F5", "Aggregate score ≥ 65", "UNKNOWN", "No scored ROI runs")
+        node(
+            "F5",
+            "Aggregate score ≥ 65",
+            "UNKNOWN",
+            "No scored ROI runs",
+            data_fields=["roi_runs"],
+            formula_ids=["F_STANCE_BUY_GATES"],
+        )
         blockers.append("No aggregate score")
     elif agg_score >= 65:
-        node("F5", "Aggregate score ≥ 65", "PASS", f"score={agg_score}")
+        node(
+            "F5",
+            "Aggregate score ≥ 65",
+            "PASS",
+            f"score={agg_score}",
+            data_fields=["roi_runs"],
+            formula_ids=["F_STANCE_BUY_GATES"],
+        )
     else:
-        node("F5", "Aggregate score ≥ 65", "FAIL", f"score={agg_score}")
+        node(
+            "F5",
+            "Aggregate score ≥ 65",
+            "FAIL",
+            f"score={agg_score}",
+            data_fields=["roi_runs"],
+            formula_ids=["F_STANCE_BUY_GATES"],
+        )
         blockers.append(f"Aggregate score {agg_score} < 65")
 
     # Confidence
@@ -679,22 +785,60 @@ def build_close_call_waterfall(
 
     if buy_ok:
         stance = "BUY"
-        node("F6", "Stance", "BUY", f"All gates cleared · confidence={confidence} · {horizon_years}y horizon")
+        node(
+            "F6",
+            "Stance",
+            "BUY",
+            f"All gates cleared · confidence={confidence} · {horizon_years}y horizon",
+            data_fields=["F1", "F2", "F3", "F4", "F5", "confidence"],
+            formula_ids=["F_HOLD_HORIZON", "F_IMPLIED_ANN_RETURN"],
+        )
     elif kill_unknown:
         stance = "UNKNOWN"
-        node("F6", "Stance", "UNKNOWN", "Kill criterion state is unknown — not confident enough to BUY")
+        node(
+            "F6",
+            "Stance",
+            "UNKNOWN",
+            "Kill criterion state is unknown — not confident enough to BUY",
+            data_fields=["kill_active"],
+        )
     elif kill or (mos is not None and mos <= 0):
         stance = "OUT" if kill else "HOLD"
-        node("F6", "Stance", stance, "; ".join(blockers) or stance)
+        node(
+            "F6",
+            "Stance",
+            stance,
+            "; ".join(blockers) or stance,
+            data_fields=["kill_active", "mos_live"],
+            formula_ids=["F_MOS_LIVE"],
+        )
     elif l4.status != "known" or mos is None:
         stance = "UNKNOWN"
-        node("F6", "Stance", "UNKNOWN", "Critical inputs unknown — not confident enough to BUY")
+        node(
+            "F6",
+            "Stance",
+            "UNKNOWN",
+            "Critical inputs unknown — not confident enough to BUY",
+            data_fields=["L4.status", "mos_live"],
+        )
     elif grade not in ("A", "B"):
         stance = "WATCH"
-        node("F6", "Stance", "WATCH", "Evidence incomplete for underwriting")
+        node(
+            "F6",
+            "Stance",
+            "WATCH",
+            "Evidence incomplete for underwriting",
+            data_fields=["completeness_grade"],
+        )
     else:
         stance = "HOLD"
-        node("F6", "Stance", "HOLD", "; ".join(blockers) or "Gates not cleared for BUY")
+        node(
+            "F6",
+            "Stance",
+            "HOLD",
+            "; ".join(blockers) or "Gates not cleared for BUY",
+            data_fields=["blockers"],
+        )
 
     # Only attach horizon to BUY or HOLD when gap known
     if stance not in ("BUY", "HOLD"):
@@ -713,6 +857,8 @@ def build_close_call_waterfall(
         blockers=blockers,
         flowchart=flowchart,
         precedence_examples=precedence,
+        decision_chain_id="D_STANCE_BUY",
+        decision_provenance=stance_decision_provenance(),
         engine_version=ENGINE_VERSION,
     )
 

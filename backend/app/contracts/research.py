@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -448,6 +448,13 @@ class PrecedenceExample(BaseModel):
         default=None, description="None = cannot evaluate (unknown inputs)"
     )
     evidence: str
+    gate_kind: Literal["hard", "advisory"] = Field(
+        default="hard",
+        description="advisory = shown for transparency but not in buy_ok",
+    )
+    opinion: bool = Field(
+        default=False, description="Must stay false — precedence is data-evaluated"
+    )
 
 
 class StanceAggregate(BaseModel):
@@ -464,9 +471,17 @@ class StanceAggregate(BaseModel):
     blockers: list[str] = Field(default_factory=list)
     flowchart: list[dict] = Field(
         default_factory=list,
-        description="Ordered decision nodes: {id, label, result, detail}",
+        description=(
+            "Ordered decision nodes: {id, label, result, detail, gate_kind, "
+            "data_fields, formula_ids, opinion, references}"
+        ),
     )
     precedence_examples: list[PrecedenceExample] = Field(default_factory=list)
+    decision_chain_id: str = "D_STANCE_BUY"
+    decision_provenance: dict[str, Any] = Field(
+        default_factory=dict,
+        description="First-principles provenance blob from decision_chains.json",
+    )
     engine_version: str = "close_call_v1"
     watermark: str = (
         "Research stance from the close-call waterfall — not a broker recommendation."

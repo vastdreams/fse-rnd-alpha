@@ -8,6 +8,7 @@ import { type RankedRow, type StanceListRow } from "@/lib/api/universe"
 import { fairBandLayout } from "@/lib/fairBand"
 import { aboveBandFlag } from "@/lib/aboveBandPolicy"
 import { formulaTip } from "@/lib/formulaRegistry"
+import { decisionChainSummary } from "@/lib/decisionChains"
 import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4, formatUsdCompact } from "@/lib/formatMetrics"
 import { mosDiffersFromLiveGap } from "@/lib/rankRowInvariants"
 import { computeSellCeiling, fmtSellUpside } from "@/lib/sellCeiling"
@@ -364,7 +365,7 @@ export function ScreenerRow({
           <div className="rounded-lg border border-sky-200 bg-sky-50/70">
             <div
               className="border-b border-sky-200 px-2.5 py-2"
-              title={formulaTip("F_SCORE_ROBUST_Z", `${quality.label}. ${quality.baseline}`)}
+              title={`${formulaTip("F_SCORE_ROBUST_Z", `${quality.label}. ${quality.baseline}`)} · ${decisionChainSummary("D_RANK_R3")}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score</span>
@@ -380,6 +381,9 @@ export function ScreenerRow({
                 {formatNumber4(r.score)}
               </div>
               <p className="mt-1 text-[10px] leading-snug text-slate-500">{quality.baseline}</p>
+              <p className="mt-1 text-[9px] leading-snug text-slate-400">
+                Provenance: D_RANK_R3 · no imputation · rank ≠ BUY
+              </p>
             </div>
 
             <div className="grid grid-cols-3 divide-x divide-sky-200 border-b border-sky-200 bg-white/40 text-center">
