@@ -153,8 +153,10 @@ publish_immutable_images:
     - docker build --pull -f deploy/Dockerfile.frontend -t "$frontend_tag" .
     - docker push "$backend_tag"
     - docker push "$frontend_tag"
-    - backend_digest="$(docker buildx imagetools inspect "$backend_tag" --format '{{.Digest}}')"
-    - frontend_digest="$(docker buildx imagetools inspect "$frontend_tag" --format '{{.Digest}}')"
+    # imagetools exposes the pushed digest under .Manifest; a bare .Digest
+    # field does not exist on the template input.
+    - backend_digest="$(docker buildx imagetools inspect "$backend_tag" --format '{{.Manifest.Digest}}')"
+    - frontend_digest="$(docker buildx imagetools inspect "$frontend_tag" --format '{{.Manifest.Digest}}')"
     - test "${backend_digest#sha256:}" != "$backend_digest"
     - test "${frontend_digest#sha256:}" != "$frontend_digest"
     - printf 'BACKEND_IMAGE=%s@%s\nFRONTEND_IMAGE=%s@%s\nRELEASE_VERSION=%s\n' "$CI_REGISTRY_IMAGE/backend" "$backend_digest" "$CI_REGISTRY_IMAGE/frontend" "$frontend_digest" "$release_version" > release-images.env
