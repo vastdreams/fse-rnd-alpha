@@ -9,6 +9,7 @@ ROLE IN ARCHITECTURE:
 """
 
 from typing import List
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -86,6 +87,11 @@ class Settings(BaseSettings):
     
     # Server
     DEBUG: bool = False
+    # Optional error tracking. The deployment must opt in with a target-local
+    # DSN; observability never becomes a hidden data-export channel.
+    SENTRY_DSN: str = ""
+    SENTRY_ENVIRONMENT: str = "production"
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(default=0.05, ge=0, le=1)
     
     class Config:
         env_file = ".env"

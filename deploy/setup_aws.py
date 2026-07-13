@@ -3,9 +3,8 @@
 
 This utility deliberately separates infrastructure creation from host bootstrap:
 AWS APIs create only storage, an instance role, a security group, and an EC2
-instance. SSH bootstrap performs the initial checked-out source, GHCR login,
-and Let's Encrypt certificate issuance without placing registry credentials in
-EC2 user data.
+instance. SSH bootstrap installs a GitLab release pull agent, configures
+registry access, and issues TLS without placing credentials in EC2 user data.
 """
 
 from __future__ import annotations
@@ -59,6 +58,19 @@ def release_prefix() -> str:
     prefix = os.environ.get("DATA_RELEASE_PREFIX", "investor-platform-data").strip("/")
     if not prefix:
         raise RuntimeError("DATA_RELEASE_PREFIX must not be empty")
+    return prefix
+
+
+def backup_bucket_name() -> str | None:
+    """Return the optional dedicated off-host database-backup bucket."""
+
+    return optional("BACKUP_S3_BUCKET")
+
+
+def backup_prefix() -> str:
+    prefix = os.environ.get("BACKUP_S3_PREFIX", "investor-platform-postgres-backups").strip("/")
+    if not prefix:
+        raise RuntimeError("BACKUP_S3_PREFIX must not be empty")
     return prefix
 
 
@@ -217,6 +229,45 @@ def ensure_instance_profile(aws: boto3.Session) -> str:
             },
         ],
     }
+    backup_bucket = backup_bucket_name()
+    if backup_bucket:
+        backup_policy = [
+            {
+                "Sid": "ListOnlyBackupPrefix",
+                "Effect": "Allow",
+                "Action": ["s3:ListBucket"],
+                "Resource": [f"arn:aws:s3:::{backup_bucket}"],
+                "Condition": {"StringLike": {"s3:prefix": [f"{backup_prefix()}/*"]}},
+            },
+            {
+                "Sid": "WriteAndRestoreImmutablePostgresBackups",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:GetObjectRetention",
+                    "s3:PutObject",
+                    "s3:PutObjectRetention",
+                ],
+                "Resource": [f"arn:aws:s3:::{backup_bucket}/{backup_prefix()}/*"],
+            },
+        ]
+        backup_kms_key_arn = optional("BACKUP_KMS_KEY_ARN")
+        if backup_kms_key_arn:
+            backup_policy.append(
+                {
+                    "Sid": "EncryptAndDecryptPostgresBackups",
+                    "Effect": "Allow",
+                    "Action": [
+                        "kms:Decrypt",
+                        "kms:DescribeKey",
+                        "kms:Encrypt",
+                        "kms:GenerateDataKey",
+                    ],
+                    "Resource": [backup_kms_key_arn],
+                }
+            )
+        policy["Statement"].extend(backup_policy)
     iam.put_role_policy(
         RoleName=role_name,
         PolicyName="read-immutable-investor-release",
@@ -484,33 +535,140 @@ def _run_ssh(host: str, remote_command: str, *, input_text: str | None = None) -
 
 
 def bootstrap_host(host: str) -> None:
-    """Perform checkout, registry login, and certificate setup over SSH."""
-    repository_url = required("REPOSITORY_URL")
-    repository_ref = required("REPOSITORY_REF")
-    deploy_path = required("DEPLOY_PATH")
+    """Install a GitLab release agent, registry access, and TLS over SSH."""
+    release_root = optional("RELEASE_ROOT") or "/opt/rd-alpha"
+    state_dir = optional("RELEASE_STATE_DIR") or "/var/lib/rd-alpha"
+    deploy_env_file = optional("DEPLOY_ENV_FILE") or "/etc/rd-alpha/prod.env"
+    agent_env_file = optional("RELEASE_AGENT_ENV_FILE") or "/etc/rd-alpha/release-agent.env"
     certs_dir = required("CERTS_DIR")
     certbot_webroot = required("CERTBOT_WEBROOT")
     hostname = required("PUBLIC_HOSTNAME").rstrip(".")
     email = required("LETSENCRYPT_EMAIL")
+    registry = optional("GITLAB_REGISTRY") or "registry.gitlab.com"
+    registry_user = required("GITLAB_REGISTRY_USER")
+    registry_token = required("GITLAB_REGISTRY_TOKEN")
+    release_base_url = required("GITLAB_RELEASE_BASE_URL")
+    release_token = required("GITLAB_RELEASE_TOKEN")
+    release_auth_header = optional("GITLAB_RELEASE_AUTH_HEADER") or "PRIVATE-TOKEN"
+    require_staging_proof = optional("REQUIRE_STAGING_PROOF") or "false"
+    staging_proof_base_url = optional("GITLAB_STAGING_PROOF_BASE_URL") or ""
+    if require_staging_proof == "true" and not staging_proof_base_url:
+        raise RuntimeError(
+            "GITLAB_STAGING_PROOF_BASE_URL must be set when REQUIRE_STAGING_PROOF=true"
+        )
     quoted = shlex.quote
-    checkout = f"""
+    bootstrap = f"""
 set -Eeuo pipefail
-sudo install -d -o "$(id -un)" -g "$(id -gn)" {quoted(deploy_path)}
-if [[ -d {quoted(deploy_path)}/.git ]]; then
-  git -C {quoted(deploy_path)} fetch --prune origin
-else
-  git clone {quoted(repository_url)} {quoted(deploy_path)}
-fi
-git -C {quoted(deploy_path)} checkout --detach {quoted(repository_ref)}
+sudo install -d -m 0755 {quoted(release_root)}/releases
+sudo install -d -m 0700 {quoted(state_dir)}/release-records {quoted(state_dir)}/backups
+sudo install -d -m 0700 "$(dirname {quoted(agent_env_file)})" "$(dirname {quoted(deploy_env_file)})"
 sudo install -d -o "$(id -un)" -g "$(id -gn)" {quoted(certs_dir)} {quoted(certbot_webroot)}
+if [[ ! -f {quoted(deploy_env_file)} ]]; then
+  sudo tee {quoted(deploy_env_file)} >/dev/null <<'EOF'
+# Root-owned target Compose settings. Copy reviewed values from deploy/.env.example.
+# Release image references are supplied only by rd-alpha-release-agent.
+EOF
+  sudo chmod 0600 {quoted(deploy_env_file)}
+fi
 """
-    _run_ssh(host, checkout)
+    _run_ssh(host, bootstrap)
 
-    registry_user = required("GHCR_USERNAME")
-    registry_token = required("GHCR_READ_TOKEN")
+    agent_source = (Path(__file__).resolve().parent / "rd-alpha-release-agent.sh").read_text()
     _run_ssh(
         host,
-        f"set -Eeuo pipefail; docker login ghcr.io --username {quoted(registry_user)} --password-stdin",
+        "set -Eeuo pipefail; sudo tee /usr/local/sbin/rd-alpha-release-agent >/dev/null && "
+        "sudo chown root:root /usr/local/sbin/rd-alpha-release-agent && "
+        "sudo chmod 0750 /usr/local/sbin/rd-alpha-release-agent",
+        input_text=agent_source,
+    )
+
+    agent_config = (
+        f"RELEASE_BASE_URL={release_base_url}\n"
+        f"RELEASE_TOKEN={release_token}\n"
+        f"RELEASE_AUTH_HEADER={release_auth_header}\n"
+        f"RELEASE_ROOT={release_root}\n"
+        f"STATE_DIR={state_dir}\n"
+        f"DEPLOY_ENV_FILE={deploy_env_file}\n"
+        f"BACKUP_DIR={state_dir}/backups\n"
+        f"REQUIRE_STAGING_PROOF={require_staging_proof}\n"
+        f"STAGING_PROOF_BASE_URL={staging_proof_base_url}\n"
+    )
+    _run_ssh(
+        host,
+        f"set -Eeuo pipefail; sudo tee {quoted(agent_env_file)} >/dev/null && "
+        f"sudo chown root:root {quoted(agent_env_file)} && sudo chmod 0600 {quoted(agent_env_file)}",
+        input_text=agent_config,
+    )
+    _run_ssh(
+        host,
+        f"""set -Eeuo pipefail
+sudo tee /etc/systemd/system/rd-alpha-promote@.service >/dev/null <<'EOF'
+[Unit]
+Description=Promote immutable R&D Alpha release %i
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=RD_ALPHA_RELEASE_AGENT_ENV={quoted(agent_env_file)}
+ExecStart=/usr/local/sbin/rd-alpha-release-agent %i
+EOF
+sudo tee /etc/systemd/system/rd-alpha-healthcheck.service >/dev/null <<'EOF'
+[Unit]
+Description=Verify investor platform release health and worker liveness
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={quoted(release_root)}/current/scripts/check_release_health.sh --release-root {quoted(release_root)} --deploy-env-file {quoted(deploy_env_file)} --state-dir {quoted(state_dir)}
+EOF
+sudo tee /etc/systemd/system/rd-alpha-healthcheck.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run investor platform release health check every five minutes
+
+[Timer]
+OnBootSec=3m
+OnUnitActiveSec=5m
+RandomizedDelaySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+sudo tee /etc/systemd/system/rd-alpha-offsite-backup.service >/dev/null <<'EOF'
+[Unit]
+Description=Create encrypted off-host investor platform PostgreSQL backup
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={quoted(release_root)}/current/scripts/backup_postgres_offsite.sh --release-root {quoted(release_root)} --deploy-env-file {quoted(deploy_env_file)} --state-dir {quoted(state_dir)}
+EOF
+sudo tee /etc/systemd/system/rd-alpha-offsite-backup.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run encrypted investor platform PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 02:35:00 UTC
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now rd-alpha-healthcheck.timer
+sudo systemctl enable --now rd-alpha-offsite-backup.timer
+""",
+    )
+    _run_ssh(
+        host,
+        f"set -Eeuo pipefail; sudo docker login {quoted(registry)} --username {quoted(registry_user)} --password-stdin",
         input_text=f"{registry_token}\n",
     )
 
@@ -532,11 +690,11 @@ sudo tee /usr/local/sbin/rd-alpha-renew-tls >/dev/null <<'EOF'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-DEPLOY_PATH={quoted(deploy_path)}
+RELEASE_ROOT={quoted(release_root)}
 CERTS_DIR={quoted(certs_dir)}
 LETSENCRYPT_HOSTNAME={quoted(hostname)}
-COMPOSE_FILE="${{DEPLOY_PATH}}/deploy/docker-compose.yml"
-ENV_FILE="${{DEPLOY_PATH}}/deploy/.env"
+COMPOSE_FILE="${{RELEASE_ROOT}}/current/deploy/docker-compose.yml"
+ENV_FILE={quoted(deploy_env_file)}
 
 compose() {{
   docker compose --env-file "${{ENV_FILE}}" -f "${{COMPOSE_FILE}}" "$@"
@@ -588,7 +746,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now rd-alpha-tls-renew.timer
 """
     _run_ssh(host, renewal)
-    print(f"Bootstrapped checkout, GHCR login, and TLS certificate on {host}")
+    print(f"Bootstrapped GitLab release agent, registry login, and TLS certificate on {host}")
 
 
 def stage_data(universe_version: str) -> None:
@@ -619,7 +777,7 @@ def main() -> None:
     actions = parser.add_mutually_exclusive_group(required=True)
     actions.add_argument("--create", action="store_true", help="Create bucket, role, security group, and EC2")
     actions.add_argument("--configure-dns", action="store_true", help="Upsert PUBLIC_HOSTNAME DNS record")
-    actions.add_argument("--bootstrap", action="store_true", help="SSH bootstrap checkout, GHCR login, and TLS")
+    actions.add_argument("--bootstrap", action="store_true", help="SSH bootstrap GitLab release agent, registry login, and TLS")
     actions.add_argument("--stage-data", action="store_true", help="Stage one sealed immutable data artifact")
     actions.add_argument("--destroy", action="store_true", help="Terminate the named EC2 host only")
     parser.add_argument("--host", help="Public EC2 host/IP for --bootstrap or --configure-dns")

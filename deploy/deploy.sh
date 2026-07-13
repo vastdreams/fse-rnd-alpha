@@ -1,6 +1,7 @@
 #!/bin/bash
 # PATH: deploy/deploy.sh
-# PURPOSE: Legacy local helper. Production promotion is GitHub-workflow only.
+# PURPOSE: Local infrastructure/data helper. Production promotion is a
+# GitLab-published immutable bundle pulled by the target's release agent.
 
 set -e
 
@@ -91,71 +92,7 @@ upload_data() {
 
 # Deploy to EC2
 deploy_to_ec2() {
-    error "Legacy SSH/rsync deployment is disabled. Use the Promote Investor Platform GitHub workflow."
-    check_deploy_requirements
-    [ -z "$EC2_HOST" ] && error "EC2_HOST not set. Run with --create-infra first."
-    [ ! -f "$KEY_PATH" ] && error "SSH key not found at $KEY_PATH"
-    
-    log "Deploying to EC2 ($EC2_HOST)..."
-    
-    # Wait for SSH to be available
-    log "Waiting for SSH..."
-    for i in {1..30}; do
-        if ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$KEY_PATH" "$EC2_USER@$EC2_HOST" exit 2>/dev/null; then
-            break
-        fi
-        sleep 10
-    done
-    
-    # Copy release metadata, migrations, and compose configuration only. Data
-    # is a separately versioned artifact and CI-built images carry application
-    # code/frontend assets.
-    log "Copying project files..."
-    rsync -avz --progress \
-        --exclude 'venv' \
-        --exclude '.venv' \
-        --exclude 'node_modules' \
-        --exclude '__pycache__' \
-        --exclude '.git' \
-        --exclude 'data' \
-        -e "ssh -i $KEY_PATH -o StrictHostKeyChecking=no" \
-        "$(dirname "$0")/../" "$EC2_USER@$EC2_HOST:$REPO_DIR/"
-    
-    # SSH and start services. %q prevents a registry tag from being interpreted
-    # by the remote shell.
-    log "Starting services on EC2..."
-    local release_sha
-    release_sha="$(git -C "$(dirname "$0")/.." rev-parse HEAD)"
-    printf -v remote_command 'BACKEND_IMAGE=%q FRONTEND_IMAGE=%q RELEASE_SHA=%q REPO_DIR=%q bash -s' \
-        "$BACKEND_IMAGE" "$FRONTEND_IMAGE" "$release_sha" "$REPO_DIR"
-    ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "$remote_command" << 'REMOTE_SCRIPT'
-set -e
-cd "$REPO_DIR/deploy"
-
-# Create .env if not exists
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "Created deploy/.env from the safe template. Populate required secrets, then rerun."
-    exit 1
-fi
-
-"$REPO_DIR/scripts/deploy_release.sh"
-
-echo "Deployment complete!"
-REMOTE_SCRIPT
-    
-    log "Deployment complete!"
-    echo ""
-    echo "=================================================="
-    echo "  Application deployed successfully!"
-    echo "=================================================="
-    echo ""
-    echo "  Frontend: $PUBLIC_BASE_URL"
-    echo "  API:      $PUBLIC_BASE_URL/api/"
-    echo "  API Docs: $PUBLIC_BASE_URL/docs"
-    echo ""
-    echo "  SSH: ssh -i $KEY_PATH $EC2_USER@$EC2_HOST"
-    echo ""
+    error "Local SSH/rsync deployment is retired. Publish GitLab main, then run rd-alpha-promote@<sha>-<pipeline-id> on the target host."
 }
 
 # Run concurrent crawl
@@ -211,10 +148,7 @@ main() {
             cleanup_local
             ;;
         --full)
-            check_requirements
-            create_infrastructure
-            upload_data
-            deploy_to_ec2
+            error "--full is retired because it implied an SSH/rsync deployment. Stage data separately and promote through the target release agent."
             ;;
         *)
             echo "Usage: $0 [options]"
@@ -222,10 +156,10 @@ main() {
             echo "Options:"
             echo "  --create-infra   Create EC2 + S3 infrastructure"
             echo "  --upload-data    Stage immutable data artifact (requires UNIVERSE_VERSION and DATA_RELEASE_BUCKET)"
-            echo "  --deploy         Disabled; use the Promote Investor Platform GitHub workflow"
+            echo "  --deploy         Disabled; promote a published GitLab release on the target host"
             echo "  --crawl          Start concurrent SEC crawl"
             echo "  --cleanup-local  Remove local raw data"
-            echo "  --full           Disabled because it includes the legacy deployment path"
+            echo "  --full           Disabled because it includes the retired SSH deployment path"
             ;;
     esac
 }

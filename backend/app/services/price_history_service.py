@@ -8,6 +8,7 @@ invents prices; returns as-reported SEP closeadj (falls back to close).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
@@ -117,36 +118,51 @@ async def get_price_history(ticker: str, years: int = 3) -> dict[str, Any]:
         return cached
 
     if not settings.NASDAQ_DATA_LINK_API_KEY:
+        stale_cached = get_cached_price_history(ticker, years=years, allow_stale=True)
+        if stale_cached is not None:
+            return stale_cached
         raise PriceHistoryUnavailable("NASDAQ_DATA_LINK_API_KEY not configured")
 
     start = (datetime.now(timezone.utc).date() - timedelta(days=lookback)).isoformat()
     rows: list[dict] = []
     cursor: Optional[str] = None
-    async with aiohttp.ClientSession() as session:
-        while True:
-            params: dict[str, Any] = {
-                "ticker": ticker,
-                "date.gte": start,
-                "qopts.columns": "ticker,date,closeadj,close,volume",
-                "api_key": settings.NASDAQ_DATA_LINK_API_KEY,
-            }
-            if cursor:
-                params["qopts.cursor_id"] = cursor
-            async with session.get(SEP_URL, params=params, timeout=aiohttp.ClientTimeout(total=60)) as resp:
-                if resp.status != 200:
-                    raise PriceHistoryUnavailable(f"SEP HTTP {resp.status}")
-                payload = await resp.json()
-            table = payload.get("datatable") or {}
-            cols = [c["name"] for c in table.get("columns", [])]
-            for r in table.get("data", []):
-                d = dict(zip(cols, r))
-                px = d.get("closeadj") if d.get("closeadj") is not None else d.get("close")
-                if px is None or not d.get("date"):
-                    continue
-                rows.append({"date": d["date"], "close": float(px), "volume": d.get("volume")})
-            cursor = (payload.get("meta") or {}).get("next_cursor_id")
-            if not cursor:
-                break
+    try:
+        async with aiohttp.ClientSession() as session:
+            while True:
+                params: dict[str, Any] = {
+                    "ticker": ticker,
+                    "date.gte": start,
+                    "qopts.columns": "ticker,date,closeadj,close,volume",
+                    "api_key": settings.NASDAQ_DATA_LINK_API_KEY,
+                }
+                if cursor:
+                    params["qopts.cursor_id"] = cursor
+                async with session.get(
+                    SEP_URL, params=params, timeout=aiohttp.ClientTimeout(total=60)
+                ) as resp:
+                    if resp.status != 200:
+                        raise PriceHistoryUnavailable(f"SEP HTTP {resp.status}")
+                    payload = await resp.json()
+                table = payload.get("datatable") or {}
+                cols = [c["name"] for c in table.get("columns", [])]
+                for r in table.get("data", []):
+                    d = dict(zip(cols, r))
+                    px = d.get("closeadj") if d.get("closeadj") is not None else d.get("close")
+                    if px is None or not d.get("date"):
+                        continue
+                    try:
+                        close = float(px)
+                    except (TypeError, ValueError):
+                        continue
+                    rows.append({"date": d["date"], "close": close, "volume": d.get("volume")})
+                cursor = (payload.get("meta") or {}).get("next_cursor_id")
+                if not cursor:
+                    break
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+        stale_cached = get_cached_price_history(ticker, years=years, allow_stale=True)
+        if stale_cached is not None:
+            return stale_cached
+        raise PriceHistoryUnavailable("Sharadar SEP is temporarily unavailable") from exc
 
     rows.sort(key=lambda r: r["date"])
     if not rows:

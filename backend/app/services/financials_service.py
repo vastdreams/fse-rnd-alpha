@@ -18,6 +18,7 @@ lifetime. This keeps the company page fast and the API quota untouched.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
@@ -90,10 +91,13 @@ async def _fetch_sf1(session: aiohttp.ClientSession, ticker: str, dimension: str
         "qopts.columns": ",".join(SF1_COLUMNS),
         "api_key": settings.NASDAQ_DATA_LINK_API_KEY,
     }
-    async with session.get(SF1_URL, params=params, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-        if resp.status != 200:
-            raise FinancialsUnavailable(f"SF1 {dimension} HTTP {resp.status}")
-        payload = await resp.json()
+    try:
+        async with session.get(SF1_URL, params=params, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+            if resp.status != 200:
+                raise FinancialsUnavailable(f"SF1 {dimension} HTTP {resp.status}")
+            payload = await resp.json()
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+        raise FinancialsUnavailable(f"SF1 {dimension} is temporarily unavailable") from exc
     table = payload.get("datatable") or {}
     cols = [c["name"] for c in table.get("columns", [])]
     rows = [dict(zip(cols, r)) for r in table.get("data", [])]
@@ -104,6 +108,7 @@ async def _fetch_sf1(session: aiohttp.ClientSession, ticker: str, dimension: str
 async def get_financials(ticker: str) -> dict[str, Any]:
     """Annual (full history) + quarterly (last 8) statements with derived YoY."""
     ticker = ticker.upper()
+    stale_cached: dict[str, Any] | None = None
 
     hit = _memory_cache.get(ticker)
     if hit and time.monotonic() - hit[0] < CACHE_TTL_SECONDS:
@@ -115,18 +120,30 @@ async def get_financials(ticker: str) -> dict[str, Any]:
         try:
             cached = json.loads(cache_file.read_text())
             fetched = datetime.fromisoformat(cached["fetched_at"])
+            if fetched.tzinfo is None:
+                fetched = fetched.replace(tzinfo=timezone.utc)
             if (datetime.now(timezone.utc) - fetched).total_seconds() < CACHE_TTL_SECONDS:
-                _memory_cache[ticker] = (time.monotonic(), cached)
-                return cached
+                current = {**cached, "cache_stale": False}
+                _memory_cache[ticker] = (time.monotonic(), current)
+                return current
+            if stale_cached is None:
+                stale_cached = {**cached, "cache_stale": True}
         except Exception:
             continue  # corrupt cache → try the next layer or refetch
 
     if not settings.NASDAQ_DATA_LINK_API_KEY:
+        if stale_cached is not None:
+            return stale_cached
         raise FinancialsUnavailable("NASDAQ_DATA_LINK_API_KEY not configured")
 
-    async with aiohttp.ClientSession() as session:
-        annual = await _fetch_sf1(session, ticker, "MRY")
-        quarterly = (await _fetch_sf1(session, ticker, "MRQ"))[-8:]
+    try:
+        async with aiohttp.ClientSession() as session:
+            annual = await _fetch_sf1(session, ticker, "MRY")
+            quarterly = (await _fetch_sf1(session, ticker, "MRQ"))[-8:]
+    except FinancialsUnavailable:
+        if stale_cached is not None:
+            return stale_cached
+        raise
 
     if not annual:
         raise FinancialsUnavailable(f"No Sharadar SF1 coverage for {ticker}")
@@ -141,6 +158,7 @@ async def get_financials(ticker: str) -> dict[str, Any]:
         "n_years": len(annual),
         "annual": annual,
         "quarterly": quarterly,
+        "cache_stale": False,
         "note": "Statement values are as reported — never computed or imputed. "
                 "derived_*_yoy fields are pure arithmetic on adjacent reported rows.",
     }

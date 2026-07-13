@@ -310,3 +310,72 @@ test("keeps the newest mode response and discloses derived stale quotes", async 
   await page.waitForTimeout(450)
   await expect(page.getByText("SLOW", { exact: true })).toHaveCount(0)
 })
+
+test("requests and displays scored plus excluded names in the full universe mode", async ({ page }) => {
+  let rankRequestUrl = ""
+  await page.addInitScript(() => {
+    localStorage.setItem("fse_research_token", "test-token")
+    localStorage.setItem(
+      "fse_research_user",
+      JSON.stringify({ id: "test-user", email: "investor@example.com", role: "user" })
+    )
+  })
+  await page.route("**/api/analytics/**", (route) => route.fulfill({ status: 204 }))
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "test-user",
+        email: "investor@example.com",
+        role: "user",
+        is_active: true,
+        email_verified: true,
+      }),
+    })
+  )
+  await page.route("**/api/books", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ books: [] }) })
+  )
+  await page.route("**/api/universe/rank**", async (route) => {
+    rankRequestUrl = route.request().url()
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        recipe: {
+          recipe_id: "R7",
+          name: "Full panel",
+          formula_human: "Test formula",
+          formula_exact: "test",
+          hard_filters: [],
+          axes: [],
+          benchmark_vs: "test",
+          custom: false,
+        },
+        universe_version: universeVersion,
+        n_universe: 2,
+        n_ranked: 1,
+        n_excluded: 1,
+        rows: [{ ...rows[0], recipe_id: "R7" }],
+        excluded: [
+          {
+            ticker: "OUT",
+            name: "Excluded fixture",
+            reasons: ["Missing evidence"],
+            completeness_grade: "Incomplete",
+            route: "unknown",
+            kill_active: null,
+          },
+        ],
+        note: "Research only",
+      }),
+    })
+  })
+
+  await page.goto("/app/universe?mode=all")
+
+  await expect.poll(() => rankRequestUrl).toContain("include_excluded=true")
+  await expect(page.getByText(/R7 · test · 1 ranked of 2 · 1 also listed/)).toBeVisible()
+  await expect(page.getByText("MNDY", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("Also in universe — not scored on this composite (1)")).toBeVisible()
+  await expect(page.getByText("OUT", { exact: true })).toBeVisible()
+})

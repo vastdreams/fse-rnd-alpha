@@ -11,9 +11,19 @@ repo="${work_dir}/repo"
 fake_bin="${work_dir}/bin"
 fake_s3="${work_dir}/s3"
 mkdir -p "${repo}/scripts" "${repo}/data/saas_ai_repricing" "${fake_bin}" "${fake_s3}"
+
+checksum() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
 cp \
   "${SOURCE_ROOT}/scripts/stage_data_release.sh" \
   "${SOURCE_ROOT}/scripts/create_data_manifest.py" \
+  "${SOURCE_ROOT}/scripts/research_coverage_report.py" \
   "${SOURCE_ROOT}/scripts/research_snapshot.py" \
   "${SOURCE_ROOT}/scripts/research_release.py" \
   "${repo}/scripts/"
@@ -22,6 +32,10 @@ chmod +x "${repo}/scripts/stage_data_release.sh"
 printf 'fundamental fixture\n' > "${repo}/data/saas_ai_repricing/fundamental_value_run.csv"
 printf 'overlay fixture\n' > "${repo}/data/saas_ai_repricing/first_principles_overlay.csv"
 printf 'cache fixture\n' > "${repo}/data/price-cache.json"
+mkdir -p "${repo}/data/financials_cache" "${repo}/data/filings_cache"
+printf '{"fetched_at":"2026-07-13T00:00:00+00:00"}\n' > "${repo}/data/financials_cache/AAA.json"
+printf '10-K fixture\n' > "${repo}/data/filings_cache/AAA.txt"
+printf 'data/coverage_reports/\n__pycache__/\n' > "${repo}/.gitignore"
 
 git -C "${repo}" init -q
 git -C "${repo}" add .
@@ -29,6 +43,44 @@ git -C "${repo}" -c user.name=release-test -c user.email=release-test@example.te
   commit -qm "fixture"
 source_sha="$(git -C "${repo}" rev-parse HEAD)"
 universe_version="univ_stage_fixture"
+mkdir -p "${repo}/data/coverage_reports"
+SOURCE_SHA="${source_sha}" UNIVERSE_VERSION="${universe_version}" REPO="${repo}" python3 - <<'PY' \
+  > "${repo}/data/coverage_reports/${universe_version}.json"
+import json
+import os
+import sys
+from pathlib import Path
+
+repo = Path(os.environ["REPO"])
+sys.path.insert(0, str(repo / "scripts"))
+from research_coverage_report import build_report
+
+report = build_report(
+    build={
+        "universe_version": os.environ["UNIVERSE_VERSION"],
+        "source_sha": os.environ["SOURCE_SHA"],
+        "input_sha256": "b" * 64,
+        "sealed_at": "2026-07-13T00:00:00Z",
+    },
+    rows=[
+        {
+            "ticker": "AAA",
+            "vector": {
+                "ai_text_stance": {"value": 0.2},
+                "fair_px_lo": {"value": 80},
+                "fair_px_med": {"value": 100},
+                "fair_px_hi": {"value": 120},
+            },
+            "completeness_grade": "A",
+            "kill_active": False,
+            "has_filing_evidence": True,
+            "has_filing_map": True,
+        }
+    ],
+    data_dir=repo / "data",
+)
+print(json.dumps(report, sort_keys=True))
+PY
 
 cat > "${fake_bin}/psql" <<'SH'
 #!/usr/bin/env bash
@@ -97,7 +149,12 @@ case "${1:-}" in
         mkdir -p "$(dirname "${target}")"
         cp "${body}" "${target}"
         printf '%s\n' "${metadata#sha256=}" > "${target}.sha256meta"
-        version="fixture-$(printf '%s' "${key}" | shasum -a 256 | awk '{print substr($1, 1, 16)}')"
+        if command -v sha256sum >/dev/null 2>&1; then
+          fingerprint="$(printf '%s' "${key}" | sha256sum | awk '{print substr($1, 1, 16)}')"
+        else
+          fingerprint="$(printf '%s' "${key}" | shasum -a 256 | awk '{print substr($1, 1, 16)}')"
+        fi
+        version="fixture-${fingerprint}"
         printf '%s\n' "${version}" > "${target}.version"
         printf '{"VersionId":"%s"}\n' "${version}"
         ;;
@@ -163,6 +220,10 @@ if [[ "${1:-}" == */research_release.py && "${2:-}" == "export" ]]; then
   exit 0
 fi
 
+if [[ "${1:-}" == */research_coverage_report.py && "${2:-}" == "--verify-report" ]]; then
+  exec "${REAL_PYTHON3:?}" "$1" --validate-report "$3"
+fi
+
 exec "${REAL_PYTHON3:?}" "$@"
 SH
 chmod +x "${fake_bin}/python3"
@@ -186,7 +247,7 @@ release_path="${fake_s3}/${release_uri#s3://}"
 [[ -f "${release_path}/research_snapshot.json" ]]
 [[ -f "${release_path}/research_records.json" ]]
 [[ -f "${release_path}/release.json" ]]
-release_descriptor_sha="$(shasum -a 256 "${release_path}/release.json" | awk '{print $1}')"
+release_descriptor_sha="$(checksum "${release_path}/release.json")"
 [[ "${stage_output}" == *"DATA_RELEASE_DESCRIPTOR_SHA256=${release_descriptor_sha}"* ]]
 
 python3 - "${release_path}/release.json" "${source_sha}" "${universe_version}" <<'PY'
@@ -199,7 +260,9 @@ assert release["universe_version"] == sys.argv[3]
 assert len(release["manifest_sha256"]) == 64
 assert len(release["database_snapshot_sha256"]) == 64
 assert len(release["research_records_sha256"]) == 64
-assert release["schema_version"] == 2
+assert release["schema_version"] == 3
+assert release["coverage_report"]["path"] == f"coverage_reports/{sys.argv[3]}.json"
+assert len(release["coverage_report"]["sha256"]) == 64
 assert set(release["object_versions"]) == {
     "data.tar.gz",
     "manifest.json",
@@ -270,6 +333,55 @@ if (
       --source-sha "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 ); then
   echo "Stage unexpectedly accepted a mismatched source SHA." >&2
+  exit 1
+fi
+
+python3 - "${repo}/data/coverage_reports/${universe_version}.json" <<'PY'
+import hashlib
+import json
+import sys
+
+path = sys.argv[1]
+report = json.load(open(path))
+report["coverage"] = {}
+content = {
+    key: value
+    for key, value in report.items()
+    if key not in {"generated_at", "report_sha256"}
+}
+report["report_sha256"] = hashlib.sha256(
+    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+).hexdigest()
+open(path, "w").write(json.dumps(report, sort_keys=True))
+PY
+if (
+  cd "${repo}"
+  PATH="${fake_bin}:${PATH}" \
+    FAKE_S3_ROOT="${fake_s3}" \
+    FAKE_UNIVERSE_VERSION="${universe_version}" \
+    FAKE_BUILD_SOURCE_SHA="${source_sha}" \
+    REAL_PYTHON3="${real_python3}" \
+    DATABASE_URL="postgresql://fixture" \
+    DATA_RELEASE_BUCKET="fixture-bucket" \
+    ./scripts/stage_data_release.sh --universe-version "${universe_version}"
+); then
+  echo "Stage unexpectedly accepted an incomplete coverage schema." >&2
+  exit 1
+fi
+
+rm "${repo}/data/coverage_reports/${universe_version}.json"
+if (
+  cd "${repo}"
+  PATH="${fake_bin}:${PATH}" \
+    FAKE_S3_ROOT="${fake_s3}" \
+    FAKE_UNIVERSE_VERSION="${universe_version}" \
+    FAKE_BUILD_SOURCE_SHA="${source_sha}" \
+    REAL_PYTHON3="${real_python3}" \
+    DATABASE_URL="postgresql://fixture" \
+    DATA_RELEASE_BUCKET="fixture-bucket" \
+    ./scripts/stage_data_release.sh --universe-version "${universe_version}"
+); then
+  echo "Stage unexpectedly accepted a release without immutable coverage evidence." >&2
   exit 1
 fi
 

@@ -63,7 +63,7 @@ export function AdminClients({ data }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Briefcase className="w-5 h-5 text-blue-500" />Client Portals</CardTitle>
-          <CardDescription>Manage investor portals. Passwords are loaded from the backend admin config (not committed to git).</CardDescription>
+          <CardDescription>Manage portal metadata. Credentials are never returned to this browser.</CardDescription>
         </CardHeader>
         <CardContent>
           {clientsLoading && <div className="text-sm text-muted-foreground">Loading client portals…</div>}
@@ -82,11 +82,10 @@ export function AdminClients({ data }: Props) {
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Access Control</CardTitle><CardDescription>Manage client portal credentials</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Access Control</CardTitle><CardDescription>Manage credentials outside the browser</CardDescription></CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">Client portal passwords are intentionally <strong>not</strong> stored in this repository.</p>
-            <div className="p-3 bg-slate-800/50 rounded-lg"><code className="text-xs text-muted-foreground">backend/admin_clients.json (server-only; ignored by git)</code></div>
-            <p className="text-xs text-muted-foreground">To change passwords: update `backend/admin_clients.json` on the research server and redeploy/restart backend if needed.</p>
+            <p className="text-sm text-muted-foreground">Client portal credentials are intentionally not stored in the repository or exposed through the admin API.</p>
+            <p className="text-xs text-muted-foreground">Rotate credentials through the approved target-side secret and access-control process, then verify the portal separately.</p>
           </CardContent>
         </Card>
         <Card>
@@ -142,12 +141,6 @@ function ClientPortalCard({ client, onCopy }: { client: ClientPortal; onCopy: (t
             <div className="flex items-center justify-between">
               <div><p className="text-xs text-muted-foreground mb-1">Portal URL</p><code className="text-sm font-mono text-blue-400">{client.portalUrl}</code></div>
               <Button size="sm" variant="ghost" onClick={() => onCopy(client.portalUrl, `${client.name} URL`)}><Copy className="w-3 h-3" /></Button>
-            </div>
-          </div>
-          <div className="p-3 rounded-lg bg-slate-800/50">
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs text-muted-foreground mb-1">Access Password</p><code className="text-sm font-mono text-amber-400">{client.accessPassword || "N/A"}</code></div>
-              <Button size="sm" variant="ghost" onClick={() => { if (!client.accessPassword) { onCopy("", `No password configured for ${client.name}`); return }; onCopy(client.accessPassword, `${client.name} password`) }}><Copy className="w-3 h-3" /></Button>
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { useAuthStore } from "@/stores/authStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { dashboardNextPath, withDashboardNext } from "@/lib/authRedirect"
 
 export function Login() {
   const navigate = useNavigate()
@@ -18,6 +19,9 @@ export function Login() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const verificationUrl = `/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(
+    dashboardNextPath(params.get("next"))
+  )}`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,8 +32,7 @@ export function Login() {
     }
     const result = await login(email.trim(), password)
     if (result.success) {
-      const next = params.get("next") || "/app"
-      navigate(next.startsWith("/") ? next : "/app")
+      navigate(dashboardNextPath(params.get("next")))
     } else {
       setError(result.message || "Login failed")
     }
@@ -49,7 +52,12 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
-                {error}
+                <p>{error}</p>
+                {error.includes("Verify your email") && (
+                  <Link to={verificationUrl} className="mt-2 inline-block font-medium underline">
+                    Resend or enter a verification token
+                  </Link>
+                )}
               </div>
             )}
             <div className="space-y-2">
@@ -106,12 +114,18 @@ export function Login() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               No account?{" "}
-              <Link to="/register" className="text-emerald-600 font-medium hover:underline">
+              <Link
+                to={withDashboardNext("/register", params.get("next"))}
+                className="text-emerald-600 font-medium hover:underline"
+              >
                 Create one
               </Link>
             </p>
             <p className="text-center text-sm text-muted-foreground">
-              <Link to="/reset-password" className="text-emerald-600 font-medium hover:underline">
+              <Link
+                to={withDashboardNext("/reset-password", params.get("next"))}
+                className="text-emerald-600 font-medium hover:underline"
+              >
                 Forgot password?
               </Link>
             </p>

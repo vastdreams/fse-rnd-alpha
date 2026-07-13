@@ -15,6 +15,14 @@ target_data="${work_dir}/target-data"
 mkdir -p "${fake_bin}" "${fake_s3}" "${artifact_dir}" \
   "${source_data}/saas_ai_repricing" "${target_data}"
 
+checksum() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
 cat > "${fake_bin}/aws" <<'SH'
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -174,7 +182,7 @@ bucket="fixture-bucket"
 prefix="investor-platform-data/${universe_version}/$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_sha256"])' "${manifest}")"
 mkdir -p "${fake_s3}/${bucket}/${prefix}"
 cp "${manifest}" "${archive}" "${snapshot}" "${records}" "${release}" "${fake_s3}/${bucket}/${prefix}/"
-release_descriptor_sha="$(shasum -a 256 "${release}" | awk '{print $1}')"
+release_descriptor_sha="$(checksum "${release}")"
 
 PATH="${fake_bin}:${PATH}" FAKE_S3_ROOT="${fake_s3}" \
   DATA_RELEASE_URI="s3://${bucket}/${prefix}" \
@@ -241,7 +249,7 @@ for spec in \
   cp "${source}" "${fake_s3}/versions/${bucket}/${versioned_prefix}/${name}/${version}"
   printf 'unversioned replacement\n' > "${fake_s3}/${bucket}/${versioned_prefix}/${name}"
 done
-versioned_descriptor_sha="$(shasum -a 256 "${versioned_release}" | awk '{print $1}')"
+versioned_descriptor_sha="$(checksum "${versioned_release}")"
 PATH="${fake_bin}:${PATH}" FAKE_S3_ROOT="${fake_s3}" \
   DATA_RELEASE_URI="s3://${bucket}/${versioned_prefix}" \
   EXPECTED_SOURCE_SHA="${source_sha}" \
@@ -250,6 +258,33 @@ PATH="${fake_bin}:${PATH}" FAKE_S3_ROOT="${fake_s3}" \
   "${ROOT_DIR}/scripts/restore_data_release.sh"
 [[ -f "${versioned_target}/price-cache.json" ]]
 [[ -f "${versioned_target}/research_records.json" ]]
+
+# A schema-v3 release must bind and restore its versioned coverage report. A
+# descriptor that names no report in the archive is rejected before it can
+# replace a previously restored tree.
+python3 - "${versioned_release}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+release = json.load(open(path))
+release["schema_version"] = 3
+release["coverage_report"] = {
+    "path": "coverage_reports/univ_restore_fixture.json",
+    "sha256": "c" * 64,
+}
+open(path, "w").write(json.dumps(release, sort_keys=True))
+PY
+cp "${versioned_release}" "${fake_s3}/${bucket}/${versioned_prefix}/release.json"
+if PATH="${fake_bin}:${PATH}" FAKE_S3_ROOT="${fake_s3}" \
+  DATA_RELEASE_URI="s3://${bucket}/${versioned_prefix}" \
+  EXPECTED_SOURCE_SHA="${source_sha}" \
+  DATA_DIR="${versioned_target}" \
+  "${ROOT_DIR}/scripts/restore_data_release.sh"; then
+  echo "Restore unexpectedly accepted a schema-v3 release without its coverage report." >&2
+  exit 1
+fi
+[[ -f "${versioned_target}/price-cache.json" ]]
 
 if PATH="${fake_bin}:${PATH}" FAKE_S3_ROOT="${fake_s3}" \
   DATA_RELEASE_URI="s3://${bucket}/${prefix}" \

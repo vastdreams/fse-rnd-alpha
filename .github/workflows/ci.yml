@@ -418,17 +418,17 @@ jobs:
           FRONTEND_IMAGE: rd-alpha-frontend:release-gate
         run: ./scripts/test_compose_release.sh
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Log in to GitHub Container Registry (retired publisher)
+        if: ${{ false }}
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push the exact tested image digests
+      - name: Push the exact tested image digests (retired publisher)
         id: publish_tested_images
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: ${{ false }}
         env:
           BACKEND_REPOSITORY: ghcr.io/${{ github.repository }}-backend
           FRONTEND_REPOSITORY: ghcr.io/${{ github.repository }}-frontend
@@ -453,16 +453,16 @@ jobs:
           echo "backend_digest=${backend_digest}" >> "${GITHUB_OUTPUT}"
           echo "frontend_digest=${frontend_digest}" >> "${GITHUB_OUTPUT}"
 
-      - name: Attest tested backend image provenance
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Attest tested backend image provenance (retired publisher)
+        if: ${{ false }}
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-name: ghcr.io/${{ github.repository }}-backend
           subject-digest: ${{ steps.publish_tested_images.outputs.backend_digest }}
           push-to-registry: true
 
-      - name: Attest tested frontend image provenance
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Attest tested frontend image provenance (retired publisher)
+        if: ${{ false }}
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-name: ghcr.io/${{ github.repository }}-frontend
@@ -475,7 +475,7 @@ jobs:
   publish-immutable-release:
     name: Publish Immutable Release Artifact
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ false }}
     needs: [backend-test, frontend-build, browser-smoke, docker-build, compile-check, lint, security]
     permissions:
       contents: read

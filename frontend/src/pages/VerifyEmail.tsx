@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom"
 
 import { API_BASE } from "@/lib/api/base"
 import { useAuthStore } from "@/stores/authStore"
+import { dashboardNextPath, withDashboardNext } from "@/lib/authRedirect"
 
 export function VerifyEmail() {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ export function VerifyEmail() {
       setError(result.message || "Verification failed")
       return
     }
-    navigate("/app")
+    navigate(dashboardNextPath(params.get("next")))
   }
 
   useEffect(() => {
@@ -95,7 +96,10 @@ export function VerifyEmail() {
           </button>
         </div>
         <p className="mt-5 text-sm text-neutral-600">
-          <Link to="/login" className="font-medium text-emerald-700 underline">
+          <Link
+            to={withDashboardNext("/login", params.get("next"))}
+            className="font-medium text-emerald-700 underline"
+          >
             Back to sign in
           </Link>
         </p>

@@ -81,6 +81,7 @@ const vector = {
 test("renders Company Research from the URL-pinned universe version", async ({ page }) => {
   let companyRequestUrl = ""
   let dcfRequests = 0
+  let dcfRequestBody: Record<string, unknown> | null = null
   let memoSaved = false
   await page.addInitScript(() => {
     localStorage.setItem("fse_research_token", "test-token")
@@ -148,6 +149,27 @@ test("renders Company Research from the URL-pinned universe version", async ({ p
         deepseek_runs: [],
         final_review: null,
         reviewer_passed: true,
+        dcf_seed: {
+          inputs: {
+            ticker: "MNDY",
+            scenario: "base",
+            revenue_usd: 1000000,
+            fcf_sbc_usd: 100000,
+            fcfm_sbc: 0.1,
+            net_cash_usd: 50000,
+            ev_mult_usd: 1500000,
+            shares_fut_implied: 10000,
+            price: 180,
+            growth: 0.12,
+            wacc: 0.1,
+            terminal_g: 0.03,
+            target_margin: 0.15,
+          },
+          source: "Frozen fundamental-value panel",
+          as_of: asOf,
+          missing_inputs: [],
+          note: "fixture seed",
+        },
         dcf_runs: [],
       }),
     })
@@ -179,6 +201,7 @@ test("renders Company Research from the URL-pinned universe version", async ({ p
   )
   await page.route("**/api/universe/dcf/MNDY**", async (route) => {
     dcfRequests += 1
+    dcfRequestBody = route.request().postDataJSON() as Record<string, unknown>
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -243,8 +266,11 @@ test("renders Company Research from the URL-pinned universe version", async ({ p
 
   await page.getByRole("button", { name: "Valuation", exact: true }).click()
   await expect(page.getByText("DCF workbench (saved, reproducible runs)")).toBeVisible()
+  await expect(page.getByLabel("Revenue (USD)")).toHaveValue("1000000")
+  await expect(page.getByText(/Inputs seeded from Frozen fundamental-value panel/)).toBeVisible()
   await page.getByRole("button", { name: "Run + save scenario" }).click()
   await expect.poll(() => dcfRequests).toBe(1)
+  expect(dcfRequestBody).toMatchObject({ revenue_usd: 1000000, target_margin: 0.15 })
   await expect(page.getByText("Fair px median")).toBeVisible()
 
   await page.getByRole("button", { name: "Stance · Unknown", exact: true }).click()

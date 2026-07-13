@@ -68,7 +68,7 @@ schema = release.get("schema_version")
 if schema == 1:
     print("1\t\t\t\t")
     raise SystemExit
-if schema != 2:
+if schema not in (2, 3):
     raise SystemExit(f"Unsupported release schema: {schema!r}")
 versions = release.get("object_versions")
 expected = {
@@ -86,7 +86,7 @@ for name in sorted(expected):
 print(
     "\t".join(
         (
-            "2",
+            str(schema),
             versions["data.tar.gz"],
             versions["manifest.json"],
             versions["research_snapshot.json"],
@@ -109,7 +109,7 @@ download_release_object() {
   local object_name="$1"
   local destination="$2"
   local version_id="$3"
-  if [[ "${release_schema}" == "2" ]]; then
+  if [[ "${release_schema}" != "1" ]]; then
     aws s3api get-object \
       --bucket "${release_bucket}" \
       --key "${release_key_prefix%/}/${object_name}" \
@@ -151,7 +151,7 @@ for name in required:
     if not isinstance(value, str) or not value:
         raise SystemExit(f"Release record is missing {name}")
 
-if release.get("schema_version") not in (1, 2):
+if release.get("schema_version") not in (1, 2, 3):
     raise SystemExit(f"Unsupported release schema: {release.get('schema_version')!r}")
 if manifest.get("manifest_sha256") != release["manifest_sha256"]:
     raise SystemExit("Data manifest reference does not match the release record")
@@ -250,6 +250,40 @@ tar -C "${restore_tree}" -xzf "${archive}"
 python3 "${ROOT_DIR}/scripts/verify_data_manifest.py" \
   --manifest "${manifest}" \
   --data-dir "${restore_tree}"
+if [[ "${release_schema}" == "3" ]]; then
+  python3 - "${release}" "${restore_tree}" "${ROOT_DIR}/scripts" <<'PY'
+import json
+import sys
+from pathlib import Path, PurePosixPath
+
+release = json.load(open(sys.argv[1]))
+data_root = Path(sys.argv[2]).resolve()
+sys.path.insert(0, sys.argv[3])
+from research_coverage_report import validate_report
+
+coverage = release.get("coverage_report")
+if not isinstance(coverage, dict):
+    raise SystemExit("Schema-v3 release has no coverage report binding")
+relative = coverage.get("path")
+expected_sha = coverage.get("sha256")
+if not isinstance(relative, str) or not isinstance(expected_sha, str):
+    raise SystemExit("Schema-v3 release has an invalid coverage report binding")
+path = PurePosixPath(relative)
+if path.is_absolute() or ".." in path.parts or path.parts[:1] != ("coverage_reports",):
+    raise SystemExit("Schema-v3 release has an unsafe coverage report path")
+report_path = (data_root / Path(*path.parts)).resolve()
+if data_root not in report_path.parents or not report_path.is_file():
+    raise SystemExit("Restored data has no bound coverage report")
+report = json.load(open(report_path))
+validate_report(
+    report,
+    expected_universe_version=str(release.get("universe_version") or ""),
+    expected_source_sha=str(release.get("source_sha") or ""),
+)
+if expected_sha != report["report_sha256"]:
+    raise SystemExit("Coverage report checksum does not match the release record")
+PY
+fi
 cp "${manifest}" "${restore_tree}/release_manifest.json"
 cp "${release}" "${restore_tree}/release_metadata.json"
 cp "${research_snapshot}" "${restore_tree}/research_snapshot.json"

@@ -45,6 +45,7 @@ certifi==2026.6.17
     #   httpcore
     #   httpx
     #   requests
+    #   sentry-sdk
 charset-normalizer==3.4.9
     # via requests
 click==8.4.2
@@ -67,7 +68,9 @@ email-validator==2.3.0
     #   -r backend/requirements.txt
     #   pydantic
 fastapi==0.139.0
-    # via -r backend/requirements.txt
+    # via
+    #   -r backend/requirements.txt
+    #   sentry-sdk
 frozenlist==1.8.0
     # via
     #   aiohttp
@@ -170,6 +173,8 @@ scipy==1.16.3
     # via
     #   -r backend/requirements.txt
     #   statsmodels
+sentry-sdk[fastapi]==2.65.0
+    # via -r backend/requirements.txt
 six==1.17.0
     # via python-dateutil
 sqlalchemy==2.0.51
@@ -205,6 +210,7 @@ urllib3==2.7.0
     # via
     #   botocore
     #   requests
+    #   sentry-sdk
 uvicorn==0.51.0
     # via -r backend/requirements.txt
 uvloop==0.22.1

@@ -19,6 +19,7 @@ from sqlalchemy import text
 from app.contracts.research import MetricValue, MetricVector, ResearchCompleteness
 from app.db.session import async_session_maker, engine
 from app.main import app
+from app.api.routes import auth as auth_routes
 from app.services import account_service
 
 pytestmark = pytest.mark.skipif(
@@ -124,6 +125,33 @@ async def test_duplicate_registration_returns_a_stable_conflict():
         second = await client.post("/api/auth/register", json=payload)
         assert second.status_code == 409, second.text
         assert second.json()["detail"] == "Email already registered"
+
+
+@pytest.mark.asyncio
+async def test_registration_keeps_the_verify_recovery_path_when_email_delivery_fails(monkeypatch):
+    async def delivery_failure(_user: dict, _token: str) -> bool:
+        return False
+
+    monkeypatch.setattr(auth_routes, "_send_verification_email", delivery_failure)
+    email = f"delivery-failure-{uuid.uuid4().hex}@example.com"
+    password = "correct-horse-battery-staple"
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        registered = await client.post(
+            "/api/auth/register",
+            json={"email": email, "password": password, "full_name": "Recovery Investor"},
+        )
+        assert registered.status_code == 201, registered.text
+        payload = registered.json()
+        assert payload["verification_required"] is True
+        assert "delivery is delayed" in payload["message"]
+
+        login = await client.post("/api/auth/login", json={"email": email, "password": password})
+        assert login.status_code == 403
+        verified = await client.post(
+            "/api/auth/verify-email", json={"token": payload["debug_verification_token"]}
+        )
+        assert verified.status_code == 200, verified.text
 
 
 @pytest.mark.asyncio
@@ -587,6 +615,10 @@ async def test_readiness_attests_active_sealed_build_and_mounted_manifest(tmp_pa
 
     (tmp_path / "release_manifest.json").write_text(json.dumps(manifest))
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("RELEASE_SOURCE_SHA", "1" * 40)
+    monkeypatch.setenv("RELEASE_REF", f"{'1' * 40}-integration")
+    monkeypatch.setenv("RELEASE_BACKEND_IMAGE", "backend@sha256:" + "a" * 64)
+    monkeypatch.setenv("RELEASE_FRONTEND_IMAGE", "frontend@sha256:" + "b" * 64)
     async with async_session_maker() as db:
         await db.execute(text("UPDATE universe_builds SET is_active=false WHERE is_active"))
         await db.execute(
@@ -607,6 +639,8 @@ async def test_readiness_attests_active_sealed_build_and_mounted_manifest(tmp_pa
     assert payload["ready"] is True
     assert payload["release"]["universe_version"] == universe_version
     assert payload["release"]["data_manifest_sha256"] == manifest_sha
+    assert payload["checks"]["runtime_release"] == "ok"
+    assert payload["release"]["runtime"]["release_ref"] == f"{'1' * 40}-integration"
 
 
 @pytest.mark.asyncio
@@ -890,6 +924,13 @@ async def test_personal_research_records_require_owner_and_sealed_version():
             },
         )
         assert saved.status_code == 200, saved.text
+        insufficient = await client.post(
+            f"/api/universe/dcf/{ticker}?universe_version={universe_version}",
+            headers=_headers(token),
+            json={"ticker": ticker, "growth": 0.12, "save": True},
+        )
+        assert insufficient.status_code == 422
+        assert "DCF needs" in insufficient.json()["detail"]
 
     async with async_session_maker() as db:
         stored_owner = await db.scalar(

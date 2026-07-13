@@ -11,7 +11,10 @@ ROLE IN ARCHITECTURE:
 from celery import Celery
 
 from app.core.config import settings
+from app.core.observability import init_error_tracking
 
+
+init_error_tracking()
 
 celery_app = Celery(
     "rd_alpha_worker",

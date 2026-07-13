@@ -108,6 +108,8 @@ def panel_valuation() -> dict[str, dict]:
                 "opm": num("opm_l"),
                 "fcfm_sbc": num("fcfm_sbc_l"),
                 "fcf_usd": num("fcf_sbc_usd_l"),
+                "net_cash_usd": num("netcash_usd_l"),
+                "ev_mult_usd": num("ev_mult"),
             }
     _panel_cache = out
     return out
@@ -146,33 +148,39 @@ async def identity_map(tickers: list[str]) -> dict[str, dict]:
 
     result: dict[str, dict] = dict(_identity_cache)
     if settings.NASDAQ_DATA_LINK_API_KEY:
-        async with aiohttp.ClientSession() as session:
-            # TICKERS accepts comma-separated tickers; batch to stay under URL limits
-            for i in range(0, len(missing), 80):
-                batch = missing[i : i + 80]
-                params = {
-                    "table": "SF1",
-                    "ticker": ",".join(batch),
-                    "qopts.columns": "ticker,name,exchange,sicsector,industry,scalemarketcap,location",
-                    "api_key": settings.NASDAQ_DATA_LINK_API_KEY,
-                }
-                async with session.get(TICKERS_URL, params=params,
-                                       timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                    if resp.status != 200:
-                        continue
-                    payload = await resp.json()
-                table = payload.get("datatable") or {}
-                cols = [c["name"] for c in table.get("columns", [])]
-                for r in table.get("data", []):
-                    d = dict(zip(cols, r))
-                    result[d["ticker"]] = {
-                        "name": (d.get("name") or "").title(),
-                        "exchange": d.get("exchange"),
-                        "sector": d.get("sicsector"),
-                        "industry": d.get("industry"),
-                        "size": d.get("scalemarketcap"),
-                        "location": d.get("location"),
+        try:
+            async with aiohttp.ClientSession() as session:
+                # TICKERS accepts comma-separated tickers; batch to stay under URL limits
+                for i in range(0, len(missing), 80):
+                    batch = missing[i : i + 80]
+                    params = {
+                        "table": "SF1",
+                        "ticker": ",".join(batch),
+                        "qopts.columns": "ticker,name,exchange,sicsector,industry,scalemarketcap,location",
+                        "api_key": settings.NASDAQ_DATA_LINK_API_KEY,
                     }
+                    async with session.get(
+                        TICKERS_URL, params=params, timeout=aiohttp.ClientTimeout(total=30)
+                    ) as resp:
+                        if resp.status != 200:
+                            continue
+                        payload = await resp.json()
+                    table = payload.get("datatable") or {}
+                    cols = [c["name"] for c in table.get("columns", [])]
+                    for r in table.get("data", []):
+                        d = dict(zip(cols, r))
+                        result[d["ticker"]] = {
+                            "name": (d.get("name") or "").title(),
+                            "exchange": d.get("exchange"),
+                            "sector": d.get("sicsector"),
+                            "industry": d.get("industry"),
+                            "size": d.get("scalemarketcap"),
+                            "location": d.get("location"),
+                        }
+        except (aiohttp.ClientError, TimeoutError, OSError, ValueError):
+            # Identity is a current overlay. Missing it must not erase or block
+            # a sealed-universe row when the provider is degraded.
+            pass
 
     for t in missing:
         result.setdefault(t, {})  # negative-cache unresolved tickers

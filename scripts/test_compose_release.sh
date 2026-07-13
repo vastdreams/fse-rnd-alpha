@@ -39,6 +39,7 @@ fi
 
 release_gate_host="release-gate.test"
 release_gate_universe="release_gate_universe"
+release_gate_source_sha="$(printf 'b%.0s' {1..40})"
 
 mkdir -p "${data_dir}/saas_ai_repricing" "${cert_dir}" "${acme_dir}"
 chmod 0777 "${data_dir}"
@@ -76,6 +77,8 @@ AUTH_RESET_URL=https://${release_gate_host}:18443/reset-password
 AUTH_VERIFY_URL=https://${release_gate_host}:18443/verify-email
 STRIPE_SUCCESS_URL=https://${release_gate_host}:18443/donate?success=true
 STRIPE_CANCEL_URL=https://${release_gate_host}:18443/donate?canceled=true
+RELEASE_SHA=${release_gate_source_sha}
+RELEASE_REF=${release_gate_source_sha}-release-gate
 HTTP_PORT=18080
 HTTPS_PORT=18443
 EOF
@@ -165,13 +168,35 @@ https_headers="$(
 )"
 rg -qi '^strict-transport-security:' <<< "${https_headers}"
 rg -qi '^content-security-policy:' <<< "${https_headers}"
+legacy_headers="$(
+  curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
+    -sSI "https://${release_gate_host}:18443/portfolio/saas/GATE?universe_version=${release_gate_universe}"
+)"
+rg -q '^HTTP/.* 308' <<< "${legacy_headers}"
+rg -q "^location: /app/company/gate?universe_version=${release_gate_universe}" \
+  <<< "$(tr '[:upper:]' '[:lower:]' <<< "${legacy_headers}")"
+
+admin_login_statuses=()
+for _ in $(seq 1 12); do
+  admin_login_statuses+=("$(
+    curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
+      -o /dev/null -sS -w '%{http_code}' \
+      -H 'Content-Type: application/json' \
+      --data '{"email":"admin@example.test","password":"invalid"}' \
+      "https://${release_gate_host}:18443/api/admin/login"
+  )")
+done
+[[ " ${admin_login_statuses[*]} " == *" 429 "* ]] || {
+  echo "Admin login did not receive the credential rate limit." >&2
+  exit 1
+}
 
 curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
   -fsS "https://${release_gate_host}:18443/health" |
   python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "healthy"'
 curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
   -fsS "https://${release_gate_host}:18443/ready" |
-  python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["ready"] is True; assert payload["checks"]["database"] == "ok"; assert payload["checks"]["investor_schema"] == "ok"; assert payload["checks"]["migration_ledger"] == "ok"; assert payload["checks"]["research_integrity_triggers"] == "ok"'
+  python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["ready"] is True; assert payload["checks"]["database"] == "ok"; assert payload["checks"]["investor_schema"] == "ok"; assert payload["checks"]["migration_ledger"] == "ok"; assert payload["checks"]["research_integrity_triggers"] == "ok"; assert payload["checks"]["runtime_release"] == "ok"; assert payload["release"]["runtime"]["source_sha"] == sys.argv[1]' "${release_gate_source_sha}"
 curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
   -fsS "https://${release_gate_host}:18443/api/health" |
   python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "healthy"'

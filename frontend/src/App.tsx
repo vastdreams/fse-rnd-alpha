@@ -23,7 +23,10 @@ function RootLayout() {
     location.pathname.startsWith("/app") ||
     location.pathname.startsWith("/portfolio") ||
     // Auth pages opened for the dashboard product
-    ((location.pathname === "/login" || location.pathname === "/register") &&
+    ((location.pathname === "/login" ||
+      location.pathname === "/register" ||
+      location.pathname === "/verify-email" ||
+      location.pathname === "/reset-password") &&
       new URLSearchParams(location.search).get("next")?.startsWith("/app"))
 
   if (onDashboard || portfolioHost) {

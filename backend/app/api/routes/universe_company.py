@@ -36,6 +36,7 @@ from app.services.company_meta_service import (
     company_profile,
     identity_map,
     live_price_from_mos,
+    panel_valuation,
 )
 from app.services.price_history_service import (
     PriceHistoryUnavailable,
@@ -90,6 +91,68 @@ def _valid_fair_value_band(panel: dict) -> bool:
     return all(isinstance(value, (int, float)) and math.isfinite(value) and value > 0 for value in values) and (
         values[0] <= values[1] <= values[2]
     )
+
+
+def _finite_number(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _frozen_dcf_seed(ticker: str, panel: dict) -> dict | None:
+    """Expose only existing panel assumptions; never synthesize a valuation input."""
+
+    ticker = ticker.upper()
+    growth = _finite_number(panel.get("rev_cagr"))
+    wacc = _finite_number(panel.get("wacc"))
+    if growth is None or wacc is None:
+        return None
+    fcf_margin = _finite_number(panel.get("fcfm_sbc"))
+    inputs = DcfInputs(
+        ticker=ticker,
+        scenario="base",
+        revenue_usd=_finite_number(panel.get("revenue_usd")),
+        fcf_sbc_usd=_finite_number(panel.get("fcf_usd")),
+        fcfm_sbc=fcf_margin,
+        net_cash_usd=_finite_number(panel.get("net_cash_usd")) or 0.0,
+        ev_mult_usd=_finite_number(panel.get("ev_mult_usd")),
+        shares_fut_implied=None,
+        price=_finite_number(panel.get("price_snapshot")),
+        # Mirror the release seeding script's bounded engine input, while
+        # retaining the reported panel value in its provenance note.
+        growth=max(-0.10, min(0.30, growth)),
+        wacc=wacc,
+        target_margin=fcf_margin if fcf_margin is not None and fcf_margin > 0 else None,
+    )
+    missing = [
+        name
+        for name, value in inputs.model_dump().items()
+        if name
+        in {
+            "revenue_usd",
+            "fcf_sbc_usd",
+            "fcfm_sbc",
+            "ev_mult_usd",
+            "shares_fut_implied",
+            "price",
+            "target_margin",
+        }
+        and value is None
+    ]
+    return {
+        "inputs": inputs.model_dump(mode="json"),
+        "source": "Frozen fundamental-value panel",
+        "as_of": panel.get("fundamentals_as_of"),
+        "missing_inputs": missing,
+        "note": (
+            "Inputs come from the versioned release panel. Empty fields are "
+            "unknown and must be supplied explicitly before a lens can use them."
+        ),
+    }
 
 
 async def _latest_version(db: AsyncSession) -> str:
@@ -216,6 +279,7 @@ async def company_research(
 ) -> dict:
     uv = universe_version or await _latest_version(db)
     await _require_sealed_version(db, uv)
+    active_universe = await _latest_version(db)
     vec = await _vector(db, ticker, uv)
     t = ticker.upper()
 
@@ -257,6 +321,12 @@ async def company_research(
 
     profile = await company_profile(t)
     idmap = await identity_map([t])
+    dcf_seed = None
+    if uv == active_universe:
+        try:
+            dcf_seed = _frozen_dcf_seed(t, panel_valuation().get(t, {}))
+        except OSError:
+            dcf_seed = None
     frozen_band = {
         "fair_px_lo": vec.fair_px_lo.value,
         "fair_px_med": vec.fair_px_med.value,
@@ -342,6 +412,7 @@ async def company_research(
         "deepseek_runs": [dict(r) for r in ds_runs],
         "final_review": dict(review) if review else None,
         "reviewer_passed": review["passed"] if review else None,
+        "dcf_seed": dcf_seed,
         "dcf_runs": [
             {**dict(r),
              "inputs": r["inputs"] if isinstance(r["inputs"], dict) else json.loads(r["inputs"]),
@@ -678,6 +749,11 @@ async def run_and_save_dcf(
     await _vector(db, t, uv)
     inputs.ticker = t
     outputs = run_dcf(inputs)
+    if outputs.fair_ev_med is None:
+        raise HTTPException(
+            422,
+            "DCF needs a positive SBC-adjusted FCF, revenue plus target margin, or a peer EV input",
+        )
     run_id = hashlib.sha256(
         f"{t}|{user['id']}|{uv}|{_now().isoformat()}|{inputs.model_dump_json()}".encode()
     ).hexdigest()[:40]

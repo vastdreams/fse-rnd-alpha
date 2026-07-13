@@ -8,12 +8,17 @@ DEPENDENCIES:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from app.db.models.base import (
     Base, datetime, date_type, Optional, List,
     Integer, String, Float, Boolean, Date, DateTime, Text, JSON,
     ForeignKey, Index, UniqueConstraint,
     relationship, Mapped, mapped_column,
 )
+
+if TYPE_CHECKING:
+    from app.db.models.company import CompanyYearCore
 
 
 class FinancialsCore(Base):

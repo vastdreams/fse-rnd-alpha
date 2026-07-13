@@ -200,15 +200,15 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     if verification_token:
-        if not await _send_verification_email(user, verification_token):
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Account created, but verification email delivery failed. Try resend verification.",
-            )
+        delivered = await _send_verification_email(user, verification_token)
         return RegisterResponse(
             user=user,
             verification_required=True,
-            message="Check your email to verify your account before signing in.",
+            message=(
+                "Check your email to verify your account before signing in."
+                if delivered
+                else "Account created. Verification delivery is delayed; use resend verification to try again."
+            ),
             debug_verification_token=verification_token if settings.DEBUG else None,
         )
 

@@ -37,6 +37,19 @@ backend/.venv/bin/python scripts/backfill_ai_text_stance_from_transcripts.py
 backend/.venv/bin/python scripts/build_universe.py
 ```
 
+Before staging the rebuilt universe, generate its write-once coverage evidence:
+
+```bash
+DATABASE_URL=<staging-postgres-url> \
+  backend/.venv/bin/python scripts/research_coverage_report.py \
+    --universe-version <new-sealed-version> \
+    --data-dir <mounted-data-volume>
+```
+
+The report records cache, filing, map, stance, kill-state, and value-band gaps
+as evidence. It does not turn missing source material into a pass; a verified
+cohort always requires a new sealed version.
+
 ## Phase E ops
 
 - `filing_map`: quote-substring locators only (`deepseek_audit.py filing_map`).

@@ -163,7 +163,7 @@ export function useAdminData() {
       const rows = Array.isArray(data) ? data : []
       setClientPortals(rows.map((row) => {
         const status: ClientPortal["status"] = row.status === "active" || row.status === "pending" || row.status === "inactive" ? row.status : "pending"
-        return { id: String(row.id), name: String(row.name), slug: String(row.slug), description: String(row.description), portalUrl: String(row.portal_url), status, sector: String(row.sector), location: String(row.location), afsl: row.afsl ? String(row.afsl) : undefined, documents: Array.isArray(row.documents) ? row.documents.filter((d) => typeof d === "string") : [], accessPassword: typeof row.access_password === "string" ? row.access_password : undefined }
+        return { id: String(row.id), name: String(row.name), slug: String(row.slug), description: String(row.description), portalUrl: String(row.portal_url), status, sector: String(row.sector), location: String(row.location), afsl: row.afsl ? String(row.afsl) : undefined, documents: Array.isArray(row.documents) ? row.documents.filter((d) => typeof d === "string") : [] }
       }))
     } catch { setClientsError("Failed to fetch client portals"); setClientPortals([]) } finally { setClientsLoading(false) }
   }

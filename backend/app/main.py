@@ -20,12 +20,14 @@ import json
 import os
 from pathlib import Path
 import re
+from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations, admin, analytics, auth, universe_rank, universe_company, books
 from app.api.routes.auth import ensure_bootstrap_user
 from app.core.config import settings
+from app.core.observability import init_error_tracking
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.db.session import engine, create_tables
 
@@ -146,6 +148,8 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
 
+
+init_error_tracking()
 
 app = FastAPI(
     title="R&D Alpha Research API",
@@ -330,7 +334,7 @@ async def readiness_check():
     from app.db.session import async_session_maker
 
     checks: dict[str, str] = {}
-    release: dict[str, str] | None = None
+    release: dict[str, Any] | None = None
     ok = True
 
     try:
@@ -462,6 +466,27 @@ async def readiness_check():
                             "source_sha": source_sha,
                             "data_manifest_sha256": manifest_sha,
                         }
+                        runtime_source_sha = os.environ.get("RELEASE_SOURCE_SHA", "")
+                        runtime_release = {
+                            "release_ref": os.environ.get("RELEASE_REF", ""),
+                            "source_sha": runtime_source_sha,
+                            "backend_image": os.environ.get("RELEASE_BACKEND_IMAGE", ""),
+                            "frontend_image": os.environ.get("RELEASE_FRONTEND_IMAGE", ""),
+                        }
+                        if not runtime_source_sha:
+                            checks["runtime_release"] = "not attested"
+                        elif not re.fullmatch(r"[0-9a-f]{40}", runtime_source_sha):
+                            checks["runtime_release"] = "invalid source SHA"
+                            ok = False
+                        elif runtime_source_sha != source_sha:
+                            checks["runtime_release"] = "does not match active universe"
+                            ok = False
+                        elif not runtime_release["release_ref"]:
+                            checks["runtime_release"] = "missing release ref"
+                            ok = False
+                        else:
+                            checks["runtime_release"] = "ok"
+                            release["runtime"] = runtime_release
     except Exception as exc:  # pragma: no cover - env dependent
         checks["investor_schema"] = f"error: {type(exc).__name__}"
         ok = False

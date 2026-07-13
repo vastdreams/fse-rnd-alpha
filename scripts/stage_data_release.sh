@@ -63,6 +63,11 @@ done
   echo "--source-sha must be a full 40-character Git SHA" >&2
   exit 2
 }
+checked_out_source_sha="$(git -C "${ROOT_DIR}" rev-parse HEAD)"
+[[ "${release_source_sha}" == "${checked_out_source_sha}" ]] || {
+  echo "--source-sha must match the committed source checkout being staged." >&2
+  exit 1
+}
 [[ -d "${DATA_DIR}" ]] || {
   echo "Data directory not found: ${DATA_DIR}" >&2
   exit 1
@@ -157,6 +162,20 @@ for path in sorted(source.rglob("*"), key=lambda item: item.relative_to(source).
         raise SystemExit(f"Data file changed while staging: {relative_name}")
     os.chmod(destination, 0o755 if before.st_mode & 0o111 else 0o644)
 PY
+
+coverage_report_rel="coverage_reports/${universe_version}.json"
+coverage_report="${data_snapshot_dir}/${coverage_report_rel}"
+[[ -f "${coverage_report}" ]] || {
+  echo "Missing immutable coverage report for sealed universe ${universe_version}: ${coverage_report_rel}" >&2
+  exit 1
+}
+python3 "${ROOT_DIR}/scripts/research_coverage_report.py" \
+  --verify-report "${coverage_report}" \
+  --universe-version "${universe_version}" \
+  --expected-source-sha "${release_source_sha}" \
+  --database-url "${DATABASE_URL}" \
+  --data-dir "${data_snapshot_dir}" >/dev/null
+coverage_report_sha="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["report_sha256"])' "${coverage_report}")"
 
 python3 "${ROOT_DIR}/scripts/create_data_manifest.py" \
   --data-dir "${data_snapshot_dir}" \
@@ -323,6 +342,8 @@ RELEASE_MANIFEST_SHA="${manifest_sha}" RELEASE_ARCHIVE_SHA="${archive_sha}" \
 RELEASE_DATABASE_SNAPSHOT_SHA="${database_snapshot_sha}" \
 RELEASE_RESEARCH_RECORDS_SHA="${research_records_sha}" \
 RELEASE_UNIVERSE_VERSION="${universe_version}" RELEASE_SOURCE_SHA="${release_source_sha}" \
+RELEASE_COVERAGE_REPORT_PATH="${coverage_report_rel}" \
+RELEASE_COVERAGE_REPORT_SHA="${coverage_report_sha}" \
 RELEASE_ARCHIVE_VERSION_ID="${archive_version_id}" \
 RELEASE_RESEARCH_SNAPSHOT_VERSION_ID="${research_snapshot_version_id}" \
 RELEASE_RESEARCH_RECORDS_VERSION_ID="${research_records_version_id}" \
@@ -333,13 +354,17 @@ import os
 
 print(json.dumps(
     {
-        "schema_version": 2,
+        "schema_version": 3,
         "universe_version": os.environ["RELEASE_UNIVERSE_VERSION"],
         "manifest_sha256": os.environ["RELEASE_MANIFEST_SHA"],
         "archive_sha256": os.environ["RELEASE_ARCHIVE_SHA"],
         "database_snapshot_sha256": os.environ["RELEASE_DATABASE_SNAPSHOT_SHA"],
         "research_records_sha256": os.environ["RELEASE_RESEARCH_RECORDS_SHA"],
         "source_sha": os.environ["RELEASE_SOURCE_SHA"],
+        "coverage_report": {
+            "path": os.environ["RELEASE_COVERAGE_REPORT_PATH"],
+            "sha256": os.environ["RELEASE_COVERAGE_REPORT_SHA"],
+        },
         "object_versions": {
             "data.tar.gz": os.environ["RELEASE_ARCHIVE_VERSION_ID"],
             "research_snapshot.json": os.environ["RELEASE_RESEARCH_SNAPSHOT_VERSION_ID"],
@@ -358,3 +383,4 @@ release_descriptor_version_id="${PUBLISHED_OBJECT_VERSION_ID}"
 printf 'Staged immutable data release: %s\n' "${release_uri}"
 printf 'DATA_RELEASE_DESCRIPTOR_SHA256=%s\n' "${release_descriptor_sha}"
 printf 'DATA_RELEASE_DESCRIPTOR_VERSION_ID=%s\n' "${release_descriptor_version_id}"
+printf 'DATA_RELEASE_COVERAGE_REPORT_SHA256=%s\n' "${coverage_report_sha}"

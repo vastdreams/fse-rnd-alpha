@@ -1,12 +1,8 @@
-# ==============================================
-# PATH: .gitlab-ci.yml
-# PURPOSE: GitLab CI/CD pipeline for R&D Alpha Research Platform
-# STATUS: GitLab main deploys the production release.
-# ==============================================
+# GitLab main is the sole publishing authority. CI verifies and publishes
+# immutable images plus a versioned host release bundle; a root-owned release
+# agent on each target pulls a selected version over outbound HTTPS. There is
+# intentionally no runner SSH credential, rsync, git reset, or in-place build.
 
-# Keep CI scoped to review work and the GitLab main promotion path. The
-# production deploy job below builds the verified frontend release and restarts
-# the server-side containers.
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -14,28 +10,31 @@ workflow:
     - when: never
 
 stages:
-  - test
-  - build
-  - deploy
   - verify
+  - rehearse
+  - publish
+  - prove
 
 variables:
   PYTHON_VERSION: "3.11"
   NODE_VERSION: "20"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  DOCKER_HOST: "tcp://docker:2376"
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: "1"
+  DOCKER_CERT_PATH: "/certs/client"
 
-# Cache pip and npm packages
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - backend/requirements.lock
+      - frontend/package-lock.json
   paths:
     - .cache/pip
-    - frontend/node_modules/
+    - .npm/
 
-# ============================================
-# BACKEND TESTS
-# ============================================
-backend_test:
-  stage: test
+backend_integration:
+  stage: verify
   image: python:${PYTHON_VERSION}-slim
   services:
     - name: postgres:15-alpine
@@ -46,165 +45,334 @@ backend_test:
         POSTGRES_DB: test_db
   variables:
     DATABASE_URL: "postgresql+asyncpg://test_user:test_password@postgres:5432/test_db"
-    SECRET_KEY: "test-secret-key"
+    SECRET_KEY: "test-secret-key-for-ci-gates-at-least-32-characters"
     DEBUG: "true"
+    RUN_POSTGRES_INTEGRATION: "1"
   before_script:
-    - apt-get update && apt-get install -y gcc libpq-dev
-    - pip install --upgrade pip
-    - pip install -r backend/requirements.txt
-    - pip install pytest pytest-cov pytest-asyncio
-  script:
-    - cd backend
-    - pytest tests/ -v --cov=app --cov-report=term-missing || true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main"
-
-# ============================================
-# PYTHON COMPILE CHECK
-# ============================================
-compile_check:
-  stage: test
-  image: python:${PYTHON_VERSION}-slim
+    - apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev postgresql-client
+    - python -m pip install --upgrade pip
+    - pip install -r backend/requirements.lock
+    - pip install pytest pytest-cov pytest-asyncio ruff
   script:
     - python -m compileall -q backend/app scripts
-    - echo "All Python files compile successfully"
-  allow_failure: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main"
+    # Legacy research modules are retained for reproducibility and have a
+    # historical style backlog. Every Python path is still checked for fatal
+    # parse/name errors, while the deployable investor surface is fully linted.
+    - ruff check --select E9,F63,F7,F82 backend/app backend/tests scripts deploy/setup_aws.py
+    - ruff check backend/app/api/routes/auth.py backend/app/api/routes/books.py backend/app/api/routes/universe_rank.py backend/app/api/routes/universe_company.py backend/app/api/routes/admin.py backend/app/api/deps.py backend/app/contracts/research.py backend/app/core/config.py backend/app/core/observability.py backend/app/main.py backend/app/services/rank_service backend/app/services/company_meta_service.py backend/app/services/financials_service.py backend/app/services/price_history_service.py backend/app/services/close_call_service.py backend/app/workers/celery_app.py backend/tests/test_auth_authorization.py backend/tests/test_admin_client_redaction.py backend/tests/test_company_dcf_seed.py backend/tests/test_observability.py backend/tests/test_provider_failure_boundaries.py backend/tests/test_research_coverage_report.py scripts/research_coverage_report.py deploy/setup_aws.py
+    - (cd backend && python -c "import asyncio; from app.db.session import create_tables; asyncio.run(create_tables())")
+    - ./scripts/run_migrations.sh
+    - ./scripts/run_migrations.sh --verify-only
+    - cd backend && pytest tests/ -v --cov=app --cov-report=term-missing
 
-# ============================================
-# LINT & FORMAT
-# ============================================
-lint:
-  stage: test
+release_contract:
+  stage: verify
   image: python:${PYTHON_VERSION}-slim
   before_script:
-    - pip install flake8 black isort
+    - apt-get update && apt-get install -y --no-install-recommends bash coreutils git tar
   script:
-    - flake8 backend/app scripts --count --select=E9,F63,F7,F82 --show-source --statistics
-    - black --check --diff backend/app scripts || echo "Black formatting issues found (non-blocking)"
-    - isort --check-only --diff backend/app scripts || echo "Import sorting issues found (non-blocking)"
-  allow_failure: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main"
+    - bash -n scripts/run_migrations.sh scripts/deploy_release.sh scripts/restore_data_release.sh scripts/rollback_release.sh scripts/create_release_bundle.sh scripts/check_release_health.sh scripts/backup_postgres_offsite.sh scripts/restore_postgres_offsite.sh scripts/run_authenticated_release_smoke.sh scripts/test_release_agent.sh deploy/rd-alpha-release-agent.sh deploy/install_release_agent.sh
+    - ./scripts/test_stage_data_release.sh
+    - ./scripts/test_release_restore.sh
+    - ./scripts/test_rollback_release.sh
+    - bash ./scripts/test_release_agent.sh
+    - bash ./scripts/test_check_release_health.sh
+    - bash ./scripts/test_offsite_backup_restore.sh
+    - python3 scripts/test_smoke_public_release.py
+    - mkdir release-contract
+    - bash scripts/create_release_bundle.sh --source-sha "$CI_COMMIT_SHA" --backend-image "registry.example/backend@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" --frontend-image "registry.example/frontend@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" --pipeline-id "$CI_PIPELINE_ID" --output-dir release-contract
+    - |
+      CI_COMMIT_SHA="$CI_COMMIT_SHA" CI_PIPELINE_ID="$CI_PIPELINE_ID" python3 - <<'PY'
+      import json
+      import os
 
-# ============================================
-# FRONTEND BUILD
-# ============================================
-frontend_build:
-  stage: build
-  image: node:${NODE_VERSION}-alpine
+      release = json.load(open("release-contract/release.json"))
+      assert release["source_sha"] == os.environ["CI_COMMIT_SHA"]
+      assert release["pipeline_id"] == int(os.environ["CI_PIPELINE_ID"])
+      PY
+
+frontend_quality:
+  stage: verify
+  image: node:${NODE_VERSION}-bookworm
+  before_script:
+    - npm config set cache "$CI_PROJECT_DIR/.npm" --global
   script:
     - cd frontend
     - npm ci --legacy-peer-deps
-    # Skip tsc type-check (pre-existing errors from refactoring), build with Vite only
-    - npx vite build --configLoader runner
+    - npm run lint
+    - npm run test
+    - npm run build
   artifacts:
     paths:
       - frontend/dist/
-    expire_in: 1 hour
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    expire_in: 7 days
 
-# ============================================
-# DOCKER BUILD VERIFICATION
-# ============================================
-docker_build:
-  stage: build
-  image: docker:24-dind
-  services:
-    - docker:24-dind
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
-  needs:
-    - job: backend_test
-    - job: frontend_build
-  script:
-    - docker build -t rd-alpha-backend:test ./backend
-    - echo "Backend Docker image builds successfully"
-    # Frontend Docker image build skipped in CI (tsc strict mode issues)
-    # Server-side deploy builds frontend directly with vite
-  allow_failure: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-
-# ============================================
-# DEPLOY TO PRODUCTION
-# ============================================
-deploy_production:
-  stage: deploy
-  image: alpine:latest
-  needs:
-    - job: backend_test
-    - job: frontend_build
+browser_contract:
+  stage: verify
+  image: mcr.microsoft.com/playwright:v1.61.1-jammy
   before_script:
-    - apk add --no-cache openssh-client
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - chmod 600 "$EC2_SSH_KEY"
-    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null
+    - (cd frontend && npm ci --legacy-peer-deps)
   script:
+    - (cd frontend && npm run test:e2e)
+
+compose_rehearsal:
+  stage: rehearse
+  image: docker:24.0.9-cli
+  services:
+    - name: docker:24.0.9-dind
+      alias: docker
+  before_script:
+    - apk add --no-cache bash curl openssl python3
+    - docker info
+  script:
+    - ./scripts/test_compose_release.sh
+
+publish_immutable_images:
+  stage: publish
+  image: docker:24.0.9-cli
+  services:
+    - name: docker:24.0.9-dind
+      alias: docker
+  needs:
+    - backend_integration
+    - release_contract
+    - frontend_quality
+    - browser_contract
+    - compose_rehearsal
+  before_script:
+    - apk add --no-cache bash
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - release_version="${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
+    - backend_tag="${CI_REGISTRY_IMAGE}/backend:${release_version}"
+    - frontend_tag="${CI_REGISTRY_IMAGE}/frontend:${release_version}"
+    - docker build --pull -t "$backend_tag" ./backend
+    - docker build --pull -f deploy/Dockerfile.frontend -t "$frontend_tag" .
+    - docker push "$backend_tag"
+    - docker push "$frontend_tag"
+    - backend_digest="$(docker buildx imagetools inspect "$backend_tag" --format '{{.Digest}}')"
+    - frontend_digest="$(docker buildx imagetools inspect "$frontend_tag" --format '{{.Digest}}')"
+    - test "${backend_digest#sha256:}" != "$backend_digest"
+    - test "${frontend_digest#sha256:}" != "$frontend_digest"
+    - printf 'BACKEND_IMAGE=%s@%s\nFRONTEND_IMAGE=%s@%s\nRELEASE_VERSION=%s\n' "$CI_REGISTRY_IMAGE/backend" "$backend_digest" "$CI_REGISTRY_IMAGE/frontend" "$frontend_digest" "$release_version" > release-images.env
+  artifacts:
+    reports:
+      dotenv: release-images.env
+    expire_in: 90 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+publish_release_bundle:
+  stage: publish
+  image: python:${PYTHON_VERSION}-alpine
+  needs:
+    - job: publish_immutable_images
+      artifacts: true
+  before_script:
+    - apk add --no-cache bash curl tar
+  script:
+    - test "$RELEASE_VERSION" = "${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
+    - mkdir release
+    - bash scripts/create_release_bundle.sh --source-sha "$CI_COMMIT_SHA" --backend-image "$BACKEND_IMAGE" --frontend-image "$FRONTEND_IMAGE" --pipeline-id "$CI_PIPELINE_ID" --output-dir release
+    - package_url="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/investor-platform/${RELEASE_VERSION}"
+    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.tar.gz "${package_url}/release-bundle.tar.gz"
+    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release-bundle.sha256 "${package_url}/release-bundle.sha256"
+    - curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file release/release.json "${package_url}/release.json"
+    - printf 'RELEASE_VERSION=%s\nRELEASE_PACKAGE_URL=%s\n' "$RELEASE_VERSION" "$package_url" > release-published.env
+  artifacts:
+    paths:
+      - release/
+    reports:
+      dotenv: release-published.env
+    expire_in: 90 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# These proof jobs run only on protected, target-local or private-network
+# runners. They never receive SSH credentials and do not activate releases;
+# an operator activates the published version through rd-alpha-promote@ first.
+# Environment-scoped variables supply RELEASE_SMOKE_* credentials and URLs.
+
+staging_api_smoke:
+  stage: prove
+  image: python:${PYTHON_VERSION}-alpine
+  tags:
+    - investor-platform-staging
+  needs:
+    - job: publish_release_bundle
+      artifacts: true
+  environment:
+    name: staging
+  resource_group: investor-platform-staging-proof
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - test "$RELEASE_VERSION" = "${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
+    - mkdir release-proof
+    - export RELEASE_SMOKE_TARGET=staging
+    - export RELEASE_SMOKE_RELEASE_VERSION="$RELEASE_VERSION"
+    - export RELEASE_SMOKE_ARTIFACT_DIR="$CI_PROJECT_DIR/release-proof"
+    - bash /opt/rd-alpha/current/scripts/run_authenticated_release_smoke.sh
+    - printf 'STAGING_API_SMOKE_JOB_ID=%s\n' "$CI_JOB_ID" > staging-api-proof.env
+  artifacts:
+    when: always
+    paths:
+      - release-proof/
+    reports:
+      dotenv: staging-api-proof.env
+    expire_in: 1 year
+  when: manual
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+staging_browser_smoke:
+  stage: prove
+  image: mcr.microsoft.com/playwright:v1.61.1-jammy
+  tags:
+    - investor-platform-staging
+  needs:
+    - job: publish_release_bundle
+      artifacts: true
+    - job: staging_api_smoke
+      artifacts: true
+  environment:
+    name: staging
+  resource_group: investor-platform-staging-proof
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends curl
+    - (cd frontend && npm ci --legacy-peer-deps)
+  script:
+    - test "$RELEASE_VERSION" = "${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
     - |
-      ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'DEPLOY_SCRIPT'
-        set -e
-        cd /home/ubuntu/fse-rnd-alpha
+      for value in RELEASE_SMOKE_BASE_URL RELEASE_SMOKE_EMAIL RELEASE_SMOKE_PASSWORD RELEASE_SMOKE_EXPECTED_BUY_TICKER RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256; do
+        : "${!value:?Set protected staging ${value}}"
+      done
+      [[ "${RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256}" =~ ^[0-9a-f]{64}$ ]] || {
+        echo "RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256 must be a SHA-256 checksum." >&2
+        exit 1
+      }
+    - (cd frontend && E2E_BASE_URL="$RELEASE_SMOKE_BASE_URL" E2E_EMAIL="$RELEASE_SMOKE_EMAIL" E2E_PASSWORD="$RELEASE_SMOKE_PASSWORD" E2E_EXPECTED_BUY_TICKER="$RELEASE_SMOKE_EXPECTED_BUY_TICKER" E2E_EXPECTED_SOURCE_SHA="$CI_COMMIT_SHA" E2E_EXPECTED_DATA_MANIFEST_SHA256="$RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256" npx playwright test e2e/deployed-auth.spec.ts --reporter=line,html)
+    - |
+      source_sha="${RELEASE_VERSION%%-*}"
+      mkdir -p "$CI_PROJECT_DIR/release-proof"
+      SOURCE_SHA="$source_sha" RELEASE_VERSION="$RELEASE_VERSION" PIPELINE_ID="$CI_PIPELINE_ID" \
+      DATA_MANIFEST_SHA256="$RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256" \
+      STAGING_API_SMOKE_JOB_ID="$STAGING_API_SMOKE_JOB_ID" STAGING_BROWSER_SMOKE_JOB_ID="$CI_JOB_ID" \
+      python3 - "$CI_PROJECT_DIR/release-proof/staging-proof.json" <<'PY'
+      import json
+      import os
+      import re
+      import sys
+      from datetime import datetime, timezone
+      from pathlib import Path
 
-        echo "=== Pulling latest code from GitLab ==="
-        git fetch origin
-        git reset --hard origin/main
+      if not re.fullmatch(r"[0-9a-f]{64}", os.environ["DATA_MANIFEST_SHA256"]):
+          raise SystemExit("RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256 must be a SHA-256 checksum")
 
-        echo "=== Rebuilding frontend ==="
-        cd frontend
-        npm ci --legacy-peer-deps
-        npx vite build --configLoader runner
-        cd ..
+      Path(sys.argv[1]).write_text(
+          json.dumps(
+              {
+                  "schema_version": 1,
+                  "status": "passed",
+                  "release_version": os.environ["RELEASE_VERSION"],
+                  "source_sha": os.environ["SOURCE_SHA"],
+                  "pipeline_id": int(os.environ["PIPELINE_ID"]),
+                  "data_manifest_sha256": os.environ["DATA_MANIFEST_SHA256"],
+                  "staging_api_smoke_job_id": int(os.environ["STAGING_API_SMOKE_JOB_ID"]),
+                  "staging_browser_smoke_job_id": int(os.environ["STAGING_BROWSER_SMOKE_JOB_ID"]),
+                  "verified_at": datetime.now(timezone.utc).isoformat(),
+              },
+              indent=2,
+              sort_keys=True,
+          )
+          + "\n"
+      )
+      PY
+      proof_url="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/investor-platform-proofs/${RELEASE_VERSION}/staging-proof.json"
+      if curl --fail --silent --show-error --header "JOB-TOKEN: $CI_JOB_TOKEN" "$proof_url" --output "$CI_PROJECT_DIR/release-proof/existing-staging-proof.json"; then
+        cmp -s "$CI_PROJECT_DIR/release-proof/existing-staging-proof.json" "$CI_PROJECT_DIR/release-proof/staging-proof.json" || {
+          echo "An immutable staging proof already exists with different contents." >&2
+          exit 1
+        }
+      else
+        curl --fail --retry 3 --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$CI_PROJECT_DIR/release-proof/staging-proof.json" "$proof_url"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - frontend/test-results/
+      - frontend/playwright-report/
+    expire_in: 1 year
+  when: manual
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
-        echo "=== Copying frontend dist to deploy ==="
-        mkdir -p deploy/frontend/dist
-        cp -R frontend/dist/. deploy/frontend/dist/
-
-        echo "=== Rebuilding and restarting Docker containers ==="
-        cd deploy
-        docker-compose build backend worker beat
-        docker-compose up -d --no-deps backend worker beat
-        docker-compose restart frontend
-
-        echo "=== Waiting for services ==="
-        sleep 15
-
-        echo "=== Health check ==="
-        curl -sf http://localhost/health && echo " Backend OK" || echo " Backend not ready"
-        curl -sf http://localhost/ > /dev/null && echo "Frontend OK" || echo "Frontend not ready"
-
-        echo "=== Cleaning up old images ==="
-        docker image prune -f
-
-        echo "=== Deployment complete at $(date) ==="
-      DEPLOY_SCRIPT
+production_api_smoke:
+  stage: prove
+  image: python:${PYTHON_VERSION}-alpine
+  tags:
+    - investor-platform-production
+  needs:
+    - job: publish_release_bundle
+      artifacts: true
+    - job: staging_browser_smoke
   environment:
     name: production
-    url: https://research.finsoeasy.com
+  resource_group: investor-platform-production-proof
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - test "$RELEASE_VERSION" = "${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
+    - mkdir release-proof
+    - export RELEASE_SMOKE_TARGET=production
+    - export RELEASE_SMOKE_RELEASE_VERSION="$RELEASE_VERSION"
+    - export RELEASE_SMOKE_ARTIFACT_DIR="$CI_PROJECT_DIR/release-proof"
+    - bash /opt/rd-alpha/current/scripts/run_authenticated_release_smoke.sh
+  artifacts:
+    when: always
+    paths:
+      - release-proof/
+    expire_in: 1 year
+  when: manual
+  allow_failure: false
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
 
-# ============================================
-# POST-DEPLOY VERIFICATION
-# ============================================
-verify_deployment:
-  stage: verify
-  image: alpine:latest
+production_browser_smoke:
+  stage: prove
+  image: mcr.microsoft.com/playwright:v1.61.1-jammy
+  tags:
+    - investor-platform-production
   needs:
-    - deploy_production
+    - job: publish_release_bundle
+      artifacts: true
+    - job: production_api_smoke
+  environment:
+    name: production
+  resource_group: investor-platform-production-proof
   before_script:
-    - apk add --no-cache curl
+    - (cd frontend && npm ci --legacy-peer-deps)
   script:
-    - sleep 30
-    - curl -sf https://research.finsoeasy.com/health || exit 1
-    - curl -sf https://research.finsoeasy.com/ || exit 1
-    - echo "All health checks passed!"
+    - test "$RELEASE_VERSION" = "${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
+    - |
+      for value in RELEASE_SMOKE_BASE_URL RELEASE_SMOKE_EMAIL RELEASE_SMOKE_PASSWORD RELEASE_SMOKE_EXPECTED_BUY_TICKER RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256; do
+        : "${!value:?Set protected production ${value}}"
+      done
+      [[ "${RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256}" =~ ^[0-9a-f]{64}$ ]] || {
+        echo "RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256 must be a SHA-256 checksum." >&2
+        exit 1
+      }
+    - (cd frontend && E2E_BASE_URL="$RELEASE_SMOKE_BASE_URL" E2E_EMAIL="$RELEASE_SMOKE_EMAIL" E2E_PASSWORD="$RELEASE_SMOKE_PASSWORD" E2E_EXPECTED_BUY_TICKER="$RELEASE_SMOKE_EXPECTED_BUY_TICKER" E2E_EXPECTED_SOURCE_SHA="$CI_COMMIT_SHA" E2E_EXPECTED_DATA_MANIFEST_SHA256="$RELEASE_SMOKE_EXPECTED_DATA_MANIFEST_SHA256" npx playwright test e2e/deployed-auth.spec.ts --reporter=line,html)
+  artifacts:
+    when: always
+    paths:
+      - frontend/test-results/
+      - frontend/playwright-report/
+    expire_in: 1 year
+  when: manual
+  allow_failure: false
   rules:
     - if: $CI_COMMIT_BRANCH == "main"

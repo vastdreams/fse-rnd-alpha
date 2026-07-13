@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from "react-router-dom"
 
 import { RequireAuth } from "@/components/auth/RequireAuth"
 import { Admin } from "@/pages/Admin"
-import { Backtests } from "@/pages/Backtests"
 import { Companies } from "@/pages/Companies"
 import { CompanyDetail } from "@/pages/CompanyDetail"
 import { Documentation } from "@/pages/Documentation"
@@ -41,7 +40,7 @@ export function AppRoutes() {
       <Route path="/companies" element={<Companies />} />
       <Route path="/companies/:ticker" element={<CompanyDetail />} />
       <Route path="/factors" element={<Factors />} />
-      <Route path="/backtests" element={<Backtests />} />
+      <Route path="/backtests" element={<Navigate to="/research" replace />} />
       <Route path="/statistics" element={<Statistics />} />
       <Route path="/research" element={<Research />} />
       <Route path="/analysis" element={<Navigate to="/research" replace />} />

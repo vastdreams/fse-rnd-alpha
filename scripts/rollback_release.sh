@@ -7,6 +7,11 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY_DIR="${DEPLOY_DIR:-${ROOT_DIR}/deploy}"
+DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-${DEPLOY_DIR}/.env}"
+# A production rollback runs from a retained, immutable release directory.
+# The release agent supplies RELEASE_ROOT; the default also resolves correctly
+# when this script is invoked from /opt/rd-alpha/current/scripts.
+RELEASE_ROOT="${RELEASE_ROOT:-$(cd "${ROOT_DIR}/../.." && pwd)}"
 APPLY=false
 ROLLBACK_RECORD=""
 
@@ -17,9 +22,9 @@ Usage:
   scripts/rollback_release.sh --record /path/to/rollback-<timestamp>.env --apply
 
 The script verifies record syntax plus database/data backup checksums before it
-changes anything. --apply restores the database and data tree, checks out the
-recorded source SHA, restarts the recorded digest-pinned images, and requires
-local /health and /ready to pass.
+changes anything. --apply restores the database and data tree, switches to the
+retained immutable release directory recorded by SHA, restarts the recorded
+digest-pinned images, and requires local /health and /ready to pass.
 USAGE
 }
 
@@ -72,6 +77,7 @@ allowed = {
     "BACKEND_IMAGE",
     "FRONTEND_IMAGE",
     "RELEASE_SHA",
+    "RELEASE_REF",
     "FAILED_RELEASE_SHA",
     "DATABASE_BACKUP",
     "DATA_BACKUP",
@@ -131,6 +137,7 @@ verify_backup_checksum() {
 BACKEND_IMAGE="$(record_value BACKEND_IMAGE)"
 FRONTEND_IMAGE="$(record_value FRONTEND_IMAGE)"
 RELEASE_SHA="$(record_value RELEASE_SHA)"
+RELEASE_REF="$(record_value RELEASE_REF)"
 DATABASE_BACKUP="$(record_value DATABASE_BACKUP)"
 DATA_BACKUP="$(record_value DATA_BACKUP)"
 DATA_DIR="$(record_value DATA_DIR)"
@@ -149,6 +156,15 @@ recorded_release_sha="${RELEASE_SHA}"
 }
 [[ "${RELEASE_SHA}" =~ ^[0-9a-f]{40}$ ]] || {
   echo "Rollback record has no valid prior RELEASE_SHA." >&2
+  exit 1
+}
+if [[ -z "${RELEASE_REF}" ]]; then
+  # Legacy records predate release-version directories. They can be restored
+  # only when a retained directory named by the source SHA exists.
+  RELEASE_REF="${RELEASE_SHA}"
+fi
+[[ "${RELEASE_REF}" =~ ^[0-9a-f]{40}(-[1-9][0-9]*)?$ ]] || {
+  echo "Rollback record has no valid immutable RELEASE_REF." >&2
   exit 1
 }
 [[ -n "${DATABASE_BACKUP}" && -n "${DATA_BACKUP}" ]] || {
@@ -190,23 +206,17 @@ if [[ "${APPLY}" != true ]]; then
   exit 0
 fi
 
-if git -C "${ROOT_DIR}" rev-parse HEAD >/dev/null 2>&1; then
-  [[ -z "$(git -C "${ROOT_DIR}" status --porcelain)" ]] || {
-    echo "Refusing rollback from a dirty source checkout." >&2
-    exit 1
-  }
-  if ! git -C "${ROOT_DIR}" cat-file -e "${RELEASE_SHA}^{commit}" 2>/dev/null; then
-    git -C "${ROOT_DIR}" fetch --prune origin
-  fi
-  git -C "${ROOT_DIR}" cat-file -e "${RELEASE_SHA}^{commit}" 2>/dev/null || {
-    echo "Recorded rollback source SHA is not available from origin: ${RELEASE_SHA}" >&2
-    exit 1
-  }
-  git -C "${ROOT_DIR}" checkout --detach "${RELEASE_SHA}"
-else
-  echo "Rollback requires a Git checkout to restore ${RELEASE_SHA}." >&2
+target_release_dir="${RELEASE_ROOT}/releases/${RELEASE_REF}"
+[[ -d "${target_release_dir}" ]] || {
+  echo "Retained immutable release is unavailable: ${target_release_dir}" >&2
   exit 1
-fi
+}
+[[ -f "${target_release_dir}/deploy/docker-compose.yml" ]] || {
+  echo "Retained release has no Compose deployment contract: ${target_release_dir}" >&2
+  exit 1
+}
+ROOT_DIR="${target_release_dir}"
+DEPLOY_DIR="${ROOT_DIR}/deploy"
 
 if docker compose version >/dev/null 2>&1; then
   COMPOSE=(docker compose)
@@ -217,8 +227,8 @@ else
   exit 1
 fi
 
-[[ -f "${DEPLOY_DIR}/.env" ]] || {
-  echo "Missing ${DEPLOY_DIR}/.env." >&2
+[[ -f "${DEPLOY_ENV_FILE}" ]] || {
+  echo "Missing deployment environment file: ${DEPLOY_ENV_FILE}." >&2
   exit 1
 }
 
@@ -231,14 +241,14 @@ while IFS= read -r line || [[ -n "${line}" ]]; do
   value="${line#*=}"
   case "${key}" in
     BACKEND_IMAGE|FRONTEND_IMAGE|RELEASE_SHA)
-      echo "Reserved rollback input must not be set in ${DEPLOY_DIR}/.env: ${key}" >&2
+      echo "Reserved rollback input must not be set in ${DEPLOY_ENV_FILE}: ${key}" >&2
       exit 1
       ;;
   esac
   value="${value%\"}"
   value="${value#\"}"
   export "${key}=${value}"
-done < "${DEPLOY_DIR}/.env"
+done < "${DEPLOY_ENV_FILE}"
 
 # Images and source SHA come from the verified rollback record, never from
 # mutable host-local configuration loaded for PostgreSQL and TLS settings.
@@ -307,6 +317,15 @@ for _ in $(seq 1 30); do
   if curl -fsS http://localhost/health >/dev/null \
     && grep -q '"ready":true' <<< "${ready_json}" \
     && curl -fsS http://localhost/ >/dev/null; then
+    current_link="${RELEASE_ROOT}/current"
+    next_link="${RELEASE_ROOT}/.current.${RELEASE_REF}.$RANDOM"
+    ln -s "${target_release_dir}" "${next_link}"
+    python3 - "${next_link}" "${current_link}" <<'PY'
+import os
+import sys
+
+os.replace(sys.argv[1], sys.argv[2])
+PY
     echo "Rollback restored ${RELEASE_SHA} and passed local readiness."
     exit 0
   fi

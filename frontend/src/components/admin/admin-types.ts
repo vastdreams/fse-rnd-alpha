@@ -27,7 +27,6 @@ export interface ClientPortal {
   location: string
   afsl?: string
   documents: string[]
-  accessPassword?: string
 }
 
 export interface ClientPortalApiResponse {
@@ -41,7 +40,6 @@ export interface ClientPortalApiResponse {
   location: string
   afsl?: string | null
   documents: string[]
-  access_password?: string | null
 }
 
 export interface AdminUser {

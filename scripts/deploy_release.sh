@@ -9,6 +9,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY_DIR="${DEPLOY_DIR:-${ROOT_DIR}/deploy}"
+DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-${DEPLOY_DIR}/.env}"
 # Keep backups outside the Git checkout so they cannot make the next deploy
 # look dirty or be removed by a source checkout cleanup.
 BACKUP_DIR="${BACKUP_DIR:-${ROOT_DIR}/../rd-alpha-backups}"
@@ -23,7 +24,9 @@ COMPOSE_NETWORK_NAME="${COMPOSE_NETWORK_NAME:-rd_alpha_network}"
 approved_backend_image="${BACKEND_IMAGE}"
 approved_frontend_image="${FRONTEND_IMAGE}"
 approved_release_sha="${RELEASE_SHA:-}"
+approved_release_ref="${RELEASE_REF:-}"
 approved_previous_release_sha="${PREVIOUS_RELEASE_SHA:-}"
+approved_previous_release_ref="${PREVIOUS_RELEASE_REF:-}"
 approved_expected_manifest_sha="${EXPECTED_DATA_MANIFEST_SHA256:-}"
 approved_expected_release_uri="${EXPECTED_DATA_RELEASE_URI:-}"
 approved_expected_descriptor_sha="${EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256:-}"
@@ -37,13 +40,15 @@ approved_expected_public_hostname="${EXPECTED_PUBLIC_HOSTNAME:-}"
   exit 2
 }
 
-if [[ ! -f "${DEPLOY_DIR}/.env" ]]; then
-  echo "Missing ${DEPLOY_DIR}/.env; copy .env.example and populate production secrets." >&2
+if [[ ! -f "${DEPLOY_ENV_FILE}" ]]; then
+  echo "Missing deployment environment file: ${DEPLOY_ENV_FILE}" >&2
   exit 1
 fi
 
-# Compose reads .env itself, but this shell also needs the data-release URI and
-# backup database variables. Parse KEY=VALUE without evaluating the contents.
+# The release agent keeps target secrets outside a versioned release directory.
+# Parse KEY=VALUE without evaluating the contents, then export the resulting
+# values so Compose resolves the same target configuration regardless of where
+# the immutable release bundle was extracted.
 while IFS= read -r line || [[ -n "${line}" ]]; do
   case "${line}" in
     ''|\#*) continue ;;
@@ -52,29 +57,33 @@ while IFS= read -r line || [[ -n "${line}" ]]; do
   key="${line%%=*}"
   value="${line#*=}"
   case "${key}" in
-    BACKEND_IMAGE|FRONTEND_IMAGE|RELEASE_SHA|PREVIOUS_RELEASE_SHA|\
+    BACKEND_IMAGE|FRONTEND_IMAGE|RELEASE_SHA|RELEASE_REF|\
+    PREVIOUS_RELEASE_SHA|PREVIOUS_RELEASE_REF|\
     EXPECTED_DATA_MANIFEST_SHA256|EXPECTED_DATA_RELEASE_URI|\
     EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256|EXPECTED_PUBLIC_HOSTNAME)
-      echo "Reserved deployment input must not be set in ${DEPLOY_DIR}/.env: ${key}" >&2
+      echo "Reserved deployment input must not be set in ${DEPLOY_ENV_FILE}: ${key}" >&2
       exit 1
       ;;
   esac
   value="${value%\"}"
   value="${value#\"}"
   export "${key}=${value}"
-done < "${DEPLOY_DIR}/.env"
+done < "${DEPLOY_ENV_FILE}"
 
 # The dispatch workflow supplies these values after resolving a successful CI
 # artifact. Never let host-local configuration replace that reviewed binding.
 BACKEND_IMAGE="${approved_backend_image}"
 FRONTEND_IMAGE="${approved_frontend_image}"
 RELEASE_SHA="${approved_release_sha}"
+RELEASE_REF="${approved_release_ref}"
 PREVIOUS_RELEASE_SHA="${approved_previous_release_sha}"
+PREVIOUS_RELEASE_REF="${approved_previous_release_ref}"
 EXPECTED_DATA_MANIFEST_SHA256="${approved_expected_manifest_sha}"
 EXPECTED_DATA_RELEASE_URI="${approved_expected_release_uri}"
 EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256="${approved_expected_descriptor_sha}"
 EXPECTED_PUBLIC_HOSTNAME="${approved_expected_public_hostname}"
-export BACKEND_IMAGE FRONTEND_IMAGE RELEASE_SHA PREVIOUS_RELEASE_SHA
+export BACKEND_IMAGE FRONTEND_IMAGE RELEASE_SHA RELEASE_REF
+export PREVIOUS_RELEASE_SHA PREVIOUS_RELEASE_REF
 export EXPECTED_DATA_MANIFEST_SHA256 EXPECTED_DATA_RELEASE_URI
 export EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256 EXPECTED_PUBLIC_HOSTNAME
 
@@ -291,7 +300,7 @@ PY
 
 backup_release_state() {
   local database_backup rollback_record data_backup postgres_container backend_container frontend_container
-  local prior_record prior_release_sha prior_data_uri
+  local prior_record prior_release_sha prior_release_ref prior_data_uri
   # Database dumps and data archives contain user-owned research. Keep both
   # the directory and newly-created files private to the deployment account.
   umask 077
@@ -301,6 +310,7 @@ backup_release_state() {
   rollback_record="${BACKUP_DIR}/rollback-${RELEASE_TIMESTAMP}.env"
   prior_record="$(ls -t "${BACKUP_DIR}"/release-*.json 2>/dev/null | awk 'NR==1' || true)"
   prior_release_sha="${PREVIOUS_RELEASE_SHA:-}"
+  prior_release_ref="${PREVIOUS_RELEASE_REF:-}"
   prior_data_uri="${PREVIOUS_DATA_RELEASE_URI:-}"
   if [[ -n "${prior_record}" ]]; then
     if [[ -z "${prior_release_sha}" ]]; then
@@ -312,6 +322,12 @@ backup_release_state() {
     if [[ -z "${prior_data_uri}" ]]; then
       prior_data_uri="$(
         python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("data_release_uri", ""))' \
+          "${prior_record}"
+      )"
+    fi
+    if [[ -z "${prior_release_ref}" ]]; then
+      prior_release_ref="$(
+        python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("release_ref", ""))' \
           "${prior_record}"
       )"
     fi
@@ -332,6 +348,7 @@ backup_release_state() {
         docker inspect --format '{{.Config.Image}}' "${frontend_container}" 2>/dev/null || true
     )"
     printf 'RELEASE_SHA=%q\n' "${prior_release_sha}"
+    printf 'RELEASE_REF=%q\n' "${prior_release_ref}"
     printf 'FAILED_RELEASE_SHA=%q\n' "${RELEASE_SHA}"
     printf 'DATABASE_BACKUP=%q\n' "${database_backup}"
     printf 'DATA_RELEASE_URI=%q\n' "${prior_data_uri}"
@@ -366,7 +383,7 @@ backup_release_state() {
 
 record_release() {
   local manifest_sha migration_ledger release_record universe_version database_snapshot_sha research_records_sha
-  local data_descriptor_sha
+  local data_descriptor_sha release_ref
   local metadata_source_sha metadata_manifest_sha
   manifest_sha="$(
     python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_sha256"])' \
@@ -387,7 +404,9 @@ record_release() {
       -c "SELECT COALESCE(json_agg(json_build_object('filename', filename, 'checksum', checksum) ORDER BY filename)::text, '[]') FROM schema_migrations;"
   )"
   release_record="${BACKUP_DIR}/release-${RELEASE_TIMESTAMP}.json"
+  release_ref="${RELEASE_REF:-${RELEASE_SHA}}"
   RELEASE_RECORD_SHA="${RELEASE_SHA}" \
+  RELEASE_RECORD_REF="${release_ref}" \
   RELEASE_RECORD_BACKEND="${BACKEND_IMAGE}" \
   RELEASE_RECORD_FRONTEND="${FRONTEND_IMAGE}" \
   RELEASE_RECORD_DATA_URI="${DATA_RELEASE_URI}" \
@@ -406,6 +425,7 @@ print(json.dumps(
     {
         "released_at": os.environ["RELEASE_RECORD_AT"],
         "release_sha": os.environ["RELEASE_RECORD_SHA"],
+        "release_ref": os.environ["RELEASE_RECORD_REF"],
         "backend_image": os.environ["RELEASE_RECORD_BACKEND"],
         "frontend_image": os.environ["RELEASE_RECORD_FRONTEND"],
         "data_release_uri": os.environ["RELEASE_RECORD_DATA_URI"],
@@ -460,10 +480,35 @@ verify_release_database_binding
 # created durable account table rather than falling back to image-local state.
 "${COMPOSE[@]}" up -d --force-recreate --remove-orphans backend worker beat frontend
 
+release_identity_ready() {
+  python3 - "${ready_json}" "${RELEASE_SHA}" "${RELEASE_REF}" \
+    "${BACKEND_IMAGE}" "${FRONTEND_IMAGE}" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+source_sha, release_ref, backend_image, frontend_image = sys.argv[2:]
+release = payload.get("release") or {}
+runtime = release.get("runtime") or {}
+raise SystemExit(
+    0
+    if (
+        payload.get("ready") is True
+        and release.get("source_sha") == source_sha
+        and runtime.get("source_sha") == source_sha
+        and runtime.get("release_ref") == release_ref
+        and runtime.get("backend_image") == backend_image
+        and runtime.get("frontend_image") == frontend_image
+    )
+    else 1
+)
+PY
+}
+
 for _ in $(seq 1 30); do
   ready_json="$(curl -fsS http://localhost/ready || true)"
   if curl -fsS http://localhost/health >/dev/null \
-    && grep -q '"ready":true' <<< "${ready_json}" \
+    && release_identity_ready \
     && curl -fsS http://localhost/ >/dev/null; then
     record_release
     echo "Release is healthy and ready."

@@ -43,8 +43,10 @@ class AdminUser(BaseModel):
 
 class ClientPortalResponse(BaseModel):
     """
-    Admin-only representation of a client portal configuration.
-    Note: This is deliberately served from a local config file to avoid committing client credentials.
+    Admin-only portal metadata.
+
+    Credentials can exist in a server-local client configuration but must never
+    cross the API boundary, including for an admin browser session.
     """
 
     id: str
@@ -57,7 +59,6 @@ class ClientPortalResponse(BaseModel):
     location: str
     afsl: Optional[str] = None
     documents: List[str] = []
-    access_password: Optional[str] = None
 
 
 def _load_client_portals_from_file() -> List[ClientPortalResponse]:

@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import urlencode
@@ -76,14 +78,34 @@ def vector_claim_ids(value: Any) -> list[str]:
     return []
 
 
+def write_evidence(path: str, payload: dict[str, Any]) -> None:
+    evidence_path = Path(path)
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = evidence_path.with_name(f".{evidence_path.name}.tmp")
+    temporary_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.chmod(temporary_path, 0o600)
+    temporary_path.replace(evidence_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True)
-    parser.add_argument("--email", required=True)
-    parser.add_argument("--password", required=True)
-    parser.add_argument("--second-email", required=True)
-    parser.add_argument("--second-password", required=True)
+    parser.add_argument("--email", default=os.environ.get("RELEASE_SMOKE_EMAIL"))
+    parser.add_argument("--password", default=os.environ.get("RELEASE_SMOKE_PASSWORD"))
+    parser.add_argument("--second-email", default=os.environ.get("RELEASE_SMOKE_SECOND_EMAIL"))
+    parser.add_argument("--second-password", default=os.environ.get("RELEASE_SMOKE_SECOND_PASSWORD"))
+    parser.add_argument("--expected-source-sha")
+    parser.add_argument("--expected-data-manifest-sha256")
+    parser.add_argument(
+        "--evidence-file",
+        help="Write secret-free JSON proof after every required check succeeds.",
+    )
     args = parser.parse_args()
+    for argument_name in ("email", "password", "second_email", "second_password"):
+        if not getattr(args, argument_name):
+            parser.error(
+                f"--{argument_name.replace('_', '-')} or its RELEASE_SMOKE_* environment value is required"
+            )
 
     first_token = login(args.base_url, args.email, args.password)
     second_token = login(args.base_url, args.second_email, args.second_password)
@@ -93,6 +115,24 @@ def main() -> None:
     ready = require(200, status, body, "readiness")
     if ready.get("ready") is not True:
         raise RuntimeError(f"readiness payload is not ready: {ready}")
+    release = ready.get("release")
+    if not isinstance(release, dict):
+        raise RuntimeError("readiness response is missing immutable release identity")
+    source_sha = release.get("source_sha")
+    data_manifest_sha256 = release.get("data_manifest_sha256")
+    if args.expected_source_sha and source_sha != args.expected_source_sha:
+        raise RuntimeError(
+            "readiness source SHA does not match the release selected for smoke: "
+            f"{source_sha!r}"
+        )
+    if (
+        args.expected_data_manifest_sha256
+        and data_manifest_sha256 != args.expected_data_manifest_sha256
+    ):
+        raise RuntimeError(
+            "readiness data manifest does not match the release selected for smoke: "
+            f"{data_manifest_sha256!r}"
+        )
 
     status, body = request(args.base_url, "GET", "/api/universe/rank", token=first_headers)
     rank = require(200, status, body, "rank")
@@ -126,7 +166,7 @@ def main() -> None:
         "price history",
     )
 
-    require(
+    dcf = require(
         200,
         *request(
             args.base_url,
@@ -136,9 +176,17 @@ def main() -> None:
             body={
                 "ticker": ticker,
                 "scenario": "custom",
+                "revenue_usd": 1_000_000_000,
+                "fcf_sbc_usd": 100_000_000,
+                "fcfm_sbc": 0.10,
+                "net_cash_usd": 50_000_000,
+                "ev_mult_usd": 1_500_000_000,
+                "shares_fut_implied": 10_000_000,
+                "price": 100,
                 "growth": 0.05,
                 "wacc": 0.10,
                 "terminal_g": 0.03,
+                "target_margin": 0.15,
                 "years": 10,
                 "glide_years": 7,
             },
@@ -147,7 +195,11 @@ def main() -> None:
     )
     dcf_run_id = dcf.get("run_id")
     if not dcf_run_id:
-        raise RuntimeError("saved DCF returned no immutable run identifier")
+        raise RuntimeError(f"saved DCF returned no immutable run identifier: {dcf}")
+    dcf_outputs = dcf.get("outputs")
+    fair_px_med = dcf_outputs.get("fair_px_med") if isinstance(dcf_outputs, dict) else None
+    if not isinstance(fair_px_med, (int, float)) or isinstance(fair_px_med, bool) or fair_px_med <= 0:
+        raise RuntimeError(f"saved DCF returned no usable fair-value output: {dcf}")
 
     claim_ids = vector_claim_ids(company.get("vector"))
     if not claim_ids:
@@ -269,32 +321,35 @@ def main() -> None:
     require(403, status, body, "public admin denial")
 
     require(
-        200,
+        409,
         *request(args.base_url, "DELETE", f"/api/books/{book_id}", token=first_headers),
-        "smoke book cleanup",
+        "locked/exported book retention",
     )
-    print(
-        json.dumps(
-            {
-                "ok": True,
-                "ticker": ticker,
-                "universe_version": universe_version,
-                "checked": [
-                    "auth",
-                    "rank",
-                    "stances",
-                    "company",
-                    "financials",
-                    "price",
-                    "dcf",
-                    "memo",
-                    "book",
-                    "two-user-isolation",
-                    "admin-denial",
-                ],
-            }
-        )
-    )
+    evidence = {
+        "ok": True,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "ticker": ticker,
+        "universe_version": universe_version,
+        "source_sha": source_sha,
+        "data_manifest_sha256": data_manifest_sha256,
+        "checked": [
+            "auth",
+            "rank",
+            "stances",
+            "company",
+            "financials",
+            "price",
+            "dcf",
+            "memo",
+            "book",
+            "locked-book-retention",
+            "two-user-isolation",
+            "admin-denial",
+        ],
+    }
+    if args.evidence_file:
+        write_evidence(args.evidence_file, evidence)
+    print(json.dumps(evidence))
 
 
 if __name__ == "__main__":

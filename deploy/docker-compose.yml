@@ -40,6 +40,16 @@ x-backend-environment: &backend-environment
   AUTH_VERIFY_URL: ${AUTH_VERIFY_URL:?AUTH_VERIFY_URL must be set}
   AUTH_SEED_ROLE: ${AUTH_SEED_ROLE:-user}
   AUTH_SECONDARY_SEED_ROLE: ${AUTH_SECONDARY_SEED_ROLE:-user}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+  SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.05}
+  # Passed by the immutable release agent, never inferred from a mutable host
+  # checkout. Readiness exposes and validates this identity against the sealed
+  # database universe.
+  RELEASE_REF: ${RELEASE_REF:-}
+  RELEASE_SOURCE_SHA: ${RELEASE_SHA:-}
+  RELEASE_BACKEND_IMAGE: ${BACKEND_IMAGE:-}
+  RELEASE_FRONTEND_IMAGE: ${FRONTEND_IMAGE:-}
   STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
   STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

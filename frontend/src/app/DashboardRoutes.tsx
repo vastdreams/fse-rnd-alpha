@@ -1,26 +1,34 @@
 /**
  * PATH: frontend/src/app/DashboardRoutes.tsx
  * PURPOSE: Standalone portfolio product routes.
- * W3 dual-run: new evidence-ranked surfaces (/app = Universe, /app/company/:t
- * eight tabs, /app/book server books) are primary; the old bundle views stay
- * reachable at /app/legacy/* until cutover completes.
+ * Evidence-ranked surfaces are the sole investor product. Historical dashboard
+ * URLs canonically redirect to the versioned /app journeys so bookmarks do not
+ * split user state across legacy in-browser storage and durable server records.
  */
-import { Navigate, Route, Routes, useParams } from "react-router-dom"
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom"
 import { RequireAuth } from "@/components/auth/RequireAuth"
 import { Login } from "@/pages/Login"
 import { Register } from "@/pages/Register"
 import { ResetPassword } from "@/pages/ResetPassword"
 import { VerifyEmail } from "@/pages/VerifyEmail"
-import { InvestigatePage } from "@/pages/portfolio/InvestigatePage"
-import { MyBookPage } from "@/pages/portfolio/MyBookPage"
 import { UniversePage } from "@/pages/portfolio/UniversePage"
 import { CompanyResearchPage } from "@/pages/portfolio/CompanyResearchPage"
 import { BookPage } from "@/pages/portfolio/BookPage"
-import { SaasCompanyDeepDive } from "@/pages/SaasCompanyDeepDive"
 
 function LegacyCompanyRedirect() {
   const { ticker } = useParams<{ ticker: string }>()
-  return <Navigate to={`/app/company/${ticker}`} replace />
+  const location = useLocation()
+  return <Navigate to={`/app/company/${ticker}${location.search}`} replace />
+}
+
+function LegacyUniverseRedirect() {
+  const location = useLocation()
+  return <Navigate to={`/app${location.search}`} replace />
+}
+
+function LegacyBookRedirect() {
+  const location = useLocation()
+  return <Navigate to={`/app/book${location.search}`} replace />
 }
 
 const guard = (el: React.ReactNode) => <RequireAuth>{el}</RequireAuth>
@@ -40,13 +48,13 @@ export function DashboardRoutes({ portfolioHost = false }: { portfolioHost?: boo
       <Route path="/app/company/:ticker" element={guard(<CompanyResearchPage />)} />
       <Route path="/app/book" element={guard(<BookPage />)} />
 
-      {/* Legacy bundle views (dual-run until cutover) */}
-      <Route path="/app/legacy" element={guard(<InvestigatePage />)} />
-      <Route path="/app/legacy/book" element={guard(<MyBookPage />)} />
-      <Route path="/app/legacy/company/:ticker" element={guard(<SaasCompanyDeepDive />)} />
-      <Route path="/app/investigate" element={<Navigate to="/app/legacy" replace />} />
+      {/* Historical URLs retain bookmarks but cannot revive legacy local state. */}
+      <Route path="/app/legacy" element={guard(<LegacyUniverseRedirect />)} />
+      <Route path="/app/legacy/book" element={guard(<LegacyBookRedirect />)} />
+      <Route path="/app/legacy/company/:ticker" element={guard(<LegacyCompanyRedirect />)} />
+      <Route path="/app/investigate" element={<LegacyUniverseRedirect />} />
 
-      <Route path="/portfolio" element={<Navigate to="/app" replace />} />
+      <Route path="/portfolio" element={<LegacyUniverseRedirect />} />
       <Route path="/portfolio/saas/:ticker" element={<LegacyCompanyRedirect />} />
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>

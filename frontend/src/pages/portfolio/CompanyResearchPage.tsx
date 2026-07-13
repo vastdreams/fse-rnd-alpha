@@ -597,7 +597,8 @@ function ValuationTab({
   }) => void
 }) {
   const v = data.vector
-  const seeded = data.dcf_runs?.[0]?.inputs
+  const savedRun = data.dcf_runs?.[0]
+  const seeded = savedRun?.inputs ?? data.dcf_seed?.inputs
   const [inputs, setInputs] = useState<Partial<DcfInputs>>(() =>
     seeded
       ? { ...seeded }
@@ -609,9 +610,9 @@ function ValuationTab({
   const requestGenerationRef = useRef(0)
 
   useEffect(() => {
-    const latest = data.dcf_runs?.[0]?.inputs
+    const latest = data.dcf_runs?.[0]?.inputs ?? data.dcf_seed?.inputs
     setInputs(latest ? { ...latest } : { ...DEFAULT_DCF_INPUTS })
-  }, [data.dcf_runs, v.ticker, data.universe_version])
+  }, [data.dcf_runs, data.dcf_seed, v.ticker, data.universe_version])
 
   useEffect(() => {
     const generation = ++requestGenerationRef.current
@@ -741,9 +742,18 @@ function ValuationTab({
           {busy ? "Running…" : "Run + save scenario"}
         </button>
         {err && <div className="mt-2"><ErrorBanner>{err}</ErrorBanner></div>}
-        {seeded && (
+        {savedRun && (
           <p className="mt-2 text-[11px] text-neutral-600">
-            Inputs seeded from latest saved run ({data.dcf_runs[0].run_id.slice(0, 8)}).
+            Inputs seeded from latest saved run ({savedRun.run_id.slice(0, 8)}).
+          </p>
+        )}
+        {!savedRun && data.dcf_seed && (
+          <p className="mt-2 text-[11px] text-neutral-600">
+            Inputs seeded from {data.dcf_seed.source}
+            {data.dcf_seed.as_of ? ` as of ${data.dcf_seed.as_of}` : ""}.
+            {data.dcf_seed.missing_inputs.length
+              ? ` Unknown fields remain blank: ${data.dcf_seed.missing_inputs.join(", ")}.`
+              : ""}
           </p>
         )}
         {out && (

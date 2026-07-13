@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 
 import { API_BASE } from "@/lib/api/base"
+import { withDashboardNext } from "@/lib/authRedirect"
 
 export function ResetPassword() {
   const navigate = useNavigate()
@@ -52,7 +53,7 @@ export function ResetPassword() {
       setError(body.detail || "Could not reset password")
       return
     }
-    navigate("/login")
+    navigate(withDashboardNext("/login", params.get("next")))
   }
 
   return (
@@ -112,7 +113,10 @@ export function ResetPassword() {
           </button>
         </div>
         <p className="mt-5 text-sm text-neutral-600">
-          <Link to="/login" className="font-medium text-emerald-700 underline">
+          <Link
+            to={withDashboardNext("/login", params.get("next"))}
+            className="font-medium text-emerald-700 underline"
+          >
             Back to sign in
           </Link>
         </p>

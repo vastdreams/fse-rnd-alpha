@@ -3,16 +3,18 @@
  * PURPOSE: End-user registration (MedTwin DRE pattern, Finsoeasy UI).
  */
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Check, Eye, EyeOff, Loader2, UserPlus, X } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { dashboardNextPath, withDashboardNext } from "@/lib/authRedirect"
 
 export function Register() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { register, isLoading } = useAuthStore()
   const [email, setEmail] = useState("")
   const [fullName, setFullName] = useState("")
@@ -46,10 +48,11 @@ export function Register() {
     }
     const result = await register(email.trim(), password, fullName.trim() || undefined)
     if (result.success) {
+      const next = dashboardNextPath(params.get("next"))
       navigate(
         result.verificationRequired
-          ? `/verify-email?email=${encodeURIComponent(email.trim())}`
-          : "/app"
+          ? `/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(next)}`
+          : next
       )
     } else {
       setError(result.message || "Registration failed")
@@ -165,7 +168,10 @@ export function Register() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-emerald-600 font-medium hover:underline">
+              <Link
+                to={withDashboardNext("/login", params.get("next"))}
+                className="text-emerald-600 font-medium hover:underline"
+              >
                 Sign in
               </Link>
             </p>

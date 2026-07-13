@@ -183,6 +183,7 @@ test("preserves custom weights and completes breach, acknowledgement, lock, and 
   await page.getByRole("button", { name: "Save book" }).click()
   await expect(page.getByText("Saved.")).toBeVisible()
 
+  await expect(page.getByRole("button", { name: "Lock / Export audit pack" })).toBeDisabled()
   const acknowledgements = page.getByRole("checkbox", { name: "Ack" })
   await acknowledgements.nth(0).check()
   await acknowledgements.nth(1).check()

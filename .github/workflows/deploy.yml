@@ -1,4 +1,7 @@
-name: Promote Investor Platform
+# GitLab main is the only release publisher. This workflow is retained solely
+# as an audit trail for the retired GitHub/runner-SSH path; every job is
+# intentionally skipped and cannot reach a target host.
+name: Retired Investor Platform Deployment
 
 on:
   workflow_dispatch:
@@ -32,6 +35,7 @@ concurrency:
 jobs:
   resolve-ci-release:
     name: Resolve immutable CI artifact
+    if: ${{ false }}
     runs-on: ubuntu-latest
     outputs:
       source_sha: ${{ steps.metadata.outputs.source_sha }}

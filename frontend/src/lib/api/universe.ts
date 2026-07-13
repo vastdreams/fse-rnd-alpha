@@ -320,6 +320,13 @@ export interface CompanyResearch {
   deepseek_runs: { run_id: string; job: string; output_kind: string; status: string; severity: string | null }[]
   final_review: { review_id: string; passed: boolean; trigger: string; notes: string | null } | null
   reviewer_passed: boolean | null
+  dcf_seed?: {
+    inputs: DcfInputs
+    source: string
+    as_of: string | null
+    missing_inputs: string[]
+    note: string
+  } | null
   dcf_runs: DcfRunRecord[]
 }
 
