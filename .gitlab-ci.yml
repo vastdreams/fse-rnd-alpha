@@ -153,10 +153,12 @@ publish_immutable_images:
     - docker build --pull -f deploy/Dockerfile.frontend -t "$frontend_tag" .
     - docker push "$backend_tag"
     - docker push "$frontend_tag"
-    # imagetools exposes the pushed digest under .Manifest; a bare .Digest
-    # field does not exist on the template input.
-    - backend_digest="$(docker buildx imagetools inspect "$backend_tag" --format '{{.Manifest.Digest}}')"
-    - frontend_digest="$(docker buildx imagetools inspect "$frontend_tag" --format '{{.Manifest.Digest}}')"
+    # docker push records the registry digest on the local image; read it from
+    # RepoDigests, which is stable across buildx/imagetools template changes.
+    - backend_digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$backend_tag")"
+    - backend_digest="${backend_digest##*@}"
+    - frontend_digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$frontend_tag")"
+    - frontend_digest="${frontend_digest##*@}"
     - test "${backend_digest#sha256:}" != "$backend_digest"
     - test "${frontend_digest#sha256:}" != "$frontend_digest"
     - printf 'BACKEND_IMAGE=%s@%s\nFRONTEND_IMAGE=%s@%s\nRELEASE_VERSION=%s\n' "$CI_REGISTRY_IMAGE/backend" "$backend_digest" "$CI_REGISTRY_IMAGE/frontend" "$frontend_digest" "$release_version" > release-images.env
