@@ -69,7 +69,7 @@ release_contract:
   stage: verify
   image: python:${PYTHON_VERSION}-slim
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends bash coreutils git tar
+    - apt-get update && apt-get install -y --no-install-recommends bash coreutils git ripgrep tar
   script:
     - bash -n scripts/run_migrations.sh scripts/deploy_release.sh scripts/restore_data_release.sh scripts/rollback_release.sh scripts/create_release_bundle.sh scripts/check_release_health.sh scripts/backup_postgres_offsite.sh scripts/restore_postgres_offsite.sh scripts/run_authenticated_release_smoke.sh scripts/test_release_agent.sh deploy/rd-alpha-release-agent.sh deploy/install_release_agent.sh
     - ./scripts/test_stage_data_release.sh
