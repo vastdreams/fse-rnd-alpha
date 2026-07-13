@@ -183,6 +183,10 @@ if ! rg -q '"ready":true' <<< "${ready}"; then
   exit 1
 fi
 
+# Everything below asserts against generated fixtures only, so tracing leaks
+# no secrets and pinpoints exactly which gateway assertion rejects a release.
+set -x
+
 redirect_headers="$(
   gate_curl 18080 -sSI "http://${release_gate_host}:18080/ready"
 )"
