@@ -202,7 +202,8 @@ legacy_headers="$(
     "https://${release_gate_host}:18443/portfolio/saas/GATE?universe_version=${release_gate_universe}"
 )"
 rg -q '^HTTP/.* 308' <<< "${legacy_headers}"
-rg -q "^location: /app/company/gate?universe_version=${release_gate_universe}" \
+# Fixed-string match: the query separator is a literal '?', not regex syntax.
+rg -qF "location: /app/company/gate?universe_version=${release_gate_universe}" \
   <<< "$(tr '[:upper:]' '[:lower:]' <<< "${legacy_headers}")"
 
 admin_login_statuses=()
