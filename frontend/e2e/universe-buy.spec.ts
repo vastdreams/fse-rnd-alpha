@@ -546,9 +546,10 @@ test("card contracts: compact revenue, fair band, no duplicate MoS when equal to
   const card = page.locator("article").filter({ hasText: "KSPI" }).first()
   await expect(card).toBeVisible()
   await expect(card.getByText("$9.11B")).toBeVisible()
-  await expect(card.getByText(/Fair band/i)).toBeVisible()
-  await expect(card.getByText(/Below fair band/i)).toBeVisible()
-  await expect(card.getByText(/vs target/i)).toBeVisible()
+  // Exact label — /Fair band/i also matches "Below fair band" + tooltip (strict mode).
+  await expect(card.getByText("Fair band", { exact: true })).toBeVisible()
+  await expect(card.getByText("Below fair band", { exact: true })).toBeVisible()
+  await expect(card.getByText("vs target", { exact: true })).toBeVisible()
   // Duplicate MoS is a trust bug when it equals live vs-target
   await expect(card.getByText(/^MoS$/)).toHaveCount(0)
   await expect(card.getByText(/Research MoS/)).toHaveCount(0)
