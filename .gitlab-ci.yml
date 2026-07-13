@@ -127,7 +127,7 @@ compose_rehearsal:
     - apk add --no-cache bash curl openssl python3 ripgrep
     - docker info
   script:
-    - ./scripts/test_compose_release.sh
+    - RELEASE_GATE_WORK_DIR="$CI_PROJECT_DIR" ./scripts/test_compose_release.sh
 
 publish_immutable_images:
   stage: publish

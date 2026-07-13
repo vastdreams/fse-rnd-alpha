@@ -8,7 +8,12 @@ COMPOSE_FILE="${ROOT_DIR}/deploy/docker-compose.yml"
 BACKEND_IMAGE="${BACKEND_IMAGE:-rd-alpha-backend:release-gate}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-rd-alpha-frontend:release-gate}"
 project_name="rd-alpha-release-gate-${RANDOM}${RANDOM}"
-work_dir="$(mktemp -d "${TMPDIR:-/tmp}/rd-alpha-compose-gate.XXXXXX")"
+# GitLab's Docker-in-Docker daemon can bind-mount only paths shared with the
+# job service. CI sets RELEASE_GATE_WORK_DIR to its checkout; local runs keep
+# isolated fixtures under /tmp.
+work_parent="${RELEASE_GATE_WORK_DIR:-${TMPDIR:-/tmp}}"
+mkdir -p "${work_parent}"
+work_dir="$(mktemp -d "${work_parent%/}/rd-alpha-compose-gate.XXXXXX")"
 env_file="${work_dir}/compose.env"
 data_dir="${work_dir}/data"
 cert_dir="${work_dir}/certs"
