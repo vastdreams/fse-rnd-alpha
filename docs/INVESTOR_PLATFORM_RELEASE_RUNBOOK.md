@@ -171,9 +171,10 @@ never add a symlink back into an immutable release directory.
 ## 3. Staging release
 
 1. Merge the candidate only after GitLab `main` has a green pipeline. It must
-   pass PostgreSQL integration, lint/type-check, frontend unit tests,
-   Playwright, migration replay, immutable data-artifact tests, and the
-   Docker/Compose rehearsal. No job is allowed to continue after a failed gate.
+   pass PostgreSQL integration, lint/type-check, frontend unit tests (including
+   `test:invariants` + sealed `rank-golden.json`), Playwright, migration replay,
+   immutable data-artifact tests, and the Docker/Compose rehearsal. No job is
+   allowed to continue after a failed gate.
 2. Record the GitLab pipeline ID and the source SHA emitted by
    `publish_release_bundle`. The immutable release version is:
 
@@ -183,7 +184,8 @@ never add a symlink back into an immutable release directory.
 
    GitLab publishes that version's `release.json`, bundle checksum, and host
    deployment bundle to the Generic Package Registry. The manifest names the
-   exact GitLab Container Registry image digests.
+   exact GitLab Container Registry image digests and `migration_ledger_sha256`
+   over `scripts/migrations`.
 3. On the staging host, fetch and activate that exact version:
 
    ```sh
@@ -222,6 +224,13 @@ never add a symlink back into an immutable release directory.
 Do not promote staging if any smoke fails, readiness reports a missing
 investor schema/data volume/email delivery, or the UI reports stale/error
 state.
+
+### Rank enrich fail-closed
+
+Set `RANK_INVARIANT_FAIL_CLOSED=1` on staging (see `deploy/.env.example`) so
+`/api/universe/rank` refuses to return rows that break first-principles math.
+Production may keep `0` (warn+log) until live quote coverage matches the sealed
+golden fixture; never rely on `DEBUG=true` for this gate.
 
 ### Retained release-proof gates
 

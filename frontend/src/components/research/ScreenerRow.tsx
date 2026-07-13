@@ -24,6 +24,11 @@ function stanceTone(stance: string | undefined): string {
   return "border-neutral-200 bg-neutral-50 text-neutral-700"
 }
 
+/** Actionable close-call stances only — hide UNKNOWN/— noise on buy cards. */
+export function isActionableStance(stance: string | null | undefined): boolean {
+  return stance === "BUY" || stance === "HOLD" || stance === "WATCH" || stance === "OUT"
+}
+
 function gapTone(vs: number | null | undefined): string {
   if (vs == null) return "text-neutral-900"
   return vs > 0 ? "text-emerald-700" : "text-rose-700"
@@ -102,11 +107,14 @@ function FairBand({
   lo,
   med,
   hi,
+  suppressZoneLabel = false,
 }: {
   price: number | null | undefined
   lo: number | null | undefined
   med: number | null | undefined
   hi: number | null | undefined
+  /** When parent already shows an above-band chip, avoid duplicate zone text. */
+  suppressZoneLabel?: boolean
 }) {
   const layout = fairBandLayout(price ?? null, lo ?? null, med ?? null, hi ?? null)
   if (!layout) {
@@ -118,14 +126,20 @@ function FairBand({
     )
   }
 
+  const tipZone = suppressZoneLabel
+    ? "Price sits above the fair-value range (chip already shown)."
+    : `${layout.zoneLabel}.`
+
   return (
     <HoverTip
-      tip={`Fair value ${formatUsd4(lo)}–${formatUsd4(hi)}. Price ${formatUsd4(price)}. ${layout.zoneLabel}.`}
+      tip={`Fair value ${formatUsd4(lo)}–${formatUsd4(hi)}. Price ${formatUsd4(price)}. ${tipZone}`}
     >
       <div className="w-full min-w-0">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">Fair band</span>
-          <span className={`text-[10px] font-semibold ${zoneTone(layout.zone)}`}>{layout.zoneLabel}</span>
+          {!suppressZoneLabel && (
+            <span className={`text-[10px] font-semibold ${zoneTone(layout.zone)}`}>{layout.zoneLabel}</span>
+          )}
         </div>
         <div className="relative mt-1.5 h-2 rounded-full bg-neutral-100">
           <div
@@ -237,7 +251,7 @@ export function ScreenerRow({
                 </span>
               </HoverTip>
             )}
-            {showStance && (
+            {showStance && isActionableStance(stance?.stance) && (
               <HoverTip
                 tip={
                   stance?.blockers?.length
@@ -250,7 +264,7 @@ export function ScreenerRow({
                     stance?.stance
                   )}`}
                 >
-                  {stance?.stance ?? "—"}
+                  {stance?.stance}
                 </span>
               </HoverTip>
             )}
@@ -292,7 +306,13 @@ export function ScreenerRow({
             </div>
           )}
 
-          <FairBand price={r.price_live} lo={r.fair_px_lo} med={r.fair_px_med} hi={r.fair_px_hi} />
+          <FairBand
+            price={r.price_live}
+            lo={r.fair_px_lo}
+            med={r.fair_px_med}
+            hi={r.fair_px_hi}
+            suppressZoneLabel={bandFlag.active}
+          />
 
           <div className="grid grid-cols-3 gap-x-3 gap-y-2 border-t border-neutral-100 pt-2 sm:grid-cols-6">
             <Col

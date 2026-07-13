@@ -107,7 +107,7 @@ describe("ScreenerRow render contracts", () => {
     }
   })
 
-  it("flags Above fair band for APP-class rows", () => {
+  it("flags Above fair band for APP-class rows once (chip, not duplicated on gauge)", () => {
     const html = renderRow({
       ...base,
       ticker: "APP",
@@ -121,5 +121,33 @@ describe("ScreenerRow render contracts", () => {
       contributions: { rd_prod: 4.5, fcfm_sbc: 3, mos_live: -1.6 },
     })
     expect(html).toContain("Above fair band")
+    expect(html.split("Above fair band").length - 1).toBe(1)
+  })
+
+  it("hides UNKNOWN stance chips on buy cards", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <ScreenerRow
+          r={base}
+          displayRank={1}
+          selectEnabled={false}
+          selected={false}
+          onToggle={() => undefined}
+          showStance
+          stance={{
+            ticker: "KSPI",
+            stance: "UNKNOWN",
+            confidence: "none",
+            score: null,
+            horizon_years: null,
+            implied_ann_return: null,
+            horizon_note: null,
+            blockers: ["incomplete"],
+            watermark: "research",
+          }}
+        />
+      </MemoryRouter>
+    )
+    expect(html).not.toContain(">UNKNOWN<")
   })
 })

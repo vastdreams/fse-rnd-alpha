@@ -71,3 +71,16 @@ def test_audit_catches_score_without_drivers():
     bad = {**KSPI, "contributions": {}}
     codes = {v["code"] for v in audit_rank_row(bad)}
     assert "SCORE_WITHOUT_DRIVERS" in codes
+
+
+def test_audit_catches_non_finite_metric():
+    bad = {**KSPI, "price_live": float("nan")}
+    codes = {v["code"] for v in audit_rank_row(bad)}
+    assert "NON_FINITE_METRIC" in codes
+
+
+def test_rank_violation_codes_match_contract():
+    from app.contracts.research import RANK_VIOLATION_CODES
+
+    assert "NON_FINITE_METRIC" in RANK_VIOLATION_CODES
+    assert "VS_MEDIAN_MISMATCH" in RANK_VIOLATION_CODES

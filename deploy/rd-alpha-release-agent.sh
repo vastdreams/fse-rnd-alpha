@@ -152,6 +152,7 @@ required = {
     "frontend_image",
     "bundle_filename",
     "bundle_sha256",
+    "migration_ledger_sha256",
     "pipeline_id",
     "created_at",
 }
@@ -169,6 +170,8 @@ if manifest["bundle_filename"] != "release-bundle.tar.gz":
     raise SystemExit("Unexpected release bundle filename")
 if not re.fullmatch(r"[0-9a-f]{64}", manifest["bundle_sha256"]):
     raise SystemExit("Release manifest has invalid bundle checksum")
+if not re.fullmatch(r"[0-9a-f]{64}", manifest["migration_ledger_sha256"]):
+    raise SystemExit("Release manifest has invalid migration ledger checksum")
 if (
     not isinstance(manifest["pipeline_id"], int)
     or manifest["pipeline_id"] < 1

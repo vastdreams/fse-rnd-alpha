@@ -31,6 +31,10 @@ x-backend-environment: &backend-environment
   AUTH_PUBLIC_REGISTRATION: ${AUTH_PUBLIC_REGISTRATION:-true}
   AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
   DEBUG: "false"
+  # Staging should set RANK_INVARIANT_FAIL_CLOSED=1 so enrich math breaks the
+  # request. Production may omit (warn+log only) until the golden set is proven
+  # against live quotes; never rely on DEBUG for this gate.
+  RANK_INVARIANT_FAIL_CLOSED: ${RANK_INVARIANT_FAIL_CLOSED:-0}
   SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in deploy .env}
   API_KEY_REQUIRED: ${API_KEY_REQUIRED:-false}
   FINSOEASY_EMAIL_PASSWORD: ${FINSOEASY_EMAIL_PASSWORD:-}

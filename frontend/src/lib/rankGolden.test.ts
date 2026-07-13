@@ -73,12 +73,19 @@ describe("rank-golden fixture seal (S2)", () => {
     }
   })
 
-  it("formatter golden strings for KSPI", () => {
-    const kspi = golden.rows.find((r) => r.ticker === "KSPI")
-    expect(kspi).toBeTruthy()
-    expect(formatUsd4(kspi!.price_live as number)).toBe("$89.67")
-    expect(formatUsdCompact(kspi!.revenue_usd as number)).toBe("$9.11B")
-    expect(formatPercent4(kspi!.vs_median_pct as number, true)).toBe("+178.6%")
-    expect(formatNumber4(kspi!.score as number)).toBe("9.877")
+  it("formatter golden strings for KSPI, APP, GRND", () => {
+    const expected: Record<string, { price: string; revenue: string; vs: string; score: string }> = {
+      KSPI: { price: "$89.67", revenue: "$9.11B", vs: "+178.6%", score: "9.877" },
+      APP: { price: "$507", revenue: "$6.16B", vs: "-84.42%", score: "8.853" },
+      GRND: { price: "$15.69", revenue: "$475.9M", vs: "+70.07%", score: "8.628" },
+    }
+    for (const [ticker, want] of Object.entries(expected)) {
+      const row = golden.rows.find((r) => r.ticker === ticker)
+      expect(row, ticker).toBeTruthy()
+      expect(formatUsd4(row!.price_live as number)).toBe(want.price)
+      expect(formatUsdCompact(row!.revenue_usd as number)).toBe(want.revenue)
+      expect(formatPercent4(row!.vs_median_pct as number, true)).toBe(want.vs)
+      expect(formatNumber4(row!.score as number)).toBe(want.score)
+    }
   })
 })

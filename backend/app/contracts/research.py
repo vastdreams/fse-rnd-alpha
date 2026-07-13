@@ -384,6 +384,24 @@ StageStatus = Literal["known", "unknown", "partial"]
 ResearchStance = Literal["BUY", "HOLD", "WATCH", "OUT", "UNKNOWN"]
 StanceConfidence = Literal["high", "med", "low", "none"]
 
+# Shared FE/BE taxonomy for /api/universe/rank row auditors (finance fail-closed).
+RankViolationCode = Literal[
+    "VS_MEDIAN_MISMATCH",
+    "FAIR_BAND_ORDER",
+    "FAIR_BAND_ZONE_CONTRADICTION",
+    "MOS_SIGN_CONTRADICTS_PRICE_VS_TARGET",
+    "SCORE_WITHOUT_DRIVERS",
+    "NON_FINITE_METRIC",
+]
+RANK_VIOLATION_CODES: tuple[str, ...] = (
+    "VS_MEDIAN_MISMATCH",
+    "FAIR_BAND_ORDER",
+    "FAIR_BAND_ZONE_CONTRADICTION",
+    "MOS_SIGN_CONTRADICTS_PRICE_VS_TARGET",
+    "SCORE_WITHOUT_DRIVERS",
+    "NON_FINITE_METRIC",
+)
+
 
 class WaterfallClaim(BaseModel):
     """One grounded fact in a waterfall stage. No invented numbers."""

@@ -47,6 +47,7 @@ backend_integration:
     DATABASE_URL: "postgresql+asyncpg://test_user:test_password@postgres:5432/test_db"
     SECRET_KEY: "test-secret-key-for-ci-gates-at-least-32-characters"
     DEBUG: "true"
+    RANK_INVARIANT_FAIL_CLOSED: "1"
     RUN_POSTGRES_INTEGRATION: "1"
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev postgresql-client
@@ -72,7 +73,7 @@ release_contract:
     - apt-get update && apt-get install -y --no-install-recommends bash coreutils git ripgrep tar
   script:
     - bash -n scripts/run_migrations.sh scripts/deploy_release.sh scripts/restore_data_release.sh scripts/rollback_release.sh scripts/create_release_bundle.sh scripts/check_release_health.sh scripts/backup_postgres_offsite.sh scripts/restore_postgres_offsite.sh scripts/run_authenticated_release_smoke.sh scripts/test_release_agent.sh deploy/rd-alpha-release-agent.sh deploy/install_release_agent.sh
-    - DEBUG=true SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters python -c "import json,sys; from pathlib import Path; sys.path.insert(0,'backend'); from app.services.rank_row_invariants import assert_rank_rows_invariants; rows=json.loads(Path('frontend/src/fixtures/rank-golden.json').read_text())['rows']; assert_rank_rows_invariants(rows); print('golden_audit_ok', len(rows))"
+    - DEBUG=true RANK_INVARIANT_FAIL_CLOSED=1 SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters python -c "import json,sys; from pathlib import Path; sys.path.insert(0,'backend'); from app.services.rank_row_invariants import assert_rank_rows_invariants; rows=json.loads(Path('frontend/src/fixtures/rank-golden.json').read_text())['rows']; assert_rank_rows_invariants(rows); print('golden_audit_ok', len(rows))"
     - ./scripts/test_stage_data_release.sh
     - ./scripts/test_release_restore.sh
     - ./scripts/test_rollback_release.sh
@@ -90,6 +91,7 @@ release_contract:
       release = json.load(open("release-contract/release.json"))
       assert release["source_sha"] == os.environ["CI_COMMIT_SHA"]
       assert release["pipeline_id"] == int(os.environ["CI_PIPELINE_ID"])
+      assert len(release["migration_ledger_sha256"]) == 64
       PY
 
 frontend_quality:
@@ -101,6 +103,7 @@ frontend_quality:
     - cd frontend
     - npm ci --legacy-peer-deps
     - npm run lint
+    - npm run typecheck
     # Fail-closed finance gates: first-principles auditors + sealed golden fixture.
     - npm run test:invariants
     - npm run test

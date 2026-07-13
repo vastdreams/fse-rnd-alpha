@@ -8,6 +8,7 @@ fixtures or live API payloads; any returned violation is a break.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping, Optional
 
 EPS = 1e-6
@@ -49,7 +50,6 @@ def fair_band_zone(
         return "above"
     return "inside"
 
-
 def audit_rank_row(row: Mapping[str, Any], eps: float = EPS) -> list[dict[str, str]]:
     """Return [] when first-principles contracts hold."""
     violations: list[dict[str, str]] = []
@@ -63,6 +63,25 @@ def audit_rank_row(row: Mapping[str, Any], eps: float = EPS) -> list[dict[str, s
     vs = row.get("vs_median_pct")
     score = row.get("score")
     contributions = row.get("contributions") or {}
+
+    for name, value in (
+        ("price_live", price),
+        ("fair_px_lo", fair_lo),
+        ("fair_px_med", fair_med),
+        ("fair_px_hi", fair_hi),
+        ("mos_live", mos),
+        ("vs_median_pct", vs),
+        ("revenue_usd", row.get("revenue_usd")),
+        ("score", score),
+    ):
+        if value is not None and isinstance(value, (int, float)) and not math.isfinite(value):
+            violations.append(
+                {
+                    "code": "NON_FINITE_METRIC",
+                    "ticker": ticker,
+                    "detail": f"{name} is non-finite ({value!r})",
+                }
+            )
 
     expected = compute_live_vs_target_pct(price, fair_med)
     if expected is not None and isinstance(vs, (int, float)):

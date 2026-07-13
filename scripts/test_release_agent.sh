@@ -68,6 +68,7 @@ print(
             "frontend_image": "registry.example/frontend@sha256:" + "c" * 64,
             "bundle_filename": "release-bundle.tar.gz",
             "bundle_sha256": os.environ["BUNDLE_SHA"],
+            "migration_ledger_sha256": "d" * 64,
             "created_at": "2026-07-14T00:00:00Z",
         },
         sort_keys=True,

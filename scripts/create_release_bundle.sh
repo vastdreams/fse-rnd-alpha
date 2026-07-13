@@ -136,11 +136,30 @@ sha256_of() {
 bundle_sha256="$(sha256_of "${bundle_path}")"
 printf '%s  %s\n' "${bundle_sha256}" "release-bundle.tar.gz" > "${checksum_path}"
 
+migration_ledger_sha256="$(
+  ROOT_DIR="${ROOT_DIR}" python3 - <<'PY'
+import hashlib
+import os
+from pathlib import Path
+
+root = Path(os.environ["ROOT_DIR"]) / "scripts" / "migrations"
+digest = hashlib.sha256()
+for path in sorted(p for p in root.rglob("*") if p.is_file()):
+    rel = path.relative_to(root).as_posix().encode()
+    digest.update(rel)
+    digest.update(b"\0")
+    digest.update(path.read_bytes())
+    digest.update(b"\0")
+print(digest.hexdigest())
+PY
+)"
+
 SOURCE_SHA="${SOURCE_SHA}" \
 BACKEND_IMAGE="${BACKEND_IMAGE}" \
 FRONTEND_IMAGE="${FRONTEND_IMAGE}" \
 PIPELINE_ID="${PIPELINE_ID}" \
 BUNDLE_SHA256="${bundle_sha256}" \
+MIGRATION_LEDGER_SHA256="${migration_ledger_sha256}" \
 RELEASE_CREATED_AT="${RELEASE_CREATED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
 python3 - <<'PY' > "${manifest_path}"
 import json
@@ -156,6 +175,7 @@ print(
             "frontend_image": os.environ["FRONTEND_IMAGE"],
             "bundle_filename": "release-bundle.tar.gz",
             "bundle_sha256": os.environ["BUNDLE_SHA256"],
+            "migration_ledger_sha256": os.environ["MIGRATION_LEDGER_SHA256"],
             "created_at": os.environ["RELEASE_CREATED_AT"],
         },
         indent=2,
@@ -175,6 +195,7 @@ assert re.fullmatch(r"[0-9a-f]{40}", manifest["source_sha"])
 assert re.search(r"@sha256:[0-9a-f]{64}$", manifest["backend_image"])
 assert re.search(r"@sha256:[0-9a-f]{64}$", manifest["frontend_image"])
 assert re.fullmatch(r"[0-9a-f]{64}", manifest["bundle_sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", manifest["migration_ledger_sha256"])
 PY
 
 echo "Created release bundle for ${SOURCE_SHA}: ${bundle_path}"
