@@ -181,12 +181,14 @@ async def _create_empty_schema_database(
         check=True,
         capture_output=True,
     )
-    subprocess.run(
+    restored = subprocess.run(
         ["psql", target_url, "-v", "ON_ERROR_STOP=1"],
-        check=True,
         input=dump.stdout,
         capture_output=True,
     )
+    if restored.returncode:
+        detail = restored.stderr.decode(errors="replace").strip()
+        raise RuntimeError(f"Could not restore schema-only fixture database: {detail}")
     return target_url
 
 

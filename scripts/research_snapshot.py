@@ -298,10 +298,13 @@ def collect_snapshot(database_url: str, universe_version: str) -> dict[str, Any]
     if shutil.which("psql") is None:
         return _collect_snapshot_with_asyncpg(database_url, universe_version)
 
+    # The app's async SQLAlchemy URL is not understood by psql. Preserve the
+    # caller's URL for async paths and adapt only this CLI invocation.
+    psql_database_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
     completed = subprocess.run(
         [
             "psql",
-            database_url,
+            psql_database_url,
             "-X",
             "-A",
             "-t",

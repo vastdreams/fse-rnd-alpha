@@ -16,6 +16,13 @@ DATA_RELEASE_PREFIX="${DATA_RELEASE_PREFIX:-investor-platform-data}"
 
 : "${DATA_RELEASE_BUCKET:?DATA_RELEASE_BUCKET must name the versioned S3 bucket}"
 : "${DATABASE_URL:?DATABASE_URL must identify the sealed research database}"
+# SQLAlchemy's async dialect URL is valid for app services but not for psql.
+# Keep DATABASE_URL unchanged for the Python release tooling and use this
+# normalized value only for the shell's direct PostgreSQL commands.
+PSQL_DATABASE_URL="${DATABASE_URL}"
+if [[ "${PSQL_DATABASE_URL}" == postgresql+asyncpg://* ]]; then
+  PSQL_DATABASE_URL="postgresql://${PSQL_DATABASE_URL#postgresql+asyncpg://}"
+fi
 command -v aws >/dev/null 2>&1 || {
   echo "aws CLI is required to stage a data release" >&2
   exit 1
@@ -82,7 +89,7 @@ fi
 # recorded by the immutable universe builder and must not be inferred from a
 # mutable active-version pointer.
 build_metadata="$(
-  psql "${DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 -F $'\t' \
+  psql "${PSQL_DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 -F $'\t' \
     -c "
       SELECT status,
              COALESCE(source_sha, ''),
@@ -221,7 +228,7 @@ archive_sha="$(checksum "${archive}")"
 # Binding the data manifest is the one permitted post-seal metadata update.
 # Re-staging exactly the same data is safe; changing its manifest is not.
 bound_manifest_sha="$(
-  psql "${DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 \
+  psql "${PSQL_DATABASE_URL}" -X -A -t -v ON_ERROR_STOP=1 \
     -c "
       UPDATE universe_builds
          SET data_manifest_sha256 = '$(sql_literal "${manifest_sha}")'
