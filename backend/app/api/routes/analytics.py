@@ -100,13 +100,18 @@ async def update_duration(data: UpdateDurationRequest, db: AsyncSession = Depend
     """Update the duration spent on a page."""
     await db.execute(
         text("""
-            UPDATE page_views 
+            WITH latest_page_view AS (
+                SELECT id
+                FROM page_views
+                WHERE session_id = :session_id
+                  AND page_path = :page_path
+                  AND ended_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+            UPDATE page_views
             SET duration_seconds = :duration, ended_at = :ended_at
-            WHERE session_id = :session_id 
-              AND page_path = :page_path 
-              AND ended_at IS NULL
-            ORDER BY created_at DESC
-            LIMIT 1
+            WHERE id = (SELECT id FROM latest_page_view)
         """),
         {
             "session_id": data.session_id,
