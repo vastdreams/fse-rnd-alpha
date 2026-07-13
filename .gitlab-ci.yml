@@ -122,7 +122,7 @@ compose_rehearsal:
     - name: docker:24.0.9-dind
       alias: docker
   before_script:
-    - apk add --no-cache bash curl openssl python3
+    - apk add --no-cache bash curl openssl python3 ripgrep
     - docker info
   script:
     - ./scripts/test_compose_release.sh
