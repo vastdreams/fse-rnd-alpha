@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "title": "Investor-visible formula registry (finance-safe)",
+  "authority": "Code + sealed tests beat papers/recipe marketing copy. Papers cite intent; this file cites what ships.",
+  "formulas": [
+    {
+      "id": "F_VS_MEDIAN_PCT",
+      "name": "Live gap vs price target (%)",
+      "expression": "(fair_px_med - price_live) / price_live",
+      "surfaces": ["api.universe.rank", "universe_card.vs_target"],
+      "compute": ["backend/app/services/rank_row_invariants.py:compute_live_vs_target_pct"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": [
+        "backend/tests/test_rank_row_invariants.py",
+        "frontend/src/lib/rankRowInvariants.test.ts",
+        "frontend/src/lib/rankGolden.test.ts",
+        "frontend/e2e/universe-number-parity.spec.ts"
+      ],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-2 §6 fair-value triangulation; live tape-relative gap uses median fair px"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_VS_MEDIAN_USD",
+      "name": "Live gap vs price target ($)",
+      "expression": "fair_px_med - price_live",
+      "surfaces": ["api.universe.rank"],
+      "compute": ["backend/app/services/rank_row_invariants.py:compute_live_vs_target_usd"],
+      "display": ["api.universe.rank.vs_median_usd"],
+      "audit": ["backend/tests/test_rank_row_invariants.py"],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-2 §6 — dollar gap companion to F_VS_MEDIAN_PCT"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_MOS_LIVE",
+      "name": "Frozen research margin of safety",
+      "expression": "fair_px_med / price_at_build - 1  (sealed on vector; may diverge from live vs)",
+      "surfaces": ["api.universe.rank", "universe_card.research_mos"],
+      "compute": ["scripts/build_universe.py", "backend/app/services/company_meta_service.py:live_price_from_mos"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": [
+        "backend/tests/test_rank_row_invariants.py",
+        "frontend/src/lib/rankRowInvariants.test.ts"
+      ],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-2 §6 / recipes LITERATURE_BINDS mos_live"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_MOS_VS_IDENTITY",
+      "name": "MoS ↔ live-gap algebraic identity",
+      "expression": "fair/p - 1 === (fair - p) / p when price basis matches",
+      "surfaces": ["auditor"],
+      "compute": ["backend/app/services/formula_math.py:mos_equals_live_gap"],
+      "display": ["n/a — identity check"],
+      "audit": ["backend/tests/test_formula_math.py", "frontend/src/lib/formulaRegistry.test.ts"],
+      "reference": {
+        "kind": "first_principles",
+        "cite": "Algebra identity; UI hides MoS when |mos - vs| < 0.005"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_MOS_UI_DEDUPE",
+      "name": "Show Research MoS only when it disagrees with live gap",
+      "expression": "show iff |mos_live - vs_median_pct| >= 0.005",
+      "surfaces": ["universe_card"],
+      "compute": ["frontend/src/lib/rankRowInvariants.ts:mosDiffersFromLiveGap"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["frontend/src/components/research/ScreenerRow.test.tsx", "frontend/e2e/universe-number-parity.spec.ts"],
+      "reference": {
+        "kind": "product",
+        "cite": "Trust: never display duplicate identical MoS and vs-target"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FAIR_BAND_ORDER",
+      "name": "Fair-value band ordering",
+      "expression": "0 < fair_px_lo <= fair_px_med <= fair_px_hi",
+      "surfaces": ["api.universe.rank", "company.valuation"],
+      "compute": ["backend/app/contracts/research.py:MetricVector", "backend/app/api/routes/universe_rank.py"],
+      "display": ["frontend/src/lib/fairBand.ts"],
+      "audit": ["backend/tests/test_rank_row_invariants.py", "frontend/src/lib/fairBand.test.ts"],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-2 triangulated lo/med/hi lenses"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FAIR_BAND_ZONE",
+      "name": "Price vs fair band zone",
+      "expression": "below if price < lo; above if price > hi; else inside",
+      "surfaces": ["universe_card.fair_band", "above_band_flag"],
+      "compute": ["backend/app/services/rank_row_invariants.py:fair_band_zone", "frontend/src/lib/fairBand.ts"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx", "frontend/src/lib/aboveBandPolicy.ts"],
+      "audit": [
+        "frontend/src/lib/fairBand.test.ts",
+        "frontend/src/lib/aboveBandPolicy.test.ts",
+        "frontend/e2e/universe-number-parity.spec.ts"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "Option B: above-band names flagged, not silently ranked as bargains"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_SCORE_ROBUST_Z",
+      "name": "Universe recipe score (MAD robust-z)",
+      "expression": "z = winsor±3((x - med) / (1.4826 * MAD)); contrib = z * w; score = Σ contrib",
+      "surfaces": ["api.universe.rank.score", "universe_card.score"],
+      "compute": ["backend/app/services/rank_service/engine.py:robust_z"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx", "frontend/src/lib/scoreBaseline.ts"],
+      "audit": ["backend/tests/test_rank_engine.py", "backend/tests/test_formula_math.py"],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper util MAD/winsor (scripts/saas_ai/analysis/util.py convention); R3 weights rd_prod×1.5, fcfm_sbc×1, roic×1, mos_live×1.5"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_SCORE_WITHOUT_DRIVERS",
+      "name": "Score requires contribution drivers",
+      "expression": "score != 0 ⇒ ∃ contribution ≠ 0",
+      "surfaces": ["auditor"],
+      "compute": ["backend/app/services/rank_row_invariants.py:audit_rank_row"],
+      "display": ["n/a"],
+      "audit": ["backend/tests/test_rank_row_invariants.py", "frontend/src/lib/rankRowInvariants.test.ts"],
+      "reference": {
+        "kind": "first_principles",
+        "cite": "Fail-closed: never show a score with empty drivers"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_SELL_CEILING",
+      "name": "Auto-sell / trim ceiling",
+      "expression": "live < med → sell=med; med ≤ live < hi → sell=hi; live ≥ hi → past_ceiling at hi; upside = sell/live - 1",
+      "surfaces": ["universe_card.sell_ceiling", "company.valuation_band"],
+      "compute": [
+        "frontend/src/lib/sellCeiling.ts:computeSellCeiling",
+        "backend/app/services/sell_ceiling.py:compute_sell_ceiling"
+      ],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["frontend/src/lib/sellCeiling.test.ts", "backend/tests/test_sell_ceiling.py"],
+      "reference": {
+        "kind": "docs",
+        "cite": "docs/SELL_CEILING.md — first-principles band exit, not a forecast"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_HOLD_HORIZON",
+      "name": "Hold horizon buckets (1y/2y/3y)",
+      "expression": "gap>0: gap≥0.6→3y; gap≥0.25→2y; else 1y",
+      "surfaces": ["stance.horizon", "sell_ceiling.horizon"],
+      "compute": [
+        "frontend/src/lib/sellCeiling.ts:holdHorizonYears",
+        "backend/app/services/sell_ceiling.py:hold_horizon_years",
+        "backend/app/services/close_call_service.py"
+      ],
+      "display": ["frontend/src/lib/sellCeiling.ts"],
+      "audit": ["frontend/src/lib/sellCeiling.test.ts", "backend/tests/test_sell_ceiling.py"],
+      "reference": {
+        "kind": "docs",
+        "cite": "docs/CLOSE_CALL_STANCE.md — shared buckets with stance"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_IMPLIED_ANN_RETURN",
+      "name": "Implied annualized close of gap",
+      "expression": "(target / live)^(1/H) - 1   OR   (1 + gap)^(1/H) - 1",
+      "surfaces": ["stance.implied_ann_return", "sell_ceiling.remaining_ann", "company.return_window"],
+      "compute": [
+        "frontend/src/lib/sellCeiling.ts:annualizedFromPrices",
+        "backend/app/services/formula_math.py:annualized_from_prices",
+        "backend/app/services/close_call_service.py:_annualized"
+      ],
+      "display": ["frontend/src/lib/sellCeiling.ts"],
+      "audit": ["backend/tests/test_formula_math.py", "frontend/src/lib/sellCeiling.test.ts"],
+      "reference": {
+        "kind": "first_principles",
+        "cite": "Convergence math only — not a forecast"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_STANCE_BUY_GATES",
+      "name": "Research BUY hard gates",
+      "expression": "¬kill ∧ completeness∈{A,B} ∧ mos_live>0 ∧ catalyst known ∧ agg_score≥65 ∧ confidence∈{med,high}",
+      "surfaces": ["api.universe.stances", "company.stance"],
+      "compute": ["backend/app/services/close_call_service.py"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["backend/tests/test_close_call_service.py"],
+      "reference": {
+        "kind": "docs",
+        "cite": "docs/CLOSE_CALL_STANCE.md"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FMT_USD4",
+      "name": "USD display (4 significant digits)",
+      "expression": "Intl USD currency, maximumSignificantDigits=4",
+      "surfaces": ["all_price_fields"],
+      "compute": ["frontend/src/lib/formatMetrics.ts:formatUsd4"],
+      "display": ["frontend/src/lib/formatMetrics.ts"],
+      "audit": ["frontend/src/lib/formatMetrics.test.ts", "frontend/src/lib/rankGolden.test.ts"],
+      "reference": {
+        "kind": "product",
+        "cite": "Consistent investor-facing precision"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FMT_USD_COMPACT",
+      "name": "Compact USD (T/B/M/K)",
+      "expression": "≥1e12→T; ≥1e9→B; ≥1e6→M; ≥1e3→K; else formatUsd4",
+      "surfaces": ["universe_card.revenue"],
+      "compute": ["frontend/src/lib/formatMetrics.ts:formatUsdCompact"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["frontend/src/lib/formatMetrics.test.ts", "frontend/src/lib/rankGolden.test.ts"],
+      "reference": {
+        "kind": "product",
+        "cite": "Revenue scale without inventing precision"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FMT_PCT4",
+      "name": "Percent display (4 sig figs, optional sign)",
+      "expression": "Intl percent, maximumSignificantDigits=4; signed via signDisplay exceptZero",
+      "surfaces": ["vs_target", "mos", "upside"],
+      "compute": ["frontend/src/lib/formatMetrics.ts:formatPercent4"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["frontend/src/lib/formatMetrics.test.ts", "frontend/src/lib/rankGolden.test.ts"],
+      "reference": {
+        "kind": "product",
+        "cite": "Same formatter as parity e2e"
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_PASS_THROUGH_FUNDAMENTALS",
+      "name": "Panel fundamentals (no live recompute)",
+      "expression": "rd_prod, fcfm_sbc, roic, gm, rev_cagr, retention — sealed vector / panel CSV pass-through; never imputed",
+      "surfaces": ["universe_card.metrics", "api.universe.rank"],
+      "compute": ["backend/app/services/company_meta_service.py", "scripts/build_universe.py"],
+      "display": ["frontend/src/components/research/ScreenerRow.tsx"],
+      "audit": ["frontend/src/lib/rankGolden.test.ts"],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-1 §4 rd_prod (Lev–Sougiannis); Paper-2 quality / owner earnings for fcfm_sbc; Novy-Marx ROIC/GM"
+      },
+      "status": "documented"
+    },
+    {
+      "id": "F_DCF_TRIANGULATION",
+      "name": "Company DCF workbench triangulation",
+      "expression": "fair_ev from {ev_fcf, ev_norm, ev_mult}; fair_px=(EV+net_cash)/shares; mos=clip(fair_px_med/price-1)",
+      "surfaces": ["company.dcf"],
+      "compute": ["backend/app/services/dcf_service.py"],
+      "display": ["frontend/src/pages/research/CompanyResearchPage.tsx"],
+      "audit": ["backend/tests/test_dcf_service.py"],
+      "reference": {
+        "kind": "paper",
+        "cite": "Paper-2 §6 — Universe fair band is sealed panel pass-through, not live DCF replay"
+      },
+      "status": "audited"
+    }
+  ]
+}

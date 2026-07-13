@@ -7,6 +7,7 @@ import { Link } from "react-router-dom"
 import { type RankedRow, type StanceListRow } from "@/lib/api/universe"
 import { fairBandLayout } from "@/lib/fairBand"
 import { aboveBandFlag } from "@/lib/aboveBandPolicy"
+import { formulaTip } from "@/lib/formulaRegistry"
 import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4, formatUsdCompact } from "@/lib/formatMetrics"
 import { mosDiffersFromLiveGap } from "@/lib/rankRowInvariants"
 import { computeSellCeiling, fmtSellUpside } from "@/lib/sellCeiling"
@@ -271,12 +272,19 @@ export function ScreenerRow({
           </div>
 
           <div className="grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-5">
-            <Col label="Price" value={formatUsd4(r.price_live)} tip="Latest quoted market price." />
-            <Col label="Target" value={formatUsd4(r.fair_px_med)} tip="Research median fair value (price target)." />
+            <Col label="Price" value={formatUsd4(r.price_live)} tip="Latest quoted market price. [pass-through]" />
+            <Col
+              label="Target"
+              value={formatUsd4(r.fair_px_med)}
+              tip={formulaTip("F_FAIR_BAND_ORDER", "Research median fair value (price target).")}
+            />
             <Col
               label="vs target"
               value={formatPercent4(r.vs_median_pct, true)}
-              tip="Live gap: (target − price) ÷ price. Positive = trading below target."
+              tip={formulaTip(
+                "F_VS_MEDIAN_PCT",
+                "Live gap. Positive = trading below target."
+              )}
               tone={gapTone(r.vs_median_pct)}
             />
             <Col
@@ -284,15 +292,21 @@ export function ScreenerRow({
               value={formatUsd4(sell.sell_ceil)}
               tip={
                 sell.zone === "past_ceiling"
-                  ? "Already through the high fair-value lens."
-                  : `Auto sell/trim level. Upside: ${fmtSellUpside(sell.upside_to_ceil)}.`
+                  ? formulaTip("F_SELL_CEILING", "Already through the high fair-value lens.")
+                  : formulaTip(
+                      "F_SELL_CEILING",
+                      `Auto sell/trim level. Upside: ${fmtSellUpside(sell.upside_to_ceil)}.`
+                    )
               }
               tone={sell.zone === "past_ceiling" ? "text-amber-800" : "text-neutral-900"}
             />
             <Col
               label="Revenue"
               value={formatUsdCompact(r.revenue_usd)}
-              tip={`Latest panel revenue. Exact: ${formatUsd4(r.revenue_usd)}.`}
+              tip={formulaTip(
+                "F_FMT_USD_COMPACT",
+                `Latest panel revenue. Exact: ${formatUsd4(r.revenue_usd)}.`
+              )}
             />
           </div>
 
@@ -348,7 +362,10 @@ export function ScreenerRow({
         {/* Score card — natural height, no stretch filler */}
         <aside className="hidden w-[12.5rem] shrink-0 sm:block lg:w-[13.5rem]">
           <div className="rounded-lg border border-sky-200 bg-sky-50/70">
-            <div className="border-b border-sky-200 px-2.5 py-2" title={`${quality.label}. ${quality.baseline}`}>
+            <div
+              className="border-b border-sky-200 px-2.5 py-2"
+              title={formulaTip("F_SCORE_ROBUST_Z", `${quality.label}. ${quality.baseline}`)}
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score</span>
                 <span

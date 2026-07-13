@@ -74,6 +74,7 @@ release_contract:
   script:
     - bash -n scripts/run_migrations.sh scripts/deploy_release.sh scripts/restore_data_release.sh scripts/rollback_release.sh scripts/create_release_bundle.sh scripts/check_release_health.sh scripts/backup_postgres_offsite.sh scripts/restore_postgres_offsite.sh scripts/run_authenticated_release_smoke.sh scripts/test_release_agent.sh deploy/rd-alpha-release-agent.sh deploy/install_release_agent.sh
     - DEBUG=true RANK_INVARIANT_FAIL_CLOSED=1 SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters python -c "import json,sys; from pathlib import Path; sys.path.insert(0,'backend'); from app.services.rank_row_invariants import assert_rank_rows_invariants; rows=json.loads(Path('frontend/src/fixtures/rank-golden.json').read_text())['rows']; assert_rank_rows_invariants(rows); print('golden_audit_ok', len(rows))"
+    - python3 scripts/audit_formula_registry.py
     - ./scripts/test_stage_data_release.sh
     - ./scripts/test_release_restore.sh
     - ./scripts/test_rollback_release.sh

@@ -201,10 +201,17 @@ PRESET_RECIPES: list[RankRecipe] = [
     RankRecipe(
         recipe_id="R3",
         name="Sustainable-moat underpriced",
-        formula_human="Top-third R&D productivity with improving cash economics, priced below intrinsic value, stickiness not broken",
-        formula_exact="tercile(rd_prod)==3 AND Δfcfm_sbc>0 AND Δroic>0 AND mos_live>0 AND retention not broken",
-        hard_filters=["kill_active == False", "carve_out == False", "retention disclosed or Unknown-labeled"],
-        axes=["rd_prod", "fcfm_sbc", "roic", "mos_live", "retention"],
+        formula_human=(
+            "Weighted MAD robust-z of R&D productivity, SBC-adj FCF margin, ROIC, and "
+            "margin of safety. Missing required axes exclude the name (never imputed)."
+        ),
+        formula_exact=(
+            "score=Σ w·winsor±3((x-med)/(1.4826·MAD)); "
+            "axes rd_prod×1.5, fcfm_sbc×1, roic×1, mos_live×1.5; "
+            "hard: kill_active==False AND carve_out==False"
+        ),
+        hard_filters=["kill_active == False", "carve_out == False"],
+        axes=["rd_prod", "fcfm_sbc", "roic", "mos_live"],
         benchmark_vs="high rd_int / low rd_prod (spend without conversion)",
     ),
     RankRecipe(
