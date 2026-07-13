@@ -207,7 +207,8 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
                 "tickers": [v.get("ticker") for v in violations[:20]],
             },
         )
-        if settings.DEBUG or os.getenv("RANK_INVARIANT_FAIL_CLOSED") == "1":
+        # Default fail-closed in production (compose default is 1; unset still seals).
+        if settings.DEBUG or os.getenv("RANK_INVARIANT_FAIL_CLOSED", "1") == "1":
             assert_rank_rows_invariants(rows)
     return rows
 
