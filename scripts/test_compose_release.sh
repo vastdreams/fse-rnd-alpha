@@ -40,6 +40,15 @@ fi
 release_gate_host="release-gate.test"
 release_gate_universe="release_gate_universe"
 release_gate_source_sha="$(printf 'b%.0s' {1..40})"
+# Docker-in-Docker publishes ports on the daemon service rather than the CI
+# job container. Local Docker continues to use loopback by default.
+release_gate_connect_host="${RELEASE_GATE_CONNECT_HOST:-127.0.0.1}"
+
+gate_curl() {
+  local port="$1"
+  shift
+  curl --connect-to "${release_gate_host}:${port}:${release_gate_connect_host}:${port}" "$@"
+}
 
 mkdir -p "${data_dir}/saas_ai_repricing" "${cert_dir}" "${acme_dir}"
 chmod 0777 "${data_dir}"
@@ -147,8 +156,7 @@ compose up -d backend worker beat frontend
 
 for _ in $(seq 1 45); do
   ready="$(
-    curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-      -fsS "https://${release_gate_host}:18443/ready" || true
+    gate_curl 18443 -k -fsS "https://${release_gate_host}:18443/ready" || true
   )"
   if rg -q '"ready":true' <<< "${ready}"; then
     break
@@ -157,20 +165,18 @@ for _ in $(seq 1 45); do
 done
 
 redirect_headers="$(
-  curl --resolve "${release_gate_host}:18080:127.0.0.1" \
-    -sSI "http://${release_gate_host}:18080/ready"
+  gate_curl 18080 -sSI "http://${release_gate_host}:18080/ready"
 )"
 rg -q '^HTTP/.* 301' <<< "${redirect_headers}"
 rg -q "^location: https://${release_gate_host}/ready" <<< "$(tr '[:upper:]' '[:lower:]' <<< "${redirect_headers}")"
 https_headers="$(
-  curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-    -sSI "https://${release_gate_host}:18443/ready"
+  gate_curl 18443 -k -sSI "https://${release_gate_host}:18443/ready"
 )"
 rg -qi '^strict-transport-security:' <<< "${https_headers}"
 rg -qi '^content-security-policy:' <<< "${https_headers}"
 legacy_headers="$(
-  curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-    -sSI "https://${release_gate_host}:18443/portfolio/saas/GATE?universe_version=${release_gate_universe}"
+  gate_curl 18443 -k -sSI \
+    "https://${release_gate_host}:18443/portfolio/saas/GATE?universe_version=${release_gate_universe}"
 )"
 rg -q '^HTTP/.* 308' <<< "${legacy_headers}"
 rg -q "^location: /app/company/gate?universe_version=${release_gate_universe}" \
@@ -179,7 +185,7 @@ rg -q "^location: /app/company/gate?universe_version=${release_gate_universe}" \
 admin_login_statuses=()
 for _ in $(seq 1 12); do
   admin_login_statuses+=("$(
-    curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
+    gate_curl 18443 -k \
       -o /dev/null -sS -w '%{http_code}' \
       -H 'Content-Type: application/json' \
       --data '{"email":"admin@example.test","password":"invalid"}' \
@@ -191,14 +197,11 @@ done
   exit 1
 }
 
-curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-  -fsS "https://${release_gate_host}:18443/health" |
+gate_curl 18443 -k -fsS "https://${release_gate_host}:18443/health" |
   python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "healthy"'
-curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-  -fsS "https://${release_gate_host}:18443/ready" |
+gate_curl 18443 -k -fsS "https://${release_gate_host}:18443/ready" |
   python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["ready"] is True; assert payload["checks"]["database"] == "ok"; assert payload["checks"]["investor_schema"] == "ok"; assert payload["checks"]["migration_ledger"] == "ok"; assert payload["checks"]["research_integrity_triggers"] == "ok"; assert payload["checks"]["runtime_release"] == "ok"; assert payload["release"]["runtime"]["source_sha"] == sys.argv[1]' "${release_gate_source_sha}"
-curl -k --resolve "${release_gate_host}:18443:127.0.0.1" \
-  -fsS "https://${release_gate_host}:18443/api/health" |
+gate_curl 18443 -k -fsS "https://${release_gate_host}:18443/api/health" |
   python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "healthy"'
 compose exec -T frontend nginx -t
 

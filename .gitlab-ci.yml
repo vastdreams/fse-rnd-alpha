@@ -118,6 +118,8 @@ browser_contract:
 compose_rehearsal:
   stage: rehearse
   image: docker:24.0.9-cli
+  variables:
+    RELEASE_GATE_CONNECT_HOST: docker
   services:
     - name: docker:24.0.9-dind
       alias: docker
