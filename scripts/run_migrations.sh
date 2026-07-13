@@ -85,7 +85,14 @@ checksum() {
 
 psql_exec() {
   if [[ -n "${DATABASE_URL:-}" && "${MIGRATIONS_USE_COMPOSE}" != "true" ]]; then
-    psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 "$@"
+    # SQLAlchemy's async dialect URL is valid for the application but not for
+    # the PostgreSQL CLI. Keep the caller's environment intact and adapt only
+    # the connection string passed to psql.
+    local psql_database_url="${DATABASE_URL}"
+    if [[ "${psql_database_url}" == postgresql+asyncpg://* ]]; then
+      psql_database_url="postgresql://${psql_database_url#postgresql+asyncpg://}"
+    fi
+    psql "${psql_database_url}" -v ON_ERROR_STOP=1 "$@"
   else
     "${COMPOSE[@]}" exec -T postgres \
       psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "$@"
