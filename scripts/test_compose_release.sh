@@ -163,6 +163,12 @@ for _ in $(seq 1 45); do
   fi
   sleep 2
 done
+if ! rg -q '"ready":true' <<< "${ready}"; then
+  echo "Gateway did not become ready; retaining container diagnostics in the CI log." >&2
+  compose ps >&2 || true
+  compose logs --no-color backend frontend worker beat >&2 || true
+  exit 1
+fi
 
 redirect_headers="$(
   gate_curl 18080 -sSI "http://${release_gate_host}:18080/ready"
