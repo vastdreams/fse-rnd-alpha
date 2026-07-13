@@ -17,7 +17,7 @@ export interface ConclusionSectionProps {
   } | undefined
   headlinePremiums: Array<{ horizon: string; premiumPct: number | undefined }>
   netOfCost5yr: { net_rd_premium_pct?: number } | undefined
-  transactionCosts: { premium_capture_rate_pct?: number } | undefined
+  transactionCosts: { premium_capture_rate_pct?: number | null } | undefined
 }
 
 export function ConclusionSection({

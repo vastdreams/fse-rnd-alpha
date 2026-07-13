@@ -1,7 +1,6 @@
 #!/bin/bash
 # PATH: deploy/deploy.sh
-# PURPOSE: One-click deployment to EC2
-# USAGE: ./deploy.sh [--create-infra] [--upload-data] [--deploy]
+# PURPOSE: Legacy local helper. Production promotion is GitHub-workflow only.
 
 set -e
 
@@ -40,13 +39,27 @@ fi
 EC2_USER="${EC2_USER:-ubuntu}"
 EC2_HOST="${EC2_HOST:-}"
 KEY_PATH="${KEY_PATH:-$HOME/.ssh/your-key.pem}"
-REPO_DIR="${REPO_DIR:-/home/ubuntu/fse-rnd-alpha}"
+# Target-specific paths and URLs are intentionally required so a staging
+# invocation can never fall through to a production host/domain.
+REPO_DIR="${REPO_DIR:?REPO_DIR must identify the target host checkout}"
+PUBLIC_BASE_URL="${PUBLIC_BASE_URL:?PUBLIC_BASE_URL must identify the target URL}"
 
 # Check requirements
 check_requirements() {
     command -v aws >/dev/null 2>&1 || error "AWS CLI not installed"
     command -v ssh >/dev/null 2>&1 || error "SSH not installed"
-    command -v docker >/dev/null 2>&1 || warn "Docker not installed locally (not required for remote deploy)"
+}
+
+check_deploy_requirements() {
+    command -v ssh >/dev/null 2>&1 || error "SSH not installed"
+    [ -n "${BACKEND_IMAGE:-}" ] || error "BACKEND_IMAGE must name the immutable CI image to deploy"
+    [ -n "${FRONTEND_IMAGE:-}" ] || error "FRONTEND_IMAGE must name the immutable CI image to deploy"
+    local root
+    root="$(cd "$(dirname "$0")/.." && pwd)"
+    git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
+        error "Deployment source must be a Git checkout"
+    test -z "$(git -C "$root" status --porcelain)" ||
+        error "Refusing to deploy a dirty working tree; commit or discard local changes first"
 }
 
 # Create AWS infrastructure
@@ -65,16 +78,21 @@ create_infrastructure() {
     echo "EC2_HOST=$EC2_HOST" >> .env
 }
 
-# Upload data to S3
+# Stage an immutable data artifact for the matching universe version.
 upload_data() {
-    log "Uploading data to S3..."
+    [ -n "${UNIVERSE_VERSION:-}" ] || error "UNIVERSE_VERSION must identify the immutable data build"
+    [ -n "${DATA_RELEASE_BUCKET:-}" ] || error "DATA_RELEASE_BUCKET must name the versioned data bucket"
+    log "Staging immutable data release..."
     cd "$(dirname "$0")/.."
-    python3 deploy/setup_aws.py --upload
-    log "Data uploaded successfully"
+    DATA_RELEASE_BUCKET="$DATA_RELEASE_BUCKET" \
+        DATA_RELEASE_PREFIX="${DATA_RELEASE_PREFIX:-investor-platform-data}" \
+        ./scripts/stage_data_release.sh --universe-version "$UNIVERSE_VERSION"
 }
 
 # Deploy to EC2
 deploy_to_ec2() {
+    error "Legacy SSH/rsync deployment is disabled. Use the Promote Investor Platform GitHub workflow."
+    check_deploy_requirements
     [ -z "$EC2_HOST" ] && error "EC2_HOST not set. Run with --create-infra first."
     [ ! -f "$KEY_PATH" ] && error "SSH key not found at $KEY_PATH"
     
@@ -89,7 +107,9 @@ deploy_to_ec2() {
         sleep 10
     done
     
-    # Copy project files
+    # Copy release metadata, migrations, and compose configuration only. Data
+    # is a separately versioned artifact and CI-built images carry application
+    # code/frontend assets.
     log "Copying project files..."
     rsync -avz --progress \
         --exclude 'venv' \
@@ -101,53 +121,25 @@ deploy_to_ec2() {
         -e "ssh -i $KEY_PATH -o StrictHostKeyChecking=no" \
         "$(dirname "$0")/../" "$EC2_USER@$EC2_HOST:$REPO_DIR/"
     
-    # SSH and start services
+    # SSH and start services. %q prevents a registry tag from being interpreted
+    # by the remote shell.
     log "Starting services on EC2..."
-    ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" << 'REMOTE_SCRIPT'
+    local release_sha
+    release_sha="$(git -C "$(dirname "$0")/.." rev-parse HEAD)"
+    printf -v remote_command 'BACKEND_IMAGE=%q FRONTEND_IMAGE=%q RELEASE_SHA=%q REPO_DIR=%q bash -s' \
+        "$BACKEND_IMAGE" "$FRONTEND_IMAGE" "$release_sha" "$REPO_DIR"
+    ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "$remote_command" << 'REMOTE_SCRIPT'
 set -e
-cd ~/fse-rnd-alpha/deploy
-
-# Ensure nginx has the latest built frontend assets.
-# NOTE: frontend/dist is built locally before rsync; this copies it into the deploy-mounted path.
-mkdir -p frontend
-rm -rf frontend/dist
-mkdir -p frontend/dist
-if [ -d ../frontend/dist ]; then
-  cp -R ../frontend/dist/. frontend/dist/
-else
-  echo "WARN: ../frontend/dist not found. Frontend may not update."
-fi
+cd "$REPO_DIR/deploy"
 
 # Create .env if not exists
 if [ ! -f .env ]; then
-    cp .env.example .env 2>/dev/null || touch .env
+    cp .env.example .env
+    echo "Created deploy/.env from the safe template. Populate required secrets, then rerun."
+    exit 1
 fi
 
-# Build and start containers
-docker-compose pull
-docker-compose build
-docker-compose up -d
-
-# Wait for services to be healthy
-echo "Waiting for services to start..."
-sleep 30
-
-# Apply DB migrations needed for publication snapshot + result versioning.
-echo "Running DB migrations..."
-docker-compose exec -T postgres psql -U postgres -d rd_alpha < ../scripts/migrations/001_add_result_versioning.sql
-docker-compose exec -T postgres psql -U postgres -d rd_alpha < ../scripts/migrations/003_publication_snapshots.sql
-
-# Build a fresh publication snapshot (pins the new Main Paper exhibits).
-echo "Building publication snapshot..."
-curl -s -o /dev/null -w "Snapshot build HTTP %{http_code}\n" \
-  -X POST http://localhost/api/research/publication-snapshot/build \
-  -H "Content-Type: application/json" \
-  -d '{"label":"Publication Snapshot (Main Paper)","return_convention":"july_june","data_tier":"tier1","set_active":true}' \
-  || echo "Snapshot build request failed"
-
-# Check health
-curl -s -o /dev/null -w "Backend health HTTP %{http_code}\n" http://localhost/health || echo "Backend not ready yet"
-curl -s http://localhost/ > /dev/null && echo "Frontend is up" || echo "Frontend not ready yet"
+"$REPO_DIR/scripts/deploy_release.sh"
 
 echo "Deployment complete!"
 REMOTE_SCRIPT
@@ -158,9 +150,9 @@ REMOTE_SCRIPT
     echo "  Application deployed successfully!"
     echo "=================================================="
     echo ""
-    echo "  Frontend: http://$EC2_HOST"
-    echo "  API:      http://$EC2_HOST:8000"
-    echo "  API Docs: http://$EC2_HOST:8000/docs"
+    echo "  Frontend: $PUBLIC_BASE_URL"
+    echo "  API:      $PUBLIC_BASE_URL/api/"
+    echo "  API Docs: $PUBLIC_BASE_URL/docs"
     echo ""
     echo "  SSH: ssh -i $KEY_PATH $EC2_USER@$EC2_HOST"
     echo ""
@@ -172,7 +164,7 @@ run_crawl() {
     
     log "Starting concurrent SEC crawl..."
     ssh -i "$KEY_PATH" "$EC2_USER@$EC2_HOST" << 'REMOTE_SCRIPT'
-cd ~/fse-rnd-alpha/deploy
+cd /opt/rd-alpha/deploy
 
 # Trigger batch crawl via Celery
 docker-compose exec -T worker celery -A app.workers.celery_app call app.workers.tasks.batch_crawl_companies \
@@ -199,25 +191,27 @@ cleanup_local() {
 
 # Main
 main() {
-    check_requirements
-    
     case "${1:-}" in
         --create-infra)
+            check_requirements
             create_infrastructure
             ;;
         --upload-data)
+            check_requirements
             upload_data
             ;;
         --deploy)
             deploy_to_ec2
             ;;
         --crawl)
+            check_requirements
             run_crawl
             ;;
         --cleanup-local)
             cleanup_local
             ;;
         --full)
+            check_requirements
             create_infrastructure
             upload_data
             deploy_to_ec2
@@ -227,11 +221,11 @@ main() {
             echo ""
             echo "Options:"
             echo "  --create-infra   Create EC2 + S3 infrastructure"
-            echo "  --upload-data    Upload local data to S3"
-            echo "  --deploy         Deploy application to EC2"
+            echo "  --upload-data    Stage immutable data artifact (requires UNIVERSE_VERSION and DATA_RELEASE_BUCKET)"
+            echo "  --deploy         Disabled; use the Promote Investor Platform GitHub workflow"
             echo "  --crawl          Start concurrent SEC crawl"
             echo "  --cleanup-local  Remove local raw data"
-            echo "  --full           Run all steps (infra + upload + deploy)"
+            echo "  --full           Disabled because it includes the legacy deployment path"
             ;;
     esac
 }

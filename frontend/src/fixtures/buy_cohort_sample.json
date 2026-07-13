@@ -1,0 +1,38 @@
+[
+  {
+    "ticker": "MNDY",
+    "score": 83.4,
+    "mos_live": 0.85,
+    "vs_median_pct": 0.85,
+    "retention": 1.1,
+    "rev_cagr": 0.3,
+    "completeness_grade": "A",
+    "kill_active": false,
+    "stance": "BUY",
+    "fcfm_sbc": 0.1
+  },
+  {
+    "ticker": "SPSC",
+    "score": 88.7,
+    "mos_live": 0.69,
+    "vs_median_pct": 0.69,
+    "retention": null,
+    "rev_cagr": 0.12,
+    "completeness_grade": "A",
+    "kill_active": false,
+    "stance": "BUY",
+    "fcfm_sbc": 0.14
+  },
+  {
+    "ticker": "KSPI",
+    "score": 83.0,
+    "mos_live": 1.79,
+    "vs_median_pct": 1.79,
+    "retention": null,
+    "rev_cagr": 0.2,
+    "completeness_grade": "B",
+    "kill_active": false,
+    "stance": "BUY",
+    "fcfm_sbc": 0.16
+  }
+]

@@ -27,12 +27,11 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Always default to light mode unless user explicitly chose dark
-    // Ignore system preferences - only respect explicit user choice
+    // Ignore system preferences; respect an explicit stored choice or the
+    // provider's explicit fallback.
     const stored = localStorage.getItem(storageKey) as Theme
     if (stored === "dark") return "dark"
-    // For any other value (including "system", "light", null), use light
-    return "light"
+    return defaultTheme === "dark" ? "dark" : "light"
   })
 
   useEffect(() => {

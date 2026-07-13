@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
+from app.api.routes.auth import require_operator
 
 
 router = APIRouter()
@@ -50,39 +51,26 @@ _backtests: dict = {}
 async def run_backtest(
     request: BacktestRequest,
     session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
-    """Run a new backtest."""
-    import uuid
-    
-    backtest_id = str(uuid.uuid4())[:8]
-    
-    # TODO: Implement actual backtest logic via Celery task
-    # For now, return mock result
-    result = BacktestResult(
-        id=backtest_id,
-        status="completed",
-        factor_id=request.factor_id,
-        start_year=request.start_year,
-        end_year=request.end_year,
-        total_return=0.25,  # Mock values
-        annualized_return=0.08,
-        sharpe_ratio=1.2,
-        max_drawdown=-0.15,
-        created_at=datetime.utcnow(),
+    """Backtesting is intentionally unavailable until it is persisted and reproducible."""
+    raise HTTPException(
+        status_code=501,
+        detail="Backtest execution is disabled in the public release.",
     )
-    
-    _backtests[backtest_id] = result
-    return result
 
 
 @router.get("/", response_model=List[BacktestResult])
-async def list_backtests():
+async def list_backtests(user: dict = Depends(require_operator)):
     """List all backtests."""
     return list(_backtests.values())
 
 
 @router.get("/{backtest_id}", response_model=BacktestResult)
-async def get_backtest(backtest_id: str):
+async def get_backtest(
+    backtest_id: str,
+    user: dict = Depends(require_operator),
+):
     """Get backtest details."""
     if backtest_id not in _backtests:
         raise HTTPException(status_code=404, detail="Backtest not found")
@@ -90,7 +78,10 @@ async def get_backtest(backtest_id: str):
 
 
 @router.get("/{backtest_id}/results")
-async def get_backtest_results(backtest_id: str):
+async def get_backtest_results(
+    backtest_id: str,
+    user: dict = Depends(require_operator),
+):
     """Get detailed backtest results including equity curve."""
     if backtest_id not in _backtests:
         raise HTTPException(status_code=404, detail="Backtest not found")

@@ -248,3 +248,49 @@ class FMPIndividualMixin:
         if isinstance(data, list):
             return data
         return []
+
+    # =========================================================================
+    # Catalyst events (press / earnings / news)
+    # =========================================================================
+
+    async def get_press_releases(
+        self,
+        symbol: str,
+        limit: int = 50,
+        retries: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Official company press releases for catalyst anchors."""
+        data = await self._get(
+            "/stable/news/press-releases",
+            {"symbols": symbol.upper(), "limit": limit},
+            retries=retries,
+        )
+        return data if isinstance(data, list) else []
+
+    async def get_earnings(
+        self,
+        symbol: str,
+        limit: int = 24,
+        retries: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Historical earnings announcement dates / EPS for a symbol."""
+        data = await self._get(
+            "/stable/earnings",
+            {"symbol": symbol.upper(), "limit": limit},
+            retries=retries,
+        )
+        return data if isinstance(data, list) else []
+
+    async def get_stock_news(
+        self,
+        symbol: str,
+        limit: int = 50,
+        retries: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Titled stock news. Secondary only — never sole BUY basis."""
+        data = await self._get(
+            "/stable/news/stock",
+            {"symbols": symbol.upper(), "limit": limit},
+            retries=retries,
+        )
+        return data if isinstance(data, list) else []

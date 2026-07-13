@@ -9,7 +9,7 @@ import { Slide } from "../slide-components"
 
 export function ConclusionSlide({ data, totalSlides }: { data: WhitepaperData; totalSlides: number }) {
   const {
-    rdPremium, tStat, winRate, etaSquared5yr, etaSquared10yr, etaSquared20yr,
+    rdPremium, tStat, winRate, etaSquared5yr, etaSquared20yr,
     ff5AlphaPercent, ff5AlphaPValue, totalCompanies,
     invTurnoverAvg, annualTradingCost, invTradingCostEstPct, premiumCaptureRate,
   } = data

@@ -535,6 +535,18 @@ Health check endpoint.
 
 ---
 
+### GET /ready
+
+Release-readiness endpoint. Unlike `/health`, this fails closed unless the
+database has exactly one sealed active universe with vectors, a committed
+source SHA, and a data-manifest hash matching the mounted release artifact.
+
+**Response fields:** `ready`, diagnostic `checks`, and the attested
+`release.universe_version`, `release.source_sha`, and
+`release.data_manifest_sha256`.
+
+---
+
 ### GET /
 
 API root with documentation links.

@@ -1,7 +1,6 @@
 /** Paper1Methods — Data & Sample + Methodology sections */
 import { Card, CardContent } from "@/components/ui/card"
 import { Database, FlaskConical } from "lucide-react"
-import { Link } from "react-router-dom"
 import { Formulas } from "@/components/Formula"
 
 interface Paper1MethodsProps {

@@ -4,7 +4,7 @@
  * WHY: Extracted from AuditModal.tsx to stay under 300-line limit.
  */
 
-import { Copy, Database, ExternalLink } from "lucide-react"
+import { Copy, Database } from "lucide-react"
 
 // ── Shared types ────────────────────────────────────────────────────
 

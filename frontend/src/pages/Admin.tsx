@@ -38,7 +38,7 @@ export function Admin() {
         </div>
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="px-3 py-1"><Lock className="w-3 h-3 mr-2" />{adminUser?.username}</Badge>
-          <Button variant="outline" onClick={handleLogout}><LogOut className="w-4 h-4 mr-2" />Logout</Button>
+          <Button variant="outline" onClick={() => void handleLogout()}><LogOut className="w-4 h-4 mr-2" />Logout</Button>
         </div>
       </div>
 

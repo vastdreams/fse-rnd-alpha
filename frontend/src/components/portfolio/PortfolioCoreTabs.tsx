@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function PortfolioCoreTabs({ data, asOfYear, nHoldings, chartsReady, activeTab }: Props) {
-  const { holdings, yearlyDataForCharts, sectorAllocation, backtestStart, backtestEnd } = data
+  const { holdings, yearlyDataForCharts, sectorAllocation, backtestStart } = data
 
   const handleExportHoldings = () => {
     if (!holdings || holdings.length === 0) return

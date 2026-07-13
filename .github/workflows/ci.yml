@@ -6,9 +6,10 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "release/**"]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, "release/**"]
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: "3.11"
@@ -21,10 +22,15 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
-    
+    env:
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+      SECRET_KEY: test-secret-key-for-hs256-at-least-32-chars
+      DEBUG: "true"
+      RUN_POSTGRES_INTEGRATION: "1"
+
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
         env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
@@ -36,40 +42,160 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
           python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Cache pip packages
-        uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
-    
+
+      - name: Cache pip packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt', 'backend/requirements.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.lock
+          pip install pytest pytest-cov pytest-asyncio ruff
+
+      - name: Static-check investor release surfaces
+        run: |
+          ruff check \
+            backend/app/api/routes/auth.py \
+            backend/app/api/routes/books.py \
+            backend/app/api/routes/universe_company.py \
+            backend/app/api/routes/universe_rank.py \
+            backend/app/services/account_service.py \
+            backend/app/services/catalyst_event_service.py \
+            backend/app/services/company_meta_service.py \
+            backend/app/services/price_history_service.py \
+            backend/app/contracts/research.py \
+            backend/app/main.py \
+            backend/tests/test_auth_authorization.py \
+            backend/tests/test_books_constraints.py \
+            backend/tests/test_data_manifest.py \
+            backend/tests/test_price_provenance.py \
+            backend/tests/test_public_account_integration.py \
+            backend/tests/test_research_release.py \
+            backend/tests/test_setup_aws.py \
+            scripts/build_universe.py \
+            scripts/activate_universe.py \
+            scripts/patch_kill_active.py \
+            scripts/fill_layer0.py \
+            scripts/create_data_manifest.py \
+            scripts/verify_data_manifest.py \
+            scripts/research_snapshot.py \
+            scripts/research_release.py \
+            scripts/smoke_public_release.py \
+            deploy/setup_aws.py
+
+      - name: Validate release scripts and data manifest tooling
+        run: |
+          bash -n \
+            scripts/run_migrations.sh \
+            scripts/deploy_release.sh \
+            scripts/stage_data_release.sh \
+            scripts/restore_data_release.sh \
+            scripts/test_stage_data_release.sh \
+            scripts/test_release_restore.sh \
+            scripts/rollback_release.sh \
+            scripts/test_rollback_release.sh \
+            scripts/verify_github_release_controls.sh \
+            scripts/test_compose_release.sh
+          ./scripts/test_stage_data_release.sh
+          ./scripts/test_release_restore.sh
+          ./scripts/test_rollback_release.sh
+
+      - name: Bootstrap blank schema exactly as deployment does
+        working-directory: backend
+        run: |
+          python -c "import asyncio; from app.db.session import create_tables; asyncio.run(create_tables())"
+
+      - name: Apply migration ledger and verify replay
+        run: |
+          command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+          ./scripts/run_migrations.sh
+          ./scripts/run_migrations.sh
+          ./scripts/run_migrations.sh --verify-only
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+            SELECT filename FROM schema_migrations ORDER BY filename;
+            SELECT to_regclass('public.user_accounts') AS user_accounts,
+                   to_regclass('public.universe_builds') AS universe_builds,
+                   to_regclass('public.saved_books') AS saved_books,
+                   to_regclass('public.dcf_runs') AS dcf_runs;
+            DO \$\$
+            BEGIN
+              IF (
+                SELECT count(*)
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND (
+                    (table_name = 'user_accounts' AND column_name = 'token_not_before')
+                    OR (table_name = 'user_accounts' AND column_name = 'token_version')
+                    OR (table_name = 'audit_exports' AND column_name = 'payload')
+                    OR (table_name = 'universe_builds' AND column_name = 'status')
+                    OR (table_name = 'universe_builds' AND column_name = 'is_active')
+                    OR (table_name = 'saved_books' AND column_name = 'revision')
+                  )
+              ) <> 6 THEN
+                RAISE EXCEPTION 'expected public release migration columns are missing';
+              END IF;
+              IF (
+                SELECT count(*)
+                FROM pg_trigger
+                WHERE NOT tgisinternal
+                  AND tgenabled <> 'D'
+                  AND tgname IN (
+                    'trg_saved_books_history_integrity',
+                    'trg_saved_book_holdings_locked_integrity',
+                    'trg_dcf_runs_append_only',
+                    'trg_company_memos_append_only',
+                    'trg_audit_exports_append_only'
+                  )
+              ) <> 5 THEN
+                RAISE EXCEPTION 'expected immutable personal-history triggers are missing';
+              END IF;
+            END \$\$;
+          "
+
+      - name: Verify immutable migration ledger rejection
+        run: |
+          set -euo pipefail
+          filename="014_versioned_historical_outputs.sql"
+          checksum="$(sha256sum "scripts/migrations/${filename}" | awk '{print $1}')"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -c "UPDATE schema_migrations SET checksum = repeat('0', 64) WHERE filename = '${filename}';"
+          if ./scripts/run_migrations.sh; then
+            echo "Migration runner accepted a mismatched applied checksum." >&2
+            exit 1
+          fi
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -c "UPDATE schema_migrations SET checksum = '${checksum}' WHERE filename = '${filename}';"
+          ./scripts/run_migrations.sh --verify-only
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -c "INSERT INTO schema_migrations (filename, checksum) VALUES ('999_orphan_fixture.sql', repeat('f', 64));"
+          if ./scripts/run_migrations.sh --verify-only; then
+            echo "Migration runner accepted a ledger entry absent from the checkout." >&2
+            exit 1
+          fi
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -c "DELETE FROM schema_migrations WHERE filename = '999_orphan_fixture.sql';"
+          ./scripts/run_migrations.sh --verify-only
+
       - name: Run backend tests
-      env:
-          DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/test_db
-        SECRET_KEY: test-secret-key
-          DEBUG: "true"
-      run: |
+        run: |
           cd backend
           pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
-    
-    - name: Upload coverage
-        uses: codecov/codecov-action@v4
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           file: ./backend/coverage.xml
           flags: backend
@@ -83,10 +209,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -96,16 +222,54 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: frontend
+        run: npm run test
+
       - name: Build frontend
         working-directory: frontend
         run: npm run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-      with:
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
           name: frontend-dist
           path: frontend/dist
           retention-days: 7
+
+  # ==========================================================================
+  # Frontend contract E2E
+  # ==========================================================================
+  browser-smoke:
+    name: Frontend Contract E2E
+    runs-on: ubuntu-latest
+    needs: frontend-build
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run mocked frontend contract E2E
+        working-directory: frontend
+        run: npm run test:e2e
 
   # ==========================================================================
   # Linting
@@ -115,28 +279,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
           python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install linting tools
-      run: |
+
+      - name: Install linting tools
+        run: |
           pip install flake8 black isort
-    
+
       - name: Run flake8 (critical errors only)
-      run: |
+        run: |
           flake8 backend/app scripts --count --select=E9,F63,F7,F82 --show-source --statistics
-    
-    - name: Check formatting with black
-      run: |
+
+      - name: Check formatting with black
+        run: |
           black --check --diff backend/app scripts || echo "::warning::Black formatting issues found"
         continue-on-error: true
-    
-    - name: Check imports with isort
-      run: |
+
+      - name: Check imports with isort
+        run: |
           isort --check-only --diff backend/app scripts || echo "::warning::Import sorting issues found"
         continue-on-error: true
 
@@ -148,15 +312,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
           python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install security tools
-      run: |
+
+      - name: Install security tools
+        run: |
           pip install bandit safety pip-audit
 
       - name: Run bandit (security linter)
@@ -165,17 +329,44 @@ jobs:
           bandit -r backend/app -ll --format txt
 
       - name: Check dependencies with pip-audit
-      run: |
-          pip install -r backend/requirements.txt
-          pip-audit --strict || echo "::warning::Dependency vulnerabilities found (backend requirements)"
-        continue-on-error: true
+        run: |
+          pip install -r backend/requirements.lock
+          pip-audit -r backend/requirements.lock --no-deps --disable-pip --strict
+
+      - name: Set up Node.js for production dependency audit
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Check production frontend dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --omit=dev --json > audit-report.json || true
+          node -e '
+            const audit = require("./audit-report.json")
+            const counts = audit.metadata?.vulnerabilities ?? {}
+            const blocking = counts.total ?? (
+              (counts.critical ?? 0) + (counts.high ?? 0) +
+              (counts.moderate ?? 0) + (counts.low ?? 0)
+            )
+            if (blocking > 0) {
+              console.error(`Blocking production dependency vulnerabilities: ${JSON.stringify(counts)}`)
+              process.exit(1)
+            }
+            console.log(`Production dependency audit passed: ${JSON.stringify(counts)}`)
+          '
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: security-reports
-          path: bandit-report.json
+          path: |
+            bandit-report.json
+            frontend/audit-report.json
           retention-days: 30
 
   # ==========================================================================
@@ -184,31 +375,149 @@ jobs:
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-build]
+    needs: [backend-test, frontend-build, browser-smoke, compile-check, lint, security]
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    outputs:
+      backend_image: ${{ steps.publish_tested_images.outputs.backend_image }}
+      frontend_image: ${{ steps.publish_tested_images.outputs.frontend_image }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: ./backend
           push: false
-          tags: rd-alpha-backend:test
+          load: true
+          tags: rd-alpha-backend:release-gate
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build frontend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
-          context: ./frontend
+          context: .
+          file: deploy/Dockerfile.frontend
           push: false
-          tags: rd-alpha-frontend:test
+          load: true
+          tags: rd-alpha-frontend:release-gate
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Rehearse production Compose, Nginx, and readiness
+        env:
+          BACKEND_IMAGE: rd-alpha-backend:release-gate
+          FRONTEND_IMAGE: rd-alpha-frontend:release-gate
+        run: ./scripts/test_compose_release.sh
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the exact tested image digests
+        id: publish_tested_images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          BACKEND_REPOSITORY: ghcr.io/${{ github.repository }}-backend
+          FRONTEND_REPOSITORY: ghcr.io/${{ github.repository }}-frontend
+        run: |
+          set -euo pipefail
+          # A commit SHA is shared by concurrent reruns. Use a run-scoped tag
+          # so resolving it after push cannot accidentally name another run's
+          # image; the emitted digest remains the immutable release identity.
+          release_tag="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          backend_tag="${BACKEND_REPOSITORY}:${release_tag}"
+          frontend_tag="${FRONTEND_REPOSITORY}:${release_tag}"
+          docker tag rd-alpha-backend:release-gate "${backend_tag}"
+          docker tag rd-alpha-frontend:release-gate "${frontend_tag}"
+          docker push "${backend_tag}"
+          docker push "${frontend_tag}"
+          backend_digest="$(docker buildx imagetools inspect "${backend_tag}" --format '{{.Digest}}')"
+          frontend_digest="$(docker buildx imagetools inspect "${frontend_tag}" --format '{{.Digest}}')"
+          [[ "${backend_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "${frontend_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "backend_image=${BACKEND_REPOSITORY}@${backend_digest}" >> "${GITHUB_OUTPUT}"
+          echo "frontend_image=${FRONTEND_REPOSITORY}@${frontend_digest}" >> "${GITHUB_OUTPUT}"
+          echo "backend_digest=${backend_digest}" >> "${GITHUB_OUTPUT}"
+          echo "frontend_digest=${frontend_digest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Attest tested backend image provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}-backend
+          subject-digest: ${{ steps.publish_tested_images.outputs.backend_digest }}
+          push-to-registry: true
+
+      - name: Attest tested frontend image provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}-frontend
+          subject-digest: ${{ steps.publish_tested_images.outputs.frontend_digest }}
+          push-to-registry: true
+
+  # ==========================================================================
+  # Immutable release artifact
+  # ==========================================================================
+  publish-immutable-release:
+    name: Publish Immutable Release Artifact
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend-test, frontend-build, browser-smoke, docker-build, compile-check, lint, security]
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Write release metadata
+        env:
+          BACKEND_IMAGE: ${{ needs.docker-build.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.docker-build.outputs.frontend_image }}
+        run: |
+          set -euo pipefail
+          [[ "${BACKEND_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]
+          [[ "${FRONTEND_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]
+          jq -n \
+            --arg source_sha "${GITHUB_SHA}" \
+            --arg backend_image "${BACKEND_IMAGE}" \
+            --arg frontend_image "${FRONTEND_IMAGE}" \
+            --arg ci_run_id "${GITHUB_RUN_ID}" \
+            '{
+              schema_version: 1,
+              source_sha: $source_sha,
+              backend_image: $backend_image,
+              frontend_image: $frontend_image,
+              ci_run_id: $ci_run_id
+            }' > immutable-release.json
+          jq -e '
+            .source_sha | test("^[0-9a-f]{40}$")
+          ' immutable-release.json >/dev/null
+          jq -e '
+            (.backend_image | test("@sha256:[0-9a-f]{64}$"))
+            and (.frontend_image | test("@sha256:[0-9a-f]{64}$"))
+          ' immutable-release.json >/dev/null
+
+      - name: Upload immutable release metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: immutable-release
+          path: immutable-release.json
+          if-no-files-found: error
+          retention-days: 90
 
   # ==========================================================================
   # Python Compilation Check
@@ -218,16 +527,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check all Python files compile
-      run: |
+        run: |
           python -m compileall -q backend/app scripts
           echo "All Python files compile successfully"
-
-

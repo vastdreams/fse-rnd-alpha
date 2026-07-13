@@ -7,40 +7,26 @@ Uses JWT tokens for session management.
 Publication: https://research.finsoeasy.com
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 from pathlib import Path
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-import bcrypt
-from jose import JWTError, jwt
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.api.deps import get_db
+from app.api.routes.auth import _create_token, get_current_user
 from app.api.routes.subscribe import get_all_subscribers
 from app.api.routes.donations import get_all_donations
+from app.services import account_service
 
 router = APIRouter()
 
-# JWT settings
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
-
-security = HTTPBearer()
-
-# Admin credentials
-# Pre-hashed admin password (bcrypt). Prefer moving this to an environment variable for production.
-ADMIN_PASSWORD_HASH = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S6W4P2fF6Bz.Pu"
-ADMIN_USERNAME = "admin"
-
-
 class LoginRequest(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
@@ -113,80 +99,46 @@ def _load_client_portals_from_file() -> List[ClientPortalResponse]:
     return out
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash."""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+async def get_current_admin(user: dict = Depends(get_current_user)) -> AdminUser:
+    """Require a durable account explicitly assigned the admin role."""
 
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token."""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def verify_token(token: str) -> Optional[dict]:
-    """Verify JWT token."""
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        return None
-
-
-async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> AdminUser:
-    """Validate JWT token and return admin user."""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired authentication token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    payload = verify_token(credentials.credentials)
-    
-    if payload is None:
-        raise credentials_exception
-    
-    username = payload.get("sub")
-    if username is None or username != ADMIN_USERNAME:
-        raise credentials_exception
-    
-    return AdminUser(username=username, is_admin=True)
+    if user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin role required",
+        )
+    return AdminUser(username=str(user["email"]), is_admin=True)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def admin_login(login_data: LoginRequest):
-    """Admin login endpoint."""
-    
-    if login_data.username != ADMIN_USERNAME:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
-    
-    # Check password (bcrypt hash)
-    password_valid = False
+async def admin_login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Issue the normal revocable user JWT only to a durable admin account."""
+
     try:
-        password_valid = verify_password(login_data.password, ADMIN_PASSWORD_HASH)
-    except Exception:
-        pass
-    
-    if not password_valid:
+        user, error = await account_service.authenticate_account(
+            db,
+            email=str(login_data.email),
+            password=login_data.password,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    if not user or user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": login_data.username, "type": "admin"},
-        expires_delta=access_token_expires,
+    await db.commit()
+    access_token, expires_in = _create_token(
+        user,
+        await account_service.token_version(db, user["id"]),
     )
-    
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires_in=expires_in,
     )
 
 

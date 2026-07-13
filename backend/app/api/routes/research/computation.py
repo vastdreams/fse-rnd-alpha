@@ -13,6 +13,7 @@ from datetime import datetime
 import numpy as np
 
 from app.db.session import get_session
+from app.api.routes.auth import require_operator
 from app.db.models import (
     ResearchCohort, RollingWindowResult, AnovaResult, FactorPremium,
     FMPIncomeStatement, SP500Company, PublicationSnapshot
@@ -43,7 +44,8 @@ router = APIRouter()
 async def compute_all_analysis(
     background_tasks: BackgroundTasks,
     use_july_june: bool = Query(True, description="Use July-June returns (Fama-French convention)"),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     """
     Trigger full recomputation of cohort classification and analysis.
@@ -87,7 +89,8 @@ async def compute_all_analysis(
 
 @router.post("/classify-cohort")
 async def classify_cohort(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     """Classify all S&P 500 companies into research cohort."""
     classifier = CohortClassifier(session)
@@ -98,7 +101,8 @@ async def classify_cohort(
 @router.post("/compute-windows/{window_type}")
 async def compute_windows(
     window_type: str,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     """Compute rolling window analysis for a specific window type."""
     if window_type not in ["5yr", "10yr", "20yr"]:
@@ -116,7 +120,8 @@ async def compute_windows(
 
 @router.post("/compute-premiums")
 async def compute_premiums(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     """Compute annual R&D factor premiums."""
     analyzer = RollingWindowAnalyzer(session)

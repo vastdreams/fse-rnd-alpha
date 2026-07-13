@@ -5,7 +5,7 @@ import type {
   SiteKey, AdminUser, DashboardData, SubscribersData, DonationsData,
   AnalyticsSummary, VisitorsData, ClientPortal, ClientPortalApiResponse, LoginResponse,
 } from "./admin-types"
-import { API_BASE, UNIFIED_GA4_PROPERTY } from "./admin-types"
+import { API_BASE } from "./admin-types"
 
 export type AdminData = ReturnType<typeof useAdminData>
 
@@ -73,7 +73,7 @@ export function useAdminData() {
       const response = await fetch(`${API_BASE}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email: username, password }),
       })
       if (response.ok) {
         const data: LoginResponse = await response.json()
@@ -93,7 +93,18 @@ export function useAdminData() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/api/auth/logout`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` },
+        })
+      } catch {
+        // Local credential removal still protects this browser if the server
+        // is temporarily unavailable.
+      }
+    }
     localStorage.removeItem("admin_token")
     setToken(null)
     setIsAuthenticated(false)

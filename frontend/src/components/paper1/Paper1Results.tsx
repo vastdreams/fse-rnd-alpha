@@ -84,7 +84,7 @@ export function Paper1Results({ annualHmlData, annualHmlLoading, aggregateAnova,
                       contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
                     />
                     <Bar dataKey="avgReturn" radius={[4, 4, 0, 0]}>
-                      {formatQuintileData(quintilePerf5yr).map((entry, index) => (
+                      {formatQuintileData(quintilePerf5yr).map((entry: { fill: string }, index: number) => (
                         <Cell key={index} fill={entry.fill} />
                       ))}
                     </Bar>

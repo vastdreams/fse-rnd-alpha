@@ -1,0 +1,138 @@
+{
+  "FRSH": {
+    "fy": "YE 2025-12-31",
+    "filed": "2026-02-26",
+    "accession": "0001544522-26-000036",
+    "url": "https://www.sec.gov/Archives/edgar/data/1544522/000154452226000036/frsh-20251231.htm",
+    "headline": "People-first AI service software for employee and customer experience.",
+    "offerings": [
+      "Freshservice / Freshservice for Business Teams (IT / employee service)",
+      "Device42 and FireHydrant (infra / incident tooling)",
+      "Freshdesk suite (customer experience / support)",
+      "Freddy AI Agents, Copilot, and Insights"
+    ],
+    "source_type": "10-K Item 1 Business",
+    "excerpt": "We provide people-first AI service software that organizations use to deliver exceptional employee and customer experiences. Our employee experience (EX) products include Freshservice, Freshservice for Business Teams, Device42 and FireHydrant. Our customer experience (CX) products include our Freshdesk suite of products. Our AI offerings, which include Freddy AI Agents, Freddy AI Copilot and Freddy AI Insights, further enhance the employee and customer experience and are designed to boost productivity. Currently, nearly 75,000 companies use Freshworks' uncomplicated solutions to increase employee efficiency and customer loyalty. Our enterprise-grade solutions are powerful, yet easy to use,…"
+  },
+  "DOCU": {
+    "fy": "YE 2026-01-31",
+    "filed": "2026-03-18",
+    "accession": "0001261333-26-000021",
+    "url": "https://www.sec.gov/Archives/edgar/data/1261333/000126133326000021/docu-20260131.htm",
+    "headline": "Agreement platform: e-signature, IAM, and contract lifecycle management.",
+    "offerings": [
+      "Intelligent Agreement Management (IAM) platform",
+      "E-signature",
+      "Contract lifecycle management (CLM)"
+    ],
+    "source_type": "10-K Item 1 Business",
+    "excerpt": "Docusign solutions bring agreements to life, accelerating and simplifying the process of doing business. Docusign’s core offerings — our Intelligent Agreement Management (“IAM”) platform, the world’s leading e-signature solution, and contract lifecycle management (“CLM”) solution — allow organizations to boost productivity, accelerate contract review cycles, and transform agreement data into insights and actions, while providing a customer-centric experience. The Docusign IAM platform is a system of record that enables customers of all sizes to ingest a vast, complex body of agreements into a single repository, build agreement workflows that operate at scale, and take action on…"
+  },
+  "PCTY": {
+    "fy": "YE 2025-06-30",
+    "filed": "2025-08-06",
+    "accession": "0001591698-25-000087",
+    "url": "https://www.sec.gov/Archives/edgar/data/1591698/000159169825000087/pcty-20250630.htm",
+    "headline": "Cloud HCM, payroll, and spend-management SaaS for mid-market employers.",
+    "offerings": [
+      "Human capital management (HCM)",
+      "Payroll",
+      "Spend management"
+    ],
+    "source_type": "10-K Item 1 Business",
+    "excerpt": "We are a leading cloud-based provider of human capital management, or HCM, payroll and spend management software solutions that deliver a comprehensive platform for the modern workforce. Our platform offers an intuitive, easy-to-use product suite that helps businesses streamline and automate HR, payroll and spend management processes, attract and retain talent, and build culture and connection with their employees. Excluding clients acquired through acquisitions, as of June 30, 2025, we provided our software-as-a-service, or SaaS, solutions to approximately 41,650 clients across the U.S., which on average had over 150 employees. Effective management of human capital and business-related…"
+  },
+  "WDAY": {
+    "fy": "YE 2026-01-31",
+    "filed": "2026-03-06",
+    "accession": "0001327811-26-000014",
+    "url": "https://www.sec.gov/Archives/edgar/data/1327811/000132781126000014/wday-20260131.htm",
+    "headline": "Enterprise AI platform for managing people, money, and agents.",
+    "offerings": [
+      "Human capital management (HCM)",
+      "Financial management / spend",
+      "Planning and analytics",
+      "Workday AI agents"
+    ],
+    "source_type": "10-K Item 1 Business",
+    "excerpt": "Workday is the enterprise AI platform for managing people, money, and agents. Workday provides more than 11,500 organizations with cloud solutions powered by artificial intelligence (“AI”) to help solve some of today’s complex business challenges, including supporting and empowering their workforce, managing their finances and spend in an ever-changing environment, and planning for the unexpected. We strive to reimagine how work gets done and hope to empower customers to reimagine their work."
+  },
+  "MNDY": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "monday.com work OS / project and work management. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "monday.com work OS / project and work management"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  },
+  "PAYC": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "Cloud payroll and HCM for US businesses. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "Cloud payroll and HCM for US businesses"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  },
+  "NICE": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "Customer experience / contact-center platforms. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "Customer experience / contact-center platforms"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  },
+  "DBX": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "Cloud content storage and collaboration. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "Cloud content storage and collaboration"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  },
+  "APPF": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "Property-management software suite. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "Property-management software suite"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  },
+  "BILL": {
+    "source_type": "pending_10k_extract",
+    "fy": null,
+    "filed": null,
+    "accession": null,
+    "url": null,
+    "headline": "Accounts payable / receivable and spend automation. Full 10-K Item 1 Business extract is not loaded yet for this name.",
+    "offerings": [
+      "Accounts payable / receivable and spend automation"
+    ],
+    "excerpt": null,
+    "note": "Paper cohort product category only until a filing extract is attached. Do not treat as scraped website copy."
+  }
+}

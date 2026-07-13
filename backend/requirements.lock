@@ -1,0 +1,224 @@
+# Reviewed transitive pins for the Linux CPython 3.11 production image.
+# Verify after regeneration with:
+#   python -m pip download --only-binary=:all: --platform manylinux_2_17_x86_64 \
+#     --implementation cp --python-version 3.11 --abi cp311 -r requirements.lock
+
+aiohappyeyeballs==2.7.1
+    # via aiohttp
+aiohttp==3.14.1
+    # via -r backend/requirements.txt
+aiosignal==1.4.0
+    # via aiohttp
+alembic==1.18.5
+    # via -r backend/requirements.txt
+amqp==5.3.1
+    # via kombu
+annotated-doc==0.0.4
+    # via fastapi
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.14.2
+    # via
+    #   httpx
+    #   starlette
+    #   watchfiles
+asyncpg==0.31.0
+    # via -r backend/requirements.txt
+attrs==26.1.0
+    # via aiohttp
+bcrypt==5.0.0
+    # via
+    #   -r backend/requirements.txt
+    #   passlib
+billiard==4.2.4
+    # via celery
+boto3==1.43.46
+    # via -r backend/requirements.txt
+botocore==1.43.46
+    # via
+    #   boto3
+    #   s3transfer
+celery==5.6.3
+    # via -r backend/requirements.txt
+certifi==2026.6.17
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
+charset-normalizer==3.4.9
+    # via requests
+click==8.4.2
+    # via
+    #   celery
+    #   click-didyoumean
+    #   click-plugins
+    #   click-repl
+    #   uvicorn
+click-didyoumean==0.3.1
+    # via celery
+click-plugins==1.1.1.2
+    # via celery
+click-repl==0.3.0
+    # via celery
+dnspython==2.8.0
+    # via email-validator
+email-validator==2.3.0
+    # via
+    #   -r backend/requirements.txt
+    #   pydantic
+fastapi==0.139.0
+    # via -r backend/requirements.txt
+frozenlist==1.8.0
+    # via
+    #   aiohttp
+    #   aiosignal
+greenlet==3.2.5
+    # via sqlalchemy
+h11==0.16.0
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.9
+    # via httpx
+httptools==0.6.4
+    # via uvicorn
+httpx==0.28.1
+    # via -r backend/requirements.txt
+idna==3.18
+    # via
+    #   anyio
+    #   email-validator
+    #   httpx
+    #   requests
+    #   yarl
+jmespath==1.1.0
+    # via
+    #   boto3
+    #   botocore
+kombu==5.6.2
+    # via celery
+mako==1.3.12
+    # via alembic
+markupsafe==3.0.3
+    # via mako
+multidict==6.7.1
+    # via
+    #   aiohttp
+    #   yarl
+numpy==2.2.6
+    # via
+    #   -r backend/requirements.txt
+    #   pandas
+    #   patsy
+    #   scipy
+    #   statsmodels
+packaging==26.2
+    # via
+    #   kombu
+    #   statsmodels
+pandas==2.3.2
+    # via
+    #   -r backend/requirements.txt
+    #   statsmodels
+passlib==1.7.4
+    # via -r backend/requirements.txt
+patsy==1.0.2
+    # via statsmodels
+prompt-toolkit==3.0.52
+    # via click-repl
+propcache==0.5.2
+    # via
+    #   aiohttp
+    #   yarl
+pydantic==2.13.4
+    # via
+    #   -r backend/requirements.txt
+    #   fastapi
+    #   pydantic-settings
+pydantic-core==2.46.4
+    # via pydantic
+pydantic-settings==2.14.2
+    # via -r backend/requirements.txt
+pyjwt==2.13.0
+    # via -r backend/requirements.txt
+python-dateutil==2.9.0.post0
+    # via
+    #   botocore
+    #   celery
+    #   pandas
+python-dotenv==1.2.2
+    # via
+    #   pydantic-settings
+    #   uvicorn
+python-multipart==0.0.32
+    # via -r backend/requirements.txt
+pyyaml==6.0.3
+    # via uvicorn
+redis==6.4.0
+    # via
+    #   -r backend/requirements.txt
+    #   kombu
+requests==2.34.2
+    # via
+    #   resend
+    #   stripe
+resend==2.32.2
+    # via -r backend/requirements.txt
+s3transfer==0.19.1
+    # via boto3
+scipy==1.16.3
+    # via
+    #   -r backend/requirements.txt
+    #   statsmodels
+six==1.17.0
+    # via python-dateutil
+sqlalchemy==2.0.51
+    # via
+    #   -r backend/requirements.txt
+    #   alembic
+starlette==1.3.1
+    # via fastapi
+statsmodels==0.14.6
+    # via -r backend/requirements.txt
+stripe==15.3.0
+    # via -r backend/requirements.txt
+typing-extensions==4.16.0
+    # via
+    #   alembic
+    #   fastapi
+    #   pydantic
+    #   pydantic-core
+    #   resend
+    #   sqlalchemy
+    #   stripe
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via
+    #   fastapi
+    #   pydantic
+    #   pydantic-settings
+tzdata==2026.3
+    # via kombu
+tzlocal==5.4.4
+    # via celery
+urllib3==2.7.0
+    # via
+    #   botocore
+    #   requests
+uvicorn==0.51.0
+    # via -r backend/requirements.txt
+uvloop==0.22.1
+    # via uvicorn
+vine==5.1.0
+    # via
+    #   amqp
+    #   celery
+    #   kombu
+watchfiles==1.2.0
+    # via uvicorn
+wcwidth==0.8.2
+    # via prompt-toolkit
+websockets==16.1
+    # via uvicorn
+yarl==1.24.2
+    # via aiohttp

@@ -1,6 +1,6 @@
 /** Stats row beneath the hero chart + four summary metric cards. */
 import type { PortfolioData } from "@/hooks/usePortfolioData"
-import { formatPercent, CHART_COLORS } from "@/hooks/usePortfolioData"
+import { formatPercent } from "@/hooks/usePortfolioData"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, TrendingDown, Target, BarChart3 } from "lucide-react"
 import { AuditableValue } from "@/components/AuditableValue"

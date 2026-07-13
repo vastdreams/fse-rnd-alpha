@@ -1,20 +1,26 @@
 """AI-powered R&D analysis endpoints using DeepSeek 3.2 with concurrent analysis."""
 
 import os
-import asyncio
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy import select, func, text
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.db.session import get_session
+from app.api.routes.auth import require_operator
 from app.db.models import SP500Company, FMPIncomeStatement
 from app.services.deepseek_client import DeepSeekClient
 
 router = APIRouter()
 
-DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "sk-954bb3759ed2458d863de843f0ae6f6a")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+
+
+def _deepseek_key() -> str:
+    if not DEEPSEEK_API_KEY:
+        raise HTTPException(503, "AI analysis is not configured")
+    return DEEPSEEK_API_KEY
 
 
 class CompanyAnalysis(BaseModel):
@@ -71,14 +77,18 @@ async def get_company_rd_data(session: AsyncSession, symbol: str) -> dict:
 
 
 @router.post("/company/{symbol}", response_model=CompanyAnalysis)
-async def analyze_company(symbol: str, session: AsyncSession = Depends(get_session)):
+async def analyze_company(
+    symbol: str,
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
+):
     """AI-powered analysis of a company's R&D profile."""
     company_data = await get_company_rd_data(session, symbol.upper())
     if not company_data:
         raise HTTPException(404, f"Company {symbol} not found")
     if company_data["years_with_rd"] == 0:
         raise HTTPException(400, f"No R&D data available for {symbol}")
-    async with DeepSeekClient(DEEPSEEK_API_KEY) as client:
+    async with DeepSeekClient(_deepseek_key()) as client:
         result = await client.analyze_rd_profile(company_data)
     return CompanyAnalysis(
         symbol=result.symbol, name=company_data["name"],
@@ -87,7 +97,11 @@ async def analyze_company(symbol: str, session: AsyncSession = Depends(get_sessi
 
 
 @router.post("/batch", response_model=List[CompanyAnalysis])
-async def batch_analyze_companies(symbols: List[str], session: AsyncSession = Depends(get_session)):
+async def batch_analyze_companies(
+    symbols: List[str],
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
+):
     """Concurrently analyze multiple companies."""
     if len(symbols) > 20:
         raise HTTPException(400, "Maximum 20 companies per batch")
@@ -98,7 +112,7 @@ async def batch_analyze_companies(symbols: List[str], session: AsyncSession = De
             companies_data.append(data)
     if not companies_data:
         raise HTTPException(400, "No valid companies with R&D data found")
-    async with DeepSeekClient(DEEPSEEK_API_KEY, max_concurrent=10) as client:
+    async with DeepSeekClient(_deepseek_key(), max_concurrent=10) as client:
         results = await client.batch_analyze_companies(companies_data)
     return [
         CompanyAnalysis(
@@ -112,7 +126,11 @@ async def batch_analyze_companies(symbols: List[str], session: AsyncSession = De
 
 
 @router.get("/sector/{sector}")
-async def analyze_sector(sector: str, session: AsyncSession = Depends(get_session)):
+async def analyze_sector(
+    sector: str,
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
+):
     """Analyze R&D efficiency across a sector."""
     result = await session.execute(text("""
         SELECT i.symbol, c.name,
@@ -130,13 +148,16 @@ async def analyze_sector(sector: str, session: AsyncSession = Depends(get_sessio
     ]
     if not companies:
         raise HTTPException(404, f"No companies found in sector: {sector}")
-    async with DeepSeekClient(DEEPSEEK_API_KEY) as client:
+    async with DeepSeekClient(_deepseek_key()) as client:
         analysis = await client.analyze_sector_rd_efficiency(companies)
     return {"sector": sector, "companies_analyzed": len(companies), "companies": companies, "ai_analysis": analysis}
 
 
 @router.get("/research-insights")
-async def generate_research_insights(session: AsyncSession = Depends(get_session)):
+async def generate_research_insights(
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
+):
     """Generate comprehensive research insights for publication."""
     trends_result = await session.execute(text("""
         SELECT fiscal_year as year, COUNT(DISTINCT symbol) as companies,
@@ -163,7 +184,7 @@ async def generate_research_insights(session: AsyncSession = Depends(get_session
         ORDER BY avg_rd_intensity DESC LIMIT 20
     """))
     top_performers = [dict(r._mapping) for r in top_result.fetchall()]
-    async with DeepSeekClient(DEEPSEEK_API_KEY) as client:
+    async with DeepSeekClient(_deepseek_key()) as client:
         insights = await client.generate_research_insights(rd_trends, sector_comparison, top_performers)
     return {
         "data_summary": {
@@ -177,7 +198,8 @@ async def generate_research_insights(session: AsyncSession = Depends(get_session
 @router.get("/cohort-recommendations")
 async def get_cohort_recommendations(
     target_size: int = Query(50, ge=10, le=100),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     """Get AI-recommended research cohort based on R&D profiles."""
     result = await session.execute(text("""
@@ -211,7 +233,7 @@ Return a JSON object with:
 - selection_rationale: brief explanation
 - sector_distribution: dict of sector -> count
 - intensity_distribution: dict with high/medium/low counts"""
-    async with DeepSeekClient(DEEPSEEK_API_KEY) as client:
+    async with DeepSeekClient(_deepseek_key()) as client:
         messages = [
             {"role": "system", "content": "You are a quantitative finance researcher selecting a statistically rigorous sample for academic study."},
             {"role": "user", "content": prompt}

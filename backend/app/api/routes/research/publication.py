@@ -13,6 +13,7 @@ from datetime import datetime
 import numpy as np
 
 from app.db.session import get_session
+from app.api.routes.auth import require_operator
 from app.db.models import (
     ResearchCohort, RollingWindowResult, AnovaResult, FactorPremium,
     FMPIncomeStatement, SP500Company, PublicationSnapshot
@@ -76,6 +77,7 @@ async def get_publication_snapshot(
 async def build_publication_snapshot(
     req: BuildPublicationSnapshotRequest,
     session: AsyncSession = Depends(get_session),
+    user: dict = Depends(require_operator),
 ):
     payload = await build_snapshot_payload(
         session,

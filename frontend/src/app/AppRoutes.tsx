@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom"
 
+import { RequireAuth } from "@/components/auth/RequireAuth"
 import { Admin } from "@/pages/Admin"
 import { Backtests } from "@/pages/Backtests"
 import { Companies } from "@/pages/Companies"
@@ -7,9 +8,14 @@ import { CompanyDetail } from "@/pages/CompanyDetail"
 import { Documentation } from "@/pages/Documentation"
 import { Donate } from "@/pages/Donate"
 import { Factors } from "@/pages/Factors"
+import { Login } from "@/pages/Login"
 import { Methodology } from "@/pages/Methodology"
 import { Overview } from "@/pages/Overview"
 import { Portfolio } from "@/pages/Portfolio"
+import { Register } from "@/pages/Register"
+import { ResetPassword } from "@/pages/ResetPassword"
+import { VerifyEmail } from "@/pages/VerifyEmail"
+import { SaasCompanyDeepDive } from "@/pages/SaasCompanyDeepDive"
 import { Privacy } from "@/pages/Privacy"
 import { Research } from "@/pages/Research"
 import { Statistics } from "@/pages/Statistics"
@@ -27,6 +33,10 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<MainPaper />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/overview" element={<Overview />} />
       <Route path="/companies" element={<Companies />} />
       <Route path="/companies/:ticker" element={<CompanyDetail />} />
@@ -35,7 +45,22 @@ export function AppRoutes() {
       <Route path="/statistics" element={<Statistics />} />
       <Route path="/research" element={<Research />} />
       <Route path="/analysis" element={<Navigate to="/research" replace />} />
-      <Route path="/portfolio" element={<Portfolio />} />
+      <Route
+        path="/portfolio"
+        element={
+          <RequireAuth>
+            <Portfolio />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/portfolio/saas/:ticker"
+        element={
+          <RequireAuth>
+            <SaasCompanyDeepDive />
+          </RequireAuth>
+        }
+      />
       <Route path="/documentation" element={<Documentation />} />
       <Route path="/methodology" element={<Methodology />} />
       <Route path="/papers/main" element={<Navigate to="/" replace />} />

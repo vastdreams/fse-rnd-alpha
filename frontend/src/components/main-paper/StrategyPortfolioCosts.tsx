@@ -168,7 +168,7 @@ export function StrategyPortfolioCosts({ transactionCosts, netOfCost5yr, rolling
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {netOfCost5yr.quintile_results.map((q) => (
+                    {netOfCost5yr.quintile_results.map((q: any) => (
                       <TableRow key={q.quintile}>
                         <TableCell className="font-medium">Q{q.quintile}</TableCell>
                         <TableCell className="text-right">{q.gross_return_pct.toFixed(2)}</TableCell>
@@ -247,7 +247,7 @@ export function StrategyPortfolioCosts({ transactionCosts, netOfCost5yr, rolling
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rollingAggregates["5yr"].map((q) => (
+                  {rollingAggregates["5yr"].map((q: any) => (
                     <TableRow key={q.quintile}>
                       <TableCell className="font-medium">{q.label}</TableCell>
                       <TableCell className="text-right">{q.avg_return !== null && q.avg_return !== undefined ? q.avg_return.toFixed(2) : "..."}</TableCell>

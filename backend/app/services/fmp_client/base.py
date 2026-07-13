@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 # FMP API Configuration
 FMP_BASE_URL = "https://financialmodelingprep.com"
 FMP_API_KEY = os.environ.get("FMP_API_KEY", "")
+# Stay under plan budget (~5–10 req/s peak). Default: ~0.8 req/s to avoid 429 storms.
+FMP_MIN_INTERVAL_SEC = float(os.environ.get("FMP_MIN_INTERVAL_SEC", "1.25"))
 
 
 class FMPClientBase:
@@ -30,13 +32,17 @@ class FMPClientBase:
     Provides connection management and a _get() helper with
     retry logic, rate-limit handling, and error recovery.
     """
+
+    _last_request_mono: float = 0.0
+    _rate_lock: Optional[asyncio.Lock] = None
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, min_interval_sec: Optional[float] = None):
         """
         Initialize FMP client.
         
         Args:
             api_key: FMP API key. Falls back to FMP_API_KEY env var.
+            min_interval_sec: Minimum seconds between requests (global throttle).
         """
         self.api_key = api_key or FMP_API_KEY
         if not self.api_key:
@@ -44,6 +50,11 @@ class FMPClientBase:
         
         self.base_url = FMP_BASE_URL
         self.session: Optional[aiohttp.ClientSession] = None
+        self.min_interval_sec = (
+            FMP_MIN_INTERVAL_SEC if min_interval_sec is None else float(min_interval_sec)
+        )
+        if FMPClientBase._rate_lock is None:
+            FMPClientBase._rate_lock = asyncio.Lock()
     
     async def __aenter__(self):
         """Async context manager entry."""
@@ -54,6 +65,19 @@ class FMPClientBase:
         """Async context manager exit."""
         if self.session:
             await self.session.close()
+
+    async def _throttle(self) -> None:
+        """Pace requests so we stay within FMP limits instead of retrying 429s."""
+        lock = FMPClientBase._rate_lock
+        if lock is None:
+            FMPClientBase._rate_lock = asyncio.Lock()
+            lock = FMPClientBase._rate_lock
+        async with lock:
+            now = asyncio.get_event_loop().time()
+            wait = self.min_interval_sec - (now - FMPClientBase._last_request_mono)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            FMPClientBase._last_request_mono = asyncio.get_event_loop().time()
     
     async def _get(self, endpoint: str, params: Optional[Dict] = None, retries: int = 3) -> Any:
         """
@@ -76,12 +100,13 @@ class FMPClientBase:
         
         for attempt in range(retries):
             try:
+                await self._throttle()
                 async with self.session.get(url, params=params) as response:
                     if response.status == 200:
                         return await response.json()
                     elif response.status == 429:
-                        # Rate limited - wait and retry
-                        wait_time = (2 ** attempt) * 2  # 2, 4, 8 seconds
+                        # Still hit the ceiling — back off, then fail soft
+                        wait_time = min(15 + attempt * 15, 60)
                         logger.warning(f"Rate limited, waiting {wait_time}s...")
                         await asyncio.sleep(wait_time)
                         continue

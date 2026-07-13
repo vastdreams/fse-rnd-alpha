@@ -1,8 +1,15 @@
 # ==============================================
 # PATH: .gitlab-ci.yml
 # PURPOSE: GitLab CI/CD pipeline for R&D Alpha Research Platform
-# DEPLOYS TO: 100.48.47.77 (Docker Compose)
+# STATUS: Disabled legacy pipeline; production promotes through GitHub Actions.
 # ==============================================
+
+# GitHub Actions is the sole production promotion authority. Keeping this
+# historical pipeline runnable would permit mutable host builds that bypass the
+# staging, provenance, smoke, and rollback gates in .github/workflows/deploy.yml.
+workflow:
+  rules:
+    - when: never
 
 stages:
   - test

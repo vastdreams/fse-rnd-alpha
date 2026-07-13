@@ -1,4 +1,6 @@
-# FastAPI Backend Dependencies
+# Direct backend dependency inputs. Production and CI install the reviewed
+# transitive pins in requirements.lock; regenerate that lock intentionally with
+# pip-compile after changing this file.
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic[email]>=2.5.0
@@ -29,8 +31,11 @@ resend>=2.0.0
 
 # Utilities
 python-multipart>=0.0.6
-python-jose[cryptography]>=3.3.0
+# HS256 session tokens do not need python-jose's optional ECDSA dependency.
+# PyJWT avoids that unmaintained transitive package and is actively audited.
+PyJWT>=2.13.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
 
 # Statistical Analysis
 scipy>=1.11.0

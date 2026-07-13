@@ -53,6 +53,18 @@ from app.db.models.tier2 import (
     CRSPS500Constituent,
 )
 
+# --- SaaS AI Repricing raw cache (own-the-data layer) ---
+from app.db.models.saas_ai import (
+    AVTranscriptRaw,
+    AVFundamentalsRaw,
+    SharadarSF1,
+    SharadarSEP,
+    SharadarTickers,
+)
+
+# --- End-user accounts (Portfolio Lab auth) ---
+from app.db.models.user import User
+
 __all__ = [
     # Company
     "Company",
@@ -94,4 +106,12 @@ __all__ = [
     "CRSPCompustatLink",
     "CompustatAnnual",
     "CRSPS500Constituent",
+    # SaaS AI raw cache
+    "AVTranscriptRaw",
+    "AVFundamentalsRaw",
+    "SharadarSF1",
+    "SharadarSEP",
+    "SharadarTickers",
+    # Auth
+    "User",
 ]

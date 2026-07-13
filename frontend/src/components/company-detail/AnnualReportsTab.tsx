@@ -15,10 +15,9 @@ import { Button } from "@/components/ui/button"
 interface AnnualReportsTabProps {
   company: any
   annualReports: any
-  formatNumber: (num: number | null | undefined) => string
 }
 
-export function AnnualReportsTab({ company, annualReports, formatNumber }: AnnualReportsTabProps) {
+export function AnnualReportsTab({ company, annualReports }: AnnualReportsTabProps) {
   if (!annualReports?.filings || annualReports.filings.length === 0) {
     return (
       <div className="space-y-4">

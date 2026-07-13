@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     
     # FMP API (Financial Modeling Prep)
     FMP_API_KEY: str = ""
+
+    # SaaS AI Repricing study data sources (own-the-data layer)
+    ALPHAVANTAGE_API_KEY: str = ""        # Alpha Vantage Premium: transcripts, fundamentals, listing status
+    NASDAQ_DATA_LINK_API_KEY: str = ""    # Nasdaq Data Link / Sharadar Core US Equities bundle
     
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -60,6 +64,18 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production-use-secrets-token-hex-32"
     API_KEY_REQUIRED: bool = False
     ADMIN_CLIENTS_CONFIG_PATH: str = ""  # Optional path to admin_clients.json (do not commit secrets)
+    # Public investor-platform account lifecycle.
+    AUTH_USERS_PATH: str = ""
+    AUTH_PUBLIC_REGISTRATION: bool = True
+    AUTH_REQUIRE_EMAIL_VERIFICATION: bool = True
+    AUTH_EMAIL_FROM: str = ""
+    AUTH_RESET_URL: str = "https://research.finsoeasy.com/reset-password"
+    AUTH_VERIFY_URL: str = "https://research.finsoeasy.com/verify-email"
+    AUTH_VERIFICATION_TTL_MINUTES: int = 60 * 24
+    AUTH_RESET_TTL_MINUTES: int = 60
+    AUTH_SEED_ROLE: str = "user"
+    AUTH_SECONDARY_SEED_ROLE: str = "user"
+    RESEND_API_KEY: str = ""
     
     # Stripe
     STRIPE_SECRET_KEY: str = ""
@@ -77,10 +93,29 @@ class Settings(BaseSettings):
         extra = "ignore"  # Ignore extra env vars from legacy config
 
 
+_INSECURE_SECRET_KEYS = {
+    "",
+    "change-me-in-production-use-secrets-token-hex-32",
+    "change-in-production",
+    "test-secret-key",
+}
+
+
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    return Settings()
+    s = Settings()
+    # Fail closed: JWTs signed with defaults or a short key are forgeable.
+    # Development can explicitly opt into a test key with DEBUG=true.
+    if not s.DEBUG and (
+        s.SECRET_KEY in _INSECURE_SECRET_KEYS or len(s.SECRET_KEY) < 32
+    ):
+        raise RuntimeError(
+            "SECRET_KEY must be a non-default value of at least 32 characters "
+            "(e.g. `python -c 'import secrets; print(secrets.token_hex(32))'`) "
+            "or run with DEBUG=true for local development."
+        )
+    return s
 
 
 settings = get_settings()

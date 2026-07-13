@@ -190,6 +190,7 @@ class Analytics {
 
   trackClick(element: string, _context?: Record<string, unknown>) {
     this.session.interactions++
+    void _context
     gaTrackEvent("click", "interaction", element)
   }
 

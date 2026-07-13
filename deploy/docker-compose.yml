@@ -1,19 +1,61 @@
 # PATH: deploy/docker-compose.yml
-# PURPOSE: Full stack deployment for R&D Factor Analysis
-# USAGE: docker-compose up -d
+# PURPOSE: Canonical immutable-image production stack for R&D Factor Analysis.
+# USAGE: BACKEND_IMAGE=... FRONTEND_IMAGE=... docker compose up -d
+#
+# Images are built and pinned by CI. Local development belongs in the root
+# docker-compose.yml; do not add build: blocks here or deploy a dirty checkout.
 
-version: "3.8"
+name: rd-alpha
+
+x-backend-environment: &backend-environment
+  # Do not interpolate POSTGRES_PASSWORD into a URL: valid passwords can
+  # contain @, :, or / and must be URL-encoded. The host supplies the complete
+  # internal-only DSN separately from the raw postgres service password.
+  DATABASE_URL: ${BACKEND_DATABASE_URL:?BACKEND_DATABASE_URL must be set with a URL-encoded password}
+  # When REDIS_PASSWORD is set, set REDIS_URL to redis://:<password>@redis:6379/0.
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  S3_BUCKET: ${S3_BUCKET:-fse-rnd-alpha-data}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+  SEC_USER_AGENT: ${SEC_USER_AGENT:?SEC_USER_AGENT must be set}
+  FMP_API_KEY: ${FMP_API_KEY:-}
+  ALPHAVANTAGE_API_KEY: ${ALPHAVANTAGE_API_KEY:-}
+  NASDAQ_DATA_LINK_API_KEY: ${NASDAQ_DATA_LINK_API_KEY:-}
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+  AUTH_SEED_EMAIL: ${AUTH_SEED_EMAIL:-}
+  AUTH_SEED_PASSWORD: ${AUTH_SEED_PASSWORD:-}
+  AUTH_SECONDARY_SEED_EMAIL: ${AUTH_SECONDARY_SEED_EMAIL:-}
+  AUTH_SECONDARY_SEED_PASSWORD: ${AUTH_SECONDARY_SEED_PASSWORD:-}
+  AUTH_USERS_PATH: /app/data/auth_users.json
+  AUTH_PUBLIC_REGISTRATION: ${AUTH_PUBLIC_REGISTRATION:-true}
+  AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
+  DEBUG: "false"
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in deploy .env}
+  API_KEY_REQUIRED: ${API_KEY_REQUIRED:-false}
+  FINSOEASY_EMAIL_PASSWORD: ${FINSOEASY_EMAIL_PASSWORD:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-}
+  AUTH_RESET_URL: ${AUTH_RESET_URL:?AUTH_RESET_URL must be set}
+  AUTH_VERIFY_URL: ${AUTH_VERIFY_URL:?AUTH_VERIFY_URL must be set}
+  AUTH_SEED_ROLE: ${AUTH_SEED_ROLE:-user}
+  AUTH_SECONDARY_SEED_ROLE: ${AUTH_SECONDARY_SEED_ROLE:-user}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:?STRIPE_SUCCESS_URL must be set}
+  STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:?STRIPE_CANCEL_URL must be set}
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
     container_name: rd_alpha_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: rd_alpha
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in deploy .env}
       # Security: Limit connections
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     volumes:
@@ -34,7 +76,7 @@ services:
 
   # Redis for Celery (with optional auth)
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: rd_alpha_redis
     restart: unless-stopped
     command: >
@@ -51,37 +93,21 @@ services:
     # ports:
     #   - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        [
+          "CMD-SHELL",
+          "if [ -n \"$$REDIS_PASSWORD\" ]; then redis-cli -a \"$$REDIS_PASSWORD\" ping; else redis-cli ping; fi",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # FastAPI Backend
   backend:
-    build: ../backend
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be set to an immutable CI image}
     container_name: rd_alpha_backend
     restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/rd_alpha
-      REDIS_URL: redis://redis:6379/0
-      S3_BUCKET: ${S3_BUCKET:-your-bucket}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      SEC_USER_AGENT: ${SEC_USER_AGENT:-Research Bot contact@example.com}
-      FMP_API_KEY: ${FMP_API_KEY:-}
-      DEBUG: ${DEBUG:-false}
-      SECRET_KEY: ${SECRET_KEY:-change-in-production}
-      API_KEY_REQUIRED: ${API_KEY_REQUIRED:-false}
-      FINSOEASY_EMAIL_PASSWORD: ${FINSOEASY_EMAIL_PASSWORD:-}
-      # Resend email API
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      # Stripe payment processing
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-https://research.finsoeasy.com/donate?success=true}
-      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-https://research.finsoeasy.com/donate?canceled=true}
+    environment: *backend-environment
     # Security: Don't expose backend directly in production - use nginx
     # ports:
     #   - "8000:8000"
@@ -93,7 +119,10 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../data:/app/data
+      # Immutable release data lives outside the Git checkout. It is restored
+      # from DATA_RELEASE_URI before deployment, so data changes never make a
+      # server checkout dirty.
+      - ${DATA_DIR:?DATA_DIR must point to the restored external data volume}:/app/data:ro
       - ../papers:/app/papers:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -105,59 +134,76 @@ services:
 
   # Celery Worker for background tasks
   worker:
-    build: ../backend
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be set to an immutable CI image}
     container_name: rd_alpha_worker
     restart: unless-stopped
     command: celery -A app.workers.celery_app worker -c 4 -l info
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/rd_alpha
-      REDIS_URL: redis://redis:6379/0
-      S3_BUCKET: ${S3_BUCKET:-fse-rnd-alpha-data}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      SEC_USER_AGENT: ${SEC_USER_AGENT:-FSE Research contact@example.com}
+    environment: *backend-environment
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ../data:/app/data
+      - ${DATA_DIR:?DATA_DIR must point to the restored external data volume}:/app/data:ro
+    healthcheck:
+      # Verify both the worker process and its broker control plane. A live
+      # PID alone can conceal a wedged worker that no longer consumes work.
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout=5 2>/dev/null | python -c \"import sys; raise SystemExit(0 if 'pong' in sys.stdin.read().lower() else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
 
   # Celery Beat for scheduled tasks
   beat:
-    build: ../backend
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be set to an immutable CI image}
     container_name: rd_alpha_beat
     restart: unless-stopped
     command: celery -A app.workers.celery_app beat -l info
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/rd_alpha
-      REDIS_URL: redis://redis:6379/0
+    environment: *backend-environment
     depends_on:
-      - worker
+      worker:
+        condition: service_started
+    volumes:
+      - ${DATA_DIR:?DATA_DIR must point to the restored external data volume}:/app/data:ro
+    healthcheck:
+      # Beat has no inspect/ping control plane, so verify the scheduled-process
+      # container and its Celery runtime are both still alive.
+      test: ["CMD-SHELL", "celery --version >/dev/null && kill -0 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
 
   # Nginx Reverse Proxy (handles frontend + API proxy with security)
   frontend:
-    image: nginx:alpine
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must be set to an immutable CI image}
     container_name: rd_alpha_frontend
     restart: unless-stopped
+    environment:
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:?PUBLIC_HOSTNAME must be set}
+      NGINX_ENVSUBST_FILTER: PUBLIC_HOSTNAME
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
       # SSL certificates (created by certbot)
-      - ./certs:/etc/nginx/certs:ro
+      - ${CERTS_DIR:?CERTS_DIR must remain outside the Git checkout}:/etc/nginx/certs:ro
       # ACME challenge for cert renewal
-      - ./certbot-webroot:/var/www/certbot:ro
+      - ${CERTBOT_WEBROOT:?CERTBOT_WEBROOT must remain outside the Git checkout}:/var/www/certbot:ro
     depends_on:
       - backend
     security_opt:
       - no-new-privileges:true
     read_only: true
     tmpfs:
+      # The official nginx entrypoint renders the PUBLIC_HOSTNAME template
+      # here before nginx starts. Keep the image immutable while giving that
+      # generated runtime config a disposable writable location.
+      - /etc/nginx/conf.d
       - /var/cache/nginx
       - /var/run
 

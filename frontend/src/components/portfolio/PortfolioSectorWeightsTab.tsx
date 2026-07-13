@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Scale, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { Link } from "react-router-dom"
 
-interface Props { data: PortfolioData; nHoldings: number; asOfYear: number }
+interface Props { data: PortfolioData }
 
-export function PortfolioSectorWeightsTab({ data, nHoldings, asOfYear }: Props) {
+export function PortfolioSectorWeightsTab({ data }: Props) {
   const { sectorWeights, rdAlphaHoldings, sp500Forecast } = data
 
   return (

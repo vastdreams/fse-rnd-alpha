@@ -97,7 +97,7 @@ export function Portfolio() {
 
         <PortfolioCoreTabs data={data} asOfYear={asOfYear} nHoldings={nHoldings} chartsReady={chartsReady} activeTab={activeTab} />
         <PortfolioMethodologyTab data={data} showMethodologyDetails={showMethodologyDetails} setShowMethodologyDetails={setShowMethodologyDetails} />
-        <PortfolioSectorWeightsTab data={data} nHoldings={nHoldings} asOfYear={asOfYear} />
+        <PortfolioSectorWeightsTab data={data} />
       </Tabs>
     </div>
   )

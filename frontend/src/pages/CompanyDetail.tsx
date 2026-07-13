@@ -167,7 +167,7 @@ export function CompanyDetail() {
         </TabsContent>
 
         <TabsContent value="annual-reports">
-          <AnnualReportsTab company={company} annualReports={annualReports} formatNumber={formatNumber} />
+          <AnnualReportsTab company={company} annualReports={annualReports} />
         </TabsContent>
       </Tabs>
     </div>

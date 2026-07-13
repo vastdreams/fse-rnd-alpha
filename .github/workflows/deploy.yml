@@ -1,168 +1,509 @@
-# PATH: .github/workflows/deploy.yml
-# PURPOSE: Production deployment workflow for R&D Alpha Research
-# TRIGGERS: Push to main branch (after CI passes)
-
-name: Deploy to Production
+name: Promote Investor Platform
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
-      environment:
-        description: "Deployment environment"
+      target:
+        description: Deploy first to staging, then separately approve production
         required: true
-        default: "production"
         type: choice
         options:
-          - production
           - staging
+          - production
+      ci_run_id:
+        description: Successful CI Pipeline run that published immutable-release
+        required: true
+        type: string
+      staging_promotion_run_id:
+        description: Required production-only successful staging promotion run
+        required: false
+        type: string
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+permissions:
+  contents: read
+  actions: read
+  packages: read
+  attestations: read
+
+concurrency:
+  group: investor-platform-promotion-${{ inputs.target }}
+  cancel-in-progress: false
 
 jobs:
-  # ==========================================================================
-  # Build and Push Docker Images
-  # ==========================================================================
-  build-and-push:
-    name: Build & Push Images
+  resolve-ci-release:
+    name: Resolve immutable CI artifact
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     outputs:
-      backend-tag: ${{ steps.meta-backend.outputs.tags }}
-      frontend-tag: ${{ steps.meta-frontend.outputs.tags }}
+      source_sha: ${{ steps.metadata.outputs.source_sha }}
+      backend_image: ${{ steps.metadata.outputs.backend_image }}
+      frontend_image: ${{ steps.metadata.outputs.frontend_image }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Download and verify CI metadata
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+        run: |
+          set -euo pipefail
+          : "${CI_RUN_ID:?A successful CI run ID is required}"
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}")"
+          test "$(jq -r '.name' <<< "${run}")" = "CI Pipeline"
+          test "$(jq -r '.conclusion' <<< "${run}")" = "success"
+          test "$(jq -r '.head_branch' <<< "${run}")" = "main"
+          artifact_url="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}/artifacts" |
+              jq -r '.artifacts[] | select(.name == "immutable-release" and .expired == false) | .archive_download_url' |
+              tail -n 1
+          )"
+          test -n "${artifact_url}" && test "${artifact_url}" != "null"
+          mkdir -p release-artifact
+          curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" "${artifact_url}" -o release-artifact.zip
+          unzip -q release-artifact.zip -d release-artifact
+          metadata_file="$(test -f release-artifact/immutable-release.json && echo release-artifact/immutable-release.json)"
+          test -n "${metadata_file}"
+          jq -e '
+            .schema_version == 1
+            and (.source_sha | test("^[0-9a-f]{40}$"))
+            and (.backend_image | test("@sha256:[0-9a-f]{64}$"))
+            and (.frontend_image | test("@sha256:[0-9a-f]{64}$"))
+          ' "${metadata_file}" >/dev/null
+          test "$(jq -r '.source_sha' "${metadata_file}")" = "$(jq -r '.head_sha' <<< "${run}")"
+          echo "source_sha=$(jq -r '.source_sha' "${metadata_file}")" >> "${GITHUB_OUTPUT}"
+          echo "backend_image=$(jq -r '.backend_image' "${metadata_file}")" >> "${GITHUB_OUTPUT}"
+          echo "frontend_image=$(jq -r '.frontend_image' "${metadata_file}")" >> "${GITHUB_OUTPUT}"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Verify signed provenance for the exact image digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKEND_IMAGE: ${{ steps.metadata.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ steps.metadata.outputs.frontend_image }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          gh attestation verify "oci://${BACKEND_IMAGE}" --repo "${GITHUB_REPOSITORY}"
+          gh attestation verify "oci://${FRONTEND_IMAGE}" --repo "${GITHUB_REPOSITORY}"
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (backend)
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Extract metadata (frontend)
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push backend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ==========================================================================
-  # Deploy to Production Server
-  # ==========================================================================
-  deploy:
-    name: Deploy to Production
+  verify-staging-promotion:
+    name: Verify staging promotion candidate
+    if: inputs.target == 'production'
+    needs: resolve-ci-release
     runs-on: ubuntu-latest
-    needs: build-and-push
     environment: production
+    outputs:
+      data_manifest_sha256: ${{ steps.candidate.outputs.data_manifest_sha256 }}
+      data_release_descriptor_sha256: ${{ steps.candidate.outputs.data_release_descriptor_sha256 }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Verify the separately approved staging artifact
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGING_PROMOTION_RUN_ID: ${{ inputs.staging_promotion_run_id }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          DATA_RELEASE_DESCRIPTOR_SHA256: ${{ vars.DATA_RELEASE_DESCRIPTOR_SHA256 }}
+          SOURCE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
+          BACKEND_IMAGE: ${{ needs.resolve-ci-release.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.resolve-ci-release.outputs.frontend_image }}
+        run: |
+          set -euo pipefail
+          : "${STAGING_PROMOTION_RUN_ID:?A successful staging promotion run ID is required}"
+          : "${DATA_RELEASE_URI:?Set environment-scoped DATA_RELEASE_URI}"
+          : "${DATA_RELEASE_DESCRIPTOR_SHA256:?Set environment-scoped DATA_RELEASE_DESCRIPTOR_SHA256}"
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${STAGING_PROMOTION_RUN_ID}")"
+          test "$(jq -r '.name' <<< "${run}")" = "Promote Investor Platform"
+          test "$(jq -r '.conclusion' <<< "${run}")" = "success"
+          artifact_url="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${STAGING_PROMOTION_RUN_ID}/artifacts" |
+              jq -r '.artifacts[] | select(.name == "staging-promotion-candidate" and .expired == false) | .archive_download_url' |
+              tail -n 1
+          )"
+          test -n "${artifact_url}" && test "${artifact_url}" != "null"
+          mkdir -p staging-candidate
+          curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" "${artifact_url}" -o staging-candidate.zip
+          unzip -q staging-candidate.zip -d staging-candidate
+          candidate="staging-candidate/promotion-candidate.json"
+          jq -e '
+            .schema_version == 2
+            and (.source_sha | test("^[0-9a-f]{40}$"))
+            and (.backend_image | test("@sha256:[0-9a-f]{64}$"))
+            and (.frontend_image | test("@sha256:[0-9a-f]{64}$"))
+            and (.data_release_uri | startswith("s3://"))
+            and (.data_manifest_sha256 | test("^[0-9a-f]{64}$"))
+            and (.data_release_descriptor_sha256 | test("^[0-9a-f]{64}$"))
+          ' "${candidate}" >/dev/null
+          test "$(jq -r '.source_sha' "${candidate}")" = "${SOURCE_SHA}"
+          test "$(jq -r '.backend_image' "${candidate}")" = "${BACKEND_IMAGE}"
+          test "$(jq -r '.frontend_image' "${candidate}")" = "${FRONTEND_IMAGE}"
+          production_manifest_sha="${DATA_RELEASE_URI%/}"
+          production_manifest_sha="${production_manifest_sha##*/}"
+          test "$(jq -r '.data_manifest_sha256' "${candidate}")" = "${production_manifest_sha}"
+          test "$(jq -r '.data_release_descriptor_sha256' "${candidate}")" = "${DATA_RELEASE_DESCRIPTOR_SHA256}"
+          echo "data_manifest_sha256=${production_manifest_sha}" >> "${GITHUB_OUTPUT}"
+          echo "data_release_descriptor_sha256=${DATA_RELEASE_DESCRIPTOR_SHA256}" >> "${GITHUB_OUTPUT}"
 
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.3
+  deploy-staging:
+    name: Deploy immutable release to staging
+    if: inputs.target == 'staging'
+    needs: resolve-ci-release
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Validate staging configuration
+        id: staging_config
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          DATA_RELEASE_DESCRIPTOR_SHA256: ${{ vars.DATA_RELEASE_DESCRIPTOR_SHA256 }}
+        run: |
+          set -euo pipefail
+          for value in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH PUBLIC_BASE_URL DATA_RELEASE_URI DATA_RELEASE_DESCRIPTOR_SHA256; do
+            test -n "${!value:-}" || { echo "Set environment-scoped ${value}" >&2; exit 1; }
+          done
+          [[ "${PUBLIC_BASE_URL}" =~ ^https:// ]] || { echo "PUBLIC_BASE_URL must use HTTPS" >&2; exit 1; }
+          public_hostname="$(python3 - "${PUBLIC_BASE_URL}" <<'PY'
+          from urllib.parse import urlsplit
+          import sys
+
+          url = urlsplit(sys.argv[1])
+          if (
+              url.scheme != "https"
+              or not url.hostname
+              or url.port is not None
+              or url.username
+              or url.password
+              or url.path not in ("", "/")
+              or url.query
+              or url.fragment
+          ):
+              raise SystemExit("PUBLIC_BASE_URL must be an origin-only HTTPS URL without a port")
+          print(url.hostname.lower())
+          PY
+          )"
+          [[ "${DATA_RELEASE_URI}" == s3://* ]] || { echo "DATA_RELEASE_URI must be immutable S3 URI" >&2; exit 1; }
+          data_manifest_sha="${DATA_RELEASE_URI%/}"
+          data_manifest_sha="${data_manifest_sha##*/}"
+          [[ "${data_manifest_sha}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_URI must end with its immutable manifest SHA" >&2
+            exit 1
+          }
+          [[ "${DATA_RELEASE_DESCRIPTOR_SHA256}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_DESCRIPTOR_SHA256 must checksum the staged release.json" >&2
+            exit 1
+          }
+          echo "data_manifest_sha256=${data_manifest_sha}" >> "${GITHUB_OUTPUT}"
+          echo "data_release_descriptor_sha256=${DATA_RELEASE_DESCRIPTOR_SHA256}" >> "${GITHUB_OUTPUT}"
+          echo "public_hostname=${public_hostname}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy exact staging artifact
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        env:
+          RELEASE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
+          BACKEND_IMAGE: ${{ needs.resolve-ci-release.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.resolve-ci-release.outputs.frontend_image }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          EXPECTED_DATA_MANIFEST_SHA256: ${{ steps.staging_config.outputs.data_manifest_sha256 }}
+          EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256: ${{ steps.staging_config.outputs.data_release_descriptor_sha256 }}
+          EXPECTED_PUBLIC_HOSTNAME: ${{ steps.staging_config.outputs.public_hostname }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: RELEASE_SHA,BACKEND_IMAGE,FRONTEND_IMAGE,DEPLOY_PATH,EXPECTED_DATA_MANIFEST_SHA256,EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256,EXPECTED_PUBLIC_HOSTNAME
           script: |
-            cd /opt/rd-alpha
-            
-            # Pull latest images
-            docker pull ${{ needs.build-and-push.outputs.backend-tag }}
-            docker pull ${{ needs.build-and-push.outputs.frontend-tag }}
-            
-            # Update docker-compose with new image tags
-            export BACKEND_IMAGE="${{ needs.build-and-push.outputs.backend-tag }}"
-            export FRONTEND_IMAGE="${{ needs.build-and-push.outputs.frontend-tag }}"
-            
-            # Rolling restart
-            docker-compose pull
-            docker-compose up -d --no-deps backend
-            docker-compose up -d --no-deps frontend
-            
-            # Health check
-            sleep 10
-            curl -f http://localhost:8000/health || exit 1
-            
-            # Cleanup old images
-            docker image prune -f
+            set -euo pipefail
+            cd "${DEPLOY_PATH}"
+            test -z "$(git status --porcelain)" || {
+              echo "Refusing to deploy over a dirty server checkout." >&2
+              exit 1
+            }
+            git fetch --prune origin
+            previous_release_sha="$(git rev-parse HEAD)"
+            git checkout --detach "${RELEASE_SHA}"
+            export BACKEND_IMAGE FRONTEND_IMAGE PREVIOUS_RELEASE_SHA="${previous_release_sha}"
+            export EXPECTED_DATA_MANIFEST_SHA256 EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256 EXPECTED_PUBLIC_HOSTNAME
+            ./scripts/deploy_release.sh
 
-      - name: Notify deployment
-        if: success()
-        run: |
-          echo "Deployment successful!"
-          echo "Backend: ${{ needs.build-and-push.outputs.backend-tag }}"
-          echo "Frontend: ${{ needs.build-and-push.outputs.frontend-tag }}"
-
-  # ==========================================================================
-  # Post-Deployment Verification
-  # ==========================================================================
-  verify:
-    name: Verify Deployment
+  verify-staging:
+    name: Verify staging release
+    if: inputs.target == 'staging'
+    needs: [resolve-ci-release, deploy-staging]
     runs-on: ubuntu-latest
-    needs: deploy
+    environment: staging
 
     steps:
-      - name: Health check
-        run: |
-          # Wait for services to stabilize
-          sleep 30
-          
-          # Check backend health
-          curl -f https://research.finsoeasy.com/health || exit 1
-          
-          # Check frontend is serving
-          curl -f https://research.finsoeasy.com/ || exit 1
-          
-          echo "All health checks passed!"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve-ci-release.outputs.source_sha }}
 
-      - name: Smoke test API
+      - name: Verify health and readiness
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          SOURCE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
         run: |
-          # Test key API endpoints
-          curl -f "https://research.finsoeasy.com/api/research/quintile-performance/5yr" || exit 1
-          echo "API smoke tests passed!"
+          set -euo pipefail
+          : "${PUBLIC_BASE_URL:?Set environment-scoped PUBLIC_BASE_URL}"
+          release_prefix="${DATA_RELEASE_URI%/}"
+          expected_manifest_sha="${release_prefix##*/}"
+          expected_universe_version="${release_prefix%/*}"
+          expected_universe_version="${expected_universe_version##*/}"
+          curl -fsS "${PUBLIC_BASE_URL}/health" | jq -e '.status == "healthy"'
+          curl -fsS "${PUBLIC_BASE_URL}/ready" |
+            jq -e \
+              --arg source_sha "${SOURCE_SHA}" \
+              --arg universe_version "${expected_universe_version}" \
+              --arg manifest_sha "${expected_manifest_sha}" \
+              '.ready == true
+               and .checks.database == "ok"
+               and .checks.investor_schema == "ok"
+               and .checks.migration_ledger == "ok"
+               and .checks.research_integrity_triggers == "ok"
+               and .checks.research_data_manifest == "ok"
+               and .release.source_sha == $source_sha
+               and .release.universe_version == $universe_version
+               and .release.data_manifest_sha256 == $manifest_sha'
+          curl -fsS "${PUBLIC_BASE_URL}/" >/dev/null
 
+      - name: Run authenticated two-user API smoke
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+          SMOKE_SECONDARY_EMAIL: ${{ secrets.SMOKE_SECONDARY_EMAIL }}
+          SMOKE_SECONDARY_PASSWORD: ${{ secrets.SMOKE_SECONDARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for value in SMOKE_TEST_EMAIL SMOKE_TEST_PASSWORD SMOKE_SECONDARY_EMAIL SMOKE_SECONDARY_PASSWORD; do
+            : "${!value:?Set environment-scoped ${value}}"
+          done
+          python3 scripts/smoke_public_release.py \
+            --base-url "${PUBLIC_BASE_URL}" \
+            --email "${SMOKE_TEST_EMAIL}" \
+            --password "${SMOKE_TEST_PASSWORD}" \
+            --second-email "${SMOKE_SECONDARY_EMAIL}" \
+            --second-password "${SMOKE_SECONDARY_PASSWORD}"
+
+      - name: Run non-skipped authenticated browser smoke
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          E2E_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${E2E_BASE_URL:?Set environment-scoped PUBLIC_BASE_URL}"
+          : "${E2E_EMAIL:?Set environment-scoped SMOKE_TEST_EMAIL}"
+          : "${E2E_PASSWORD:?Set environment-scoped SMOKE_TEST_PASSWORD}"
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e -- --grep "authenticated investor"
+
+      - name: Record staging promotion candidate
+        env:
+          SOURCE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
+          BACKEND_IMAGE: ${{ needs.resolve-ci-release.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.resolve-ci-release.outputs.frontend_image }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          DATA_RELEASE_DESCRIPTOR_SHA256: ${{ vars.DATA_RELEASE_DESCRIPTOR_SHA256 }}
+        run: |
+          set -euo pipefail
+          manifest_sha="${DATA_RELEASE_URI%/}"
+          manifest_sha="${manifest_sha##*/}"
+          [[ "${manifest_sha}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_URI must end with its immutable manifest SHA" >&2
+            exit 1
+          }
+          [[ "${DATA_RELEASE_DESCRIPTOR_SHA256}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_DESCRIPTOR_SHA256 must checksum the staged release.json" >&2
+            exit 1
+          }
+          jq -n \
+            --arg source_sha "${SOURCE_SHA}" \
+            --arg backend_image "${BACKEND_IMAGE}" \
+            --arg frontend_image "${FRONTEND_IMAGE}" \
+            --arg data_release_uri "${DATA_RELEASE_URI}" \
+            --arg data_manifest_sha256 "${manifest_sha}" \
+            --arg data_release_descriptor_sha256 "${DATA_RELEASE_DESCRIPTOR_SHA256}" \
+            '{
+              schema_version: 2,
+              source_sha: $source_sha,
+              backend_image: $backend_image,
+              frontend_image: $frontend_image,
+              data_release_uri: $data_release_uri,
+              data_manifest_sha256: $data_manifest_sha256,
+              data_release_descriptor_sha256: $data_release_descriptor_sha256
+            }' > promotion-candidate.json
+
+      - name: Upload staging promotion candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-promotion-candidate
+          path: promotion-candidate.json
+          if-no-files-found: error
+          retention-days: 90
+
+  deploy-production:
+    name: Deploy previously staged immutable release to production
+    if: inputs.target == 'production'
+    needs: [resolve-ci-release, verify-staging-promotion]
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Validate production configuration
+        id: production_config
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          DATA_RELEASE_DESCRIPTOR_SHA256: ${{ vars.DATA_RELEASE_DESCRIPTOR_SHA256 }}
+        run: |
+          set -euo pipefail
+          for value in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH PUBLIC_BASE_URL DATA_RELEASE_URI DATA_RELEASE_DESCRIPTOR_SHA256; do
+            test -n "${!value:-}" || { echo "Set environment-scoped ${value}" >&2; exit 1; }
+          done
+          [[ "${PUBLIC_BASE_URL}" =~ ^https:// ]] || { echo "PUBLIC_BASE_URL must use HTTPS" >&2; exit 1; }
+          public_hostname="$(python3 - "${PUBLIC_BASE_URL}" <<'PY'
+          from urllib.parse import urlsplit
+          import sys
+
+          url = urlsplit(sys.argv[1])
+          if (
+              url.scheme != "https"
+              or not url.hostname
+              or url.port is not None
+              or url.username
+              or url.password
+              or url.path not in ("", "/")
+              or url.query
+              or url.fragment
+          ):
+              raise SystemExit("PUBLIC_BASE_URL must be an origin-only HTTPS URL without a port")
+          print(url.hostname.lower())
+          PY
+          )"
+          [[ "${DATA_RELEASE_URI}" == s3://* ]] || { echo "DATA_RELEASE_URI must be immutable S3 URI" >&2; exit 1; }
+          data_manifest_sha="${DATA_RELEASE_URI%/}"
+          data_manifest_sha="${data_manifest_sha##*/}"
+          [[ "${data_manifest_sha}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_URI must end with its immutable manifest SHA" >&2
+            exit 1
+          }
+          [[ "${DATA_RELEASE_DESCRIPTOR_SHA256}" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "DATA_RELEASE_DESCRIPTOR_SHA256 must checksum the staged release.json" >&2
+            exit 1
+          }
+          echo "data_manifest_sha256=${data_manifest_sha}" >> "${GITHUB_OUTPUT}"
+          echo "data_release_descriptor_sha256=${DATA_RELEASE_DESCRIPTOR_SHA256}" >> "${GITHUB_OUTPUT}"
+          echo "public_hostname=${public_hostname}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy exact staged artifact
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        env:
+          RELEASE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
+          BACKEND_IMAGE: ${{ needs.resolve-ci-release.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.resolve-ci-release.outputs.frontend_image }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          EXPECTED_DATA_MANIFEST_SHA256: ${{ needs.verify-staging-promotion.outputs.data_manifest_sha256 }}
+          EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256: ${{ needs.verify-staging-promotion.outputs.data_release_descriptor_sha256 }}
+          EXPECTED_PUBLIC_HOSTNAME: ${{ steps.production_config.outputs.public_hostname }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: RELEASE_SHA,BACKEND_IMAGE,FRONTEND_IMAGE,DEPLOY_PATH,EXPECTED_DATA_MANIFEST_SHA256,EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256,EXPECTED_PUBLIC_HOSTNAME
+          script: |
+            set -euo pipefail
+            cd "${DEPLOY_PATH}"
+            test -z "$(git status --porcelain)" || {
+              echo "Refusing to deploy over a dirty server checkout." >&2
+              exit 1
+            }
+            git fetch --prune origin
+            previous_release_sha="$(git rev-parse HEAD)"
+            git checkout --detach "${RELEASE_SHA}"
+            export BACKEND_IMAGE FRONTEND_IMAGE PREVIOUS_RELEASE_SHA="${previous_release_sha}"
+            export EXPECTED_DATA_MANIFEST_SHA256 EXPECTED_DATA_RELEASE_DESCRIPTOR_SHA256 EXPECTED_PUBLIC_HOSTNAME
+            ./scripts/deploy_release.sh
+
+  verify-production:
+    name: Verify production release
+    if: inputs.target == 'production'
+    needs: [resolve-ci-release, deploy-production]
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.resolve-ci-release.outputs.source_sha }}
+
+      - name: Verify health and readiness
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          DATA_RELEASE_URI: ${{ vars.DATA_RELEASE_URI }}
+          SOURCE_SHA: ${{ needs.resolve-ci-release.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          : "${PUBLIC_BASE_URL:?Set environment-scoped PUBLIC_BASE_URL}"
+          release_prefix="${DATA_RELEASE_URI%/}"
+          expected_manifest_sha="${release_prefix##*/}"
+          expected_universe_version="${release_prefix%/*}"
+          expected_universe_version="${expected_universe_version##*/}"
+          curl -fsS "${PUBLIC_BASE_URL}/health" | jq -e '.status == "healthy"'
+          curl -fsS "${PUBLIC_BASE_URL}/ready" |
+            jq -e \
+              --arg source_sha "${SOURCE_SHA}" \
+              --arg universe_version "${expected_universe_version}" \
+              --arg manifest_sha "${expected_manifest_sha}" \
+              '.ready == true
+               and .checks.database == "ok"
+               and .checks.investor_schema == "ok"
+               and .checks.migration_ledger == "ok"
+               and .checks.research_integrity_triggers == "ok"
+               and .checks.research_data_manifest == "ok"
+               and .release.source_sha == $source_sha
+               and .release.universe_version == $universe_version
+               and .release.data_manifest_sha256 == $manifest_sha'
+          curl -fsS "${PUBLIC_BASE_URL}/" >/dev/null
+
+      - name: Run authenticated two-user API smoke
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+          SMOKE_SECONDARY_EMAIL: ${{ secrets.SMOKE_SECONDARY_EMAIL }}
+          SMOKE_SECONDARY_PASSWORD: ${{ secrets.SMOKE_SECONDARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for value in SMOKE_TEST_EMAIL SMOKE_TEST_PASSWORD SMOKE_SECONDARY_EMAIL SMOKE_SECONDARY_PASSWORD; do
+            : "${!value:?Set environment-scoped ${value}}"
+          done
+          python3 scripts/smoke_public_release.py \
+            --base-url "${PUBLIC_BASE_URL}" \
+            --email "${SMOKE_TEST_EMAIL}" \
+            --password "${SMOKE_TEST_PASSWORD}" \
+            --second-email "${SMOKE_SECONDARY_EMAIL}" \
+            --second-password "${SMOKE_SECONDARY_PASSWORD}"
+
+      - name: Run non-skipped authenticated browser smoke
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          E2E_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${E2E_BASE_URL:?Set environment-scoped PUBLIC_BASE_URL}"
+          : "${E2E_EMAIL:?Set environment-scoped SMOKE_TEST_EMAIL}"
+          : "${E2E_PASSWORD:?Set environment-scoped SMOKE_TEST_PASSWORD}"
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e -- --grep "authenticated investor"

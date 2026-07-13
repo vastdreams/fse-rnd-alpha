@@ -36,6 +36,9 @@ coverage.xml
 node_modules/
 npm-debug.log
 yarn-error.log
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
 
 # Build
 dist/
@@ -58,9 +61,25 @@ screenshots/
 # Generated publication validation outputs (local-only)
 publication_tables/
 
+# Rebuildable investor-platform data artifacts. Release manifests are published
+# separately with the deployment; source panel inputs remain tracked.
+data/price_history_cache/
+data/financials_cache/
+data/catalyst_event_cache/
+data/filings_cache/
+data/company_meta_cache/
+data/universe_manifests/
+data/release_manifest.json
+data/auth_users.json
+data/auth_users.tmp
+
 # Admin-only client portal configuration (do not commit)
 backend/admin_clients.json
 admin_clients.json
+
+# End-user password hashes (seeded locally / on server)
+backend/app/data/auth_users.json
+backend/app/data/auth_users.tmp
 
 # Audit files (keep out of repo)
 CHATGPT_*.md

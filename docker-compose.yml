@@ -1,15 +1,15 @@
 # PATH: docker-compose.yml
-# PURPOSE: Production-ready Docker Compose for R&D Factor Analysis
+# PURPOSE: Local development-only Docker Compose for R&D Factor Analysis.
 # USAGE:
 #   Development: docker-compose up -d
-#   Production:  docker-compose -f docker-compose.yml up -d
+#   Production:  use deploy/docker-compose.yml with immutable CI images.
 #
 # ENVIRONMENT VARIABLES (create .env file or export):
 #   POSTGRES_PASSWORD=your-secure-password
 #   FMP_API_KEY=your-fmp-api-key
 #   SECRET_KEY=your-secret-key
 #
-# For full production deployment with SSL, see deploy/docker-compose.yml
+# This file deliberately exposes local ports and must not be used for production.
 
 version: "3.8"
 
@@ -43,16 +43,17 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/rd_alpha
       FMP_API_KEY: ${FMP_API_KEY:-}
-      SECRET_KEY: ${SECRET_KEY:-change-in-production}
-      DEBUG: ${DEBUG:-false}
-      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: ${SECRET_KEY:-local-development-only-secret-key-32}
+      DEBUG: "true"
+      ENVIRONMENT: development
+      AUTH_USERS_PATH: /app/data/auth_users.json
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./data:/app/data:ro
+      - ./data:/app/data
       - ./publication_tables:/app/publication_tables
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

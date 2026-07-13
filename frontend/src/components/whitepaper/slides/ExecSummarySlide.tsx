@@ -12,7 +12,6 @@ export function ExecSummarySlide({ data, totalSlides }: { data: WhitepaperData; 
     invPortfolioNet, invBenchmarkNet, invSp500Annualized, netPremium,
     invNetExcessVsSPY, invTurnoverAvg, invNHoldings, investableGrowthData,
     invStartYear, invEndYear, invRoundTripCostPer100PctTurnover, invBenchmarkCostPct,
-    winRate,
   } = data
 
   return (

@@ -11,7 +11,7 @@ import { Database, Github, ExternalLink } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export interface ReplicabilitySectionProps {
-  snapshot: { meta?: { id?: string; git_commit?: string } } | undefined
+  snapshot: { meta?: { id?: string; git_commit?: string | null } } | undefined
   snapshotBuiltAtLabel: string | undefined
 }
 

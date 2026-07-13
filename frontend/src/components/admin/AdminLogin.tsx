@@ -23,8 +23,8 @@ export function AdminLogin({ data }: Props) {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">Username</label>
-              <Input id="username" type="text" placeholder="admin" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" />
+              <label htmlFor="username" className="text-sm font-medium">Admin email</label>
+              <Input id="username" type="email" placeholder="admin@example.com" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" />
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">Password</label>
