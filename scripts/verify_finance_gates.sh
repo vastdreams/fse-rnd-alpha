@@ -16,7 +16,20 @@ python3 scripts/check_coverage_thresholds.py --self-test
 
 echo "== golden rank audit =="
 DEBUG=true RANK_INVARIANT_FAIL_CLOSED=1 SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters \
-  python3 -c "import json,sys; from pathlib import Path; sys.path.insert(0,'backend'); from app.services.rank_row_invariants import assert_rank_rows_invariants; rows=json.loads(Path('frontend/src/fixtures/rank-golden.json').read_text())['rows']; assert_rank_rows_invariants(rows); print('golden_audit_ok', len(rows))"
+  python3 - <<'PY'
+import importlib.util
+import json
+from pathlib import Path
+
+path = Path("backend/app/services/rank_row_invariants.py")
+spec = importlib.util.spec_from_file_location("rank_row_invariants", path)
+mod = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(mod)
+rows = json.loads(Path("frontend/src/fixtures/rank-golden.json").read_text())["rows"]
+mod.assert_rank_rows_invariants(rows)
+print("golden_audit_ok", len(rows))
+PY
 
 echo "== backend formula/decision/stance tests =="
 DEBUG=true SECRET_KEY=test-secret-key-for-ci-gates-at-least-32-characters \
