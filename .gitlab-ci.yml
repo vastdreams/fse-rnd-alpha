@@ -1,14 +1,16 @@
 # ==============================================
 # PATH: .gitlab-ci.yml
 # PURPOSE: GitLab CI/CD pipeline for R&D Alpha Research Platform
-# STATUS: Disabled legacy pipeline; production promotes through GitHub Actions.
+# STATUS: GitLab main deploys the production release.
 # ==============================================
 
-# GitHub Actions is the sole production promotion authority. Keeping this
-# historical pipeline runnable would permit mutable host builds that bypass the
-# staging, provenance, smoke, and rollback gates in .github/workflows/deploy.yml.
+# Keep CI scoped to review work and the GitLab main promotion path. The
+# production deploy job below builds the verified frontend release and restarts
+# the server-side containers.
 workflow:
   rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - when: never
 
 stages:
