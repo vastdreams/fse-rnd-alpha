@@ -7,16 +7,15 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[3]
-CHAINS_PATH = ROOT / "contracts" / "decision-chains.json"
+from app.contracts.paths import contracts_dir
 
 
 @lru_cache(maxsize=1)
 def load_decision_chains() -> dict[str, Any]:
-    return json.loads(CHAINS_PATH.read_text(encoding="utf-8"))
+    path = contracts_dir() / "decision-chains.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def chain_by_id(chain_id: str) -> dict[str, Any]:

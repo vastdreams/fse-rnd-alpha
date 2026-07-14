@@ -179,7 +179,7 @@ publish_immutable_images:
     - release_version="${CI_COMMIT_SHA}-${CI_PIPELINE_ID}"
     - backend_tag="${CI_REGISTRY_IMAGE}/backend:${release_version}"
     - frontend_tag="${CI_REGISTRY_IMAGE}/frontend:${release_version}"
-    - docker build --pull -t "$backend_tag" ./backend
+    - docker build --pull -f backend/Dockerfile -t "$backend_tag" .
     - docker build --pull -f deploy/Dockerfile.frontend -t "$frontend_tag" .
     - docker push "$backend_tag"
     - docker push "$frontend_tag"

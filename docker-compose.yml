@@ -36,8 +36,8 @@ services:
   # FastAPI Backend
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: rd_alpha_backend
     restart: unless-stopped
     environment:

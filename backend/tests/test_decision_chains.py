@@ -26,6 +26,17 @@ def test_decision_chains_load():
     assert_no_opinion_hard_gates("D_RANK_R3")
 
 
+def test_contracts_dir_resolves_sealed_json():
+    """Rank enrichment 500s if contracts are missing from the runtime image."""
+    from app.contracts.paths import contracts_dir
+
+    root = contracts_dir()
+    assert (root / "decision-chains.json").is_file()
+    assert (root / "formula-registry.json").is_file()
+    # Provenance path used by every /api/universe/rank row.
+    assert rank_row_provenance({"ticker": "TEST"})["decision_chain_id"] == "D_RANK_R3"
+
+
 def test_formula_ids_in_chains_exist():
     known = set(formula_ids())
     for chain in load_decision_chains()["chains"]:

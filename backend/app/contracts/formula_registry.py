@@ -7,16 +7,15 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[3]
-REGISTRY_PATH = ROOT / "contracts" / "formula-registry.json"
+from app.contracts.paths import contracts_dir
 
 
 @lru_cache(maxsize=1)
 def load_formula_registry() -> dict[str, Any]:
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    path = contracts_dir() / "formula-registry.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def formula_ids() -> list[str]:

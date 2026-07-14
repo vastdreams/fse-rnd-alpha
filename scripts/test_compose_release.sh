@@ -36,11 +36,15 @@ command -v docker >/dev/null 2>&1 || {
 docker info >/dev/null
 
 if ! docker image inspect "${BACKEND_IMAGE}" >/dev/null 2>&1; then
-  docker build -t "${BACKEND_IMAGE}" "${ROOT_DIR}/backend"
+  docker build -f "${ROOT_DIR}/backend/Dockerfile" -t "${BACKEND_IMAGE}" "${ROOT_DIR}"
 fi
 if ! docker image inspect "${FRONTEND_IMAGE}" >/dev/null 2>&1; then
   docker build -f "${ROOT_DIR}/deploy/Dockerfile.frontend" -t "${FRONTEND_IMAGE}" "${ROOT_DIR}"
 fi
+# Fail closed if sealed contracts never made it into the backend image —
+# rank enrichment reads them on every authenticated /api/universe/rank call.
+docker run --rm --entrypoint sh "${BACKEND_IMAGE}" -c \
+  'test -f /app/contracts/decision-chains.json && test -f /app/contracts/formula-registry.json'
 
 release_gate_host="release-gate.test"
 release_gate_universe="release_gate_universe"
