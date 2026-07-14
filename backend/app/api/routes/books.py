@@ -477,9 +477,9 @@ async def post_sizing_proxy(
         fair = vec.fair_px_med.value if vec.fair_px_med else None
         gap = (fair / price - 1.0) if price and fair and fair > 0 and price > 0 else None
         wf = build_close_call_waterfall(
-            ticker,
-            uv,
-            vec,
+            ticker=ticker,
+            universe_version=uv,
+            vector=vec,
             valuation_range={"gap_to_median": gap, "price_stale": False},
             price_bars=bars,
             extra_anchors=anchors_by_ticker.get(ticker, []),
