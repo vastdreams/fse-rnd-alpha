@@ -45,6 +45,9 @@ from app.services.rank_row_invariants import (
 from app.services.decision_provenance import rank_row_provenance
 from app.services.tradability import adv_usd_from_bars, capacity_note
 from app.services.price_history_service import get_cached_price_history
+from app.services.rank_service import RankEngine, RankRequest
+
+logger = logging.getLogger(__name__)
 
 # ADV is derived from the immutable SEP disk cache; re-parsing a year of bars
 # per row per request is pure latency. Same TTL rationale as _vector_cache.
@@ -60,9 +63,6 @@ def _adv_usd_cached(ticker: str) -> float | None:
     adv = adv_usd_from_bars((hist or {}).get("bars") or [])
     _adv_cache[ticker] = (time.monotonic(), adv)
     return adv
-from app.services.rank_service import RankEngine, RankRequest
-
-logger = logging.getLogger(__name__)
 
 
 def _valid_fair_value_band(panel: dict) -> bool:
