@@ -73,7 +73,8 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      # IPv4 + Host: localhost — busybox wget prefers ::1; nginx is IPv4-only.
+      test: ["CMD-SHELL", "wget -q --spider --header='Host: localhost' http://127.0.0.1/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

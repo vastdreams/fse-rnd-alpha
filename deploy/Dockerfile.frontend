@@ -25,8 +25,11 @@ FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef
 COPY deploy/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=builder /src/frontend/dist /usr/share/nginx/html
 
+# Probe IPv4 loopback with Host: localhost. Busybox wget resolves "localhost"
+# to ::1 first; nginx only listens on 0.0.0.0:80, and the public-hostname
+# vhost 301s bare 127.0.0.1 hits to HTTPS — both make the old check fail.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://localhost/health || exit 1
+  CMD wget -q --spider --header="Host: localhost" http://127.0.0.1/health || exit 1
 
 EXPOSE 80 443
 

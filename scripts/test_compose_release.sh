@@ -183,6 +183,24 @@ if ! rg -q '"ready":true' <<< "${ready}"; then
   exit 1
 fi
 
+# Docker HEALTHCHECK must pass on IPv4 loopback + Host: localhost. A
+# localhost→::1 probe (or a bare 127.0.0.1 hit of the public vhost) falsely
+# marks the gateway unhealthy while /ready still serves 200.
+frontend_health=""
+for _ in $(seq 1 30); do
+  frontend_health="$(compose ps --format '{{.Service}} {{.Health}}' | awk '$1=="frontend"{print $2}')"
+  if [[ "${frontend_health}" == "healthy" ]]; then
+    break
+  fi
+  sleep 2
+done
+if [[ "${frontend_health}" != "healthy" ]]; then
+  echo "Frontend container health is '${frontend_health:-unknown}', expected healthy." >&2
+  compose ps >&2 || true
+  compose exec -T frontend wget -q --spider --header='Host: localhost' http://127.0.0.1/health >&2 || true
+  exit 1
+fi
+
 # Everything below asserts against generated fixtures only, so tracing leaks
 # no secrets and pinpoints exactly which gateway assertion rejects a release.
 set -x

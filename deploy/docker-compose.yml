@@ -209,6 +209,17 @@ services:
       - ${CERTBOT_WEBROOT:?CERTBOT_WEBROOT must remain outside the Git checkout}:/var/www/certbot:ro
     depends_on:
       - backend
+    healthcheck:
+      # Mirror Dockerfile.frontend: IPv4 + Host localhost (not ::1 / not public vhost).
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider --header='Host: localhost' http://127.0.0.1/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
     security_opt:
       - no-new-privileges:true
     read_only: true
