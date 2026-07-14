@@ -286,3 +286,29 @@ def test_db_claim_anchors_via_extra_pass_l1():
     )
     assert wf.stages[1].status == "known"
     assert wf.stages[4].status == "known"
+
+
+def test_live_gap_closed_blocks_buy_despite_sealed_mos():
+    """Sealed MoS+ is not enough when live vs-target has already closed."""
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.50)),
+        valuation_range={"gap_to_median": -0.05, "fair_px_med": 12.24, "price_live": 13.0},
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance == "HOLD"
+    assert any(n["id"] == "F3b" and n["result"] == "FAIL" for n in wf.aggregate.flowchart)
+    assert any("tape" in b.lower() or "vs-target" in b.lower() for b in wf.aggregate.blockers)
+
+
+def test_missing_live_gap_is_unknown_not_buy():
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86)),
+        valuation_range={"fair_px_med": 12.24},  # no gap_to_median
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance == "UNKNOWN"
+    assert any(n["id"] == "F3b" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)

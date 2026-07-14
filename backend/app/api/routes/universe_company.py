@@ -29,6 +29,11 @@ from app.api.routes.auth import get_current_user, require_operator
 from app.contracts.recipes import LITERATURE_BINDS
 from app.contracts.research import MetricVector
 from app.services.close_call_service import build_close_call_waterfall
+from app.services.buy_performance_book import (
+    empty_book_payload,
+    summarise_snapshot,
+    utc_now_naive,
+)
 from app.services.catalyst_event_service import load_catalyst_anchors_from_db_rows
 from app.services.dcf_service import DcfInputs, run_dcf
 from app.services.financials_service import FinancialsUnavailable, get_financials
@@ -968,3 +973,156 @@ async def admin_kpis(
         "final_reviews": [dict(r) for r in reviews],
         "evidence_claims_total": claims_n,
     }
+
+
+# =============================================================================
+# PIT research-BUY performance book (≠ paper HML_RD)
+# =============================================================================
+
+@router.get("/buy-performance-book")
+async def buy_performance_book(
+    universe_version: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Sealed BUY-set track record. Empty until seal_buy_set / seal endpoint runs."""
+
+    uv = universe_version or await _latest_version(db)
+    try:
+        snaps = (
+            await db.execute(
+                text(
+                    """SELECT snapshot_id, universe_version, as_of_date, sealed_at,
+                              engine_version, n_buy, note
+                         FROM buy_set_snapshots
+                        WHERE universe_version=:uv
+                        ORDER BY as_of_date DESC
+                        LIMIT 24"""
+                ),
+                {"uv": uv},
+            )
+        ).mappings().all()
+    except Exception:
+        # Table may not exist until migration 021 — fail closed with honest empty.
+        return empty_book_payload(universe_version=uv)
+
+    if not snaps:
+        return empty_book_payload(universe_version=uv)
+
+    out_snaps = []
+    for snap in snaps:
+        members = (
+            await db.execute(
+                text(
+                    """SELECT ticker, stance, confidence, score, mos_live, gap_to_median,
+                              horizon_years, implied_ann_return
+                         FROM buy_set_members WHERE snapshot_id=:id ORDER BY ticker"""
+                ),
+                {"id": snap["snapshot_id"]},
+            )
+        ).mappings().all()
+        member_dicts = [dict(m) for m in members]
+        bars_by = {
+            m["ticker"].upper(): (get_cached_price_history(m["ticker"].upper(), years=3, immutable_only=True) or {}).get("bars") or []
+            for m in member_dicts
+        }
+        summary = summarise_snapshot(
+            as_of=snap["as_of_date"],
+            universe_version=snap["universe_version"],
+            members=member_dicts,
+            bars_by_ticker=bars_by,
+        )
+        out_snaps.append(
+            {
+                **dict(snap),
+                "as_of_date": snap["as_of_date"].isoformat() if snap["as_of_date"] else None,
+                "sealed_at": snap["sealed_at"].isoformat() if snap["sealed_at"] else None,
+                "members": member_dicts,
+                "forward": summary,
+            }
+        )
+
+    latest = out_snaps[0]["forward"] if out_snaps else None
+    return {
+        "status": "ready" if out_snaps else "empty",
+        "universe_version": uv,
+        "note": (
+            "PIT research BUY clearance sets only. Paper HML_RD / RD20 is a different engine "
+            "and must not be equated to this book. Forward returns require post-as_of tape."
+        ),
+        "snapshots": out_snaps,
+        "summary": latest,
+        "engine": "buy_performance_book_v1",
+        "distinct_from": ["HML_RD", "RD20", "paper_publication_track"],
+    }
+
+
+@router.post("/buy-performance-book/seal")
+async def seal_buy_performance_book(
+    universe_version: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(require_operator),
+) -> dict:
+    """Seal today's cleared BUY shortlist for the active/sealed universe version."""
+
+    import uuid
+    from datetime import date as date_cls
+
+    uv = universe_version or await _latest_version(db)
+    await _require_sealed_version(db, uv)
+    # Reuse stances endpoint logic by calling the same waterfall path inline would
+    # be heavy; operator seal expects current BUY list from /stances?stance=BUY.
+    # Here we compute BUY rows the same way as list_stances (cached tape only).
+    listed = await research_stances(stance="BUY", universe_version=uv, limit=None, db=db, user=user)
+    members = listed.get("rows") or []
+    if not members:
+        raise HTTPException(status_code=400, detail="No cleared BUY rows to seal — refusing empty ledger")
+
+    as_of = date_cls.today()
+    snapshot_id = f"buysnap_{as_of.isoformat()}_{uuid.uuid4().hex[:12]}"
+    try:
+        await db.execute(
+            text(
+                """INSERT INTO buy_set_snapshots
+                   (snapshot_id, universe_version, as_of_date, sealed_at, engine_version,
+                    source_sha, n_buy, note)
+                   VALUES (:id, :uv, :as_of, :sealed, :engine, :sha, :n, :note)"""
+            ),
+            {
+                "id": snapshot_id,
+                "uv": uv,
+                "as_of": as_of,
+                "sealed": utc_now_naive(),
+                "engine": "close_call_v2",
+                "sha": None,
+                "n": len(members),
+                "note": "PIT research BUY clearance set — not paper HML_RD",
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"buy_set_snapshots unavailable — run migration 021 ({exc})",
+        ) from exc
+
+    for m in members:
+        await db.execute(
+            text(
+                """INSERT INTO buy_set_members
+                   (snapshot_id, ticker, stance, confidence, score, mos_live,
+                    gap_to_median, horizon_years, implied_ann_return)
+                   VALUES (:id, :t, 'BUY', :c, :s, :mos, :gap, :h, :imp)"""
+            ),
+            {
+                "id": snapshot_id,
+                "t": m["ticker"],
+                "c": m.get("confidence"),
+                "s": m.get("score"),
+                "mos": None,
+                "gap": None,
+                "h": m.get("horizon_years"),
+                "imp": m.get("implied_ann_return"),
+            },
+        )
+    await db.commit()
+    return {"snapshot_id": snapshot_id, "n_buy": len(members), "universe_version": uv, "as_of": as_of.isoformat()}

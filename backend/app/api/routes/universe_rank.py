@@ -43,6 +43,8 @@ from app.services.rank_row_invariants import (
     compute_live_vs_target_usd,
 )
 from app.services.decision_provenance import rank_row_provenance
+from app.services.tradability import adv_usd_from_bars, capacity_note
+from app.services.price_history_service import get_cached_price_history
 from app.services.rank_service import RankEngine, RankRequest
 
 logger = logging.getLogger(__name__)
@@ -193,6 +195,14 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
             r["net_profit_usd"] = rev * npm
         else:
             r["net_profit_usd"] = None
+
+        # Tradability strip — disk cache only; UNKNOWN when volume missing.
+        hist = get_cached_price_history(t, years=1, immutable_only=True)
+        bars = (hist or {}).get("bars") or []
+        adv = adv_usd_from_bars(bars)
+        r["liquidity_usd"] = adv
+        r["adv_usd_20d"] = adv
+        r["tradability_note"] = capacity_note(adv)
 
         r["provenance"] = rank_row_provenance(r)
 

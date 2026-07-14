@@ -54,7 +54,7 @@ export function StanceTab({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wide opacity-70">
-              Research stance
+              Research stance · clearance, not an order
             </div>
             <div className="mt-0.5 text-3xl font-bold tracking-tight">{a.stance}</div>
             <div className="mt-1 text-sm">
@@ -72,7 +72,7 @@ export function StanceTab({
                   {a.implied_ann_return != null && (
                     <>
                       {" "}
-                      (≈{(a.implied_ann_return * 100).toFixed(1)}%/yr if gap closes)
+                      (≈{(a.implied_ann_return * 100).toFixed(1)}%/yr gap-close maths — not a forecast / not a size)
                     </>
                   )}
                 </>
@@ -234,6 +234,12 @@ export function StanceTab({
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] leading-snug text-neutral-700">
+        MoS on this waterfall is sealed research MoS — not live intrinsic value. Live vs-target is a
+        separate hard gate (F3b). FCF+ is advisory only. Paper HML_RD / RD20 is a different engine and
+        does not prove this BUY book.
       </div>
 
       {/* Precedence */}

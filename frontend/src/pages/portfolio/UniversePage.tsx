@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useSearchParams } from "react-router-dom"
 import { ErrorBanner } from "@/components/research/ErrorBanner"
 import { ScreenerHeader, ScreenerRow } from "@/components/research/ScreenerRow"
+import { BuyPerformanceBookPanel } from "@/components/research/BuyPerformanceBook"
 import { addTickersToPrimaryBook } from "@/lib/addToBook"
 import { softAddWarnings } from "@/lib/bookOps"
 import {
@@ -71,14 +72,14 @@ const TIPS: Record<string, string> = {
   freshness: "Fundamentals within refresh SLA. Stale = past SLA; still visible, not portfolio-ready.",
   kill: "Paper kill criterion active (e.g. MoS flipped). Blocks research BUY.",
   mos:
-    "Frozen margin of safety from the research snapshot (may differ from live vs-target). Use when you want the published MoS axis, not the live tape gap.",
+    "Frozen research MoS from the sealed snapshot — not live intrinsic value. May differ from live vs-target. BUY also requires live vs-target > 0 (F3b).",
   rd_prod: "R&D productivity (Paper-1) — how well R&D spend converts to economics.",
   retention: "Disclosed NRR / retention from 10-K. Unknown = not disclosed — never estimated.",
   rev_cagr: "Revenue CAGR from fundamentals. Negative = shrinking top line.",
   stance:
-    "Close-call waterfall verdict (BUY/HOLD/WATCH/OUT/UNKNOWN). BUY requires named catalyst + MoS+ + completeness A|B + no kill + score ≥ 65.",
+    "Close-call waterfall verdict. BUY = underwriting clearance (not an order): kill off + completeness A|B + sealed MoS>0 + live vs-target>0 + named catalyst + score≥65. FCF is advisory only. ≠ paper HML_RD.",
   horizon:
-    "Years over which the live→target gap would need to close for the implied annualized rate. Convergence math, not a forecast.",
+    "Years over which the live→target gap would need to close for the implied annualized rate. Convergence math — not a forecast and not a sizing input.",
   confidence: "high/med only when catalyst is known and gates clear. none/low when critical inputs are Unknown.",
   sell_ceil:
     "Auto-sell from the research fair-value band. Below median → sell at price target (median). Between median and high → trim at high. At/above high → past ceiling. Remaining % and hold horizon use the same gap buckets as stance (1y/2y/3y). Pure maths — not a forecast.",
@@ -535,6 +536,10 @@ export function UniversePage() {
           <p className="mt-1 max-w-2xl text-sm text-neutral-700">
             Find names, compare price vs our research target, add to your book. Not investment advice.
           </p>
+          <p className="mt-2 max-w-2xl text-[12px] leading-snug text-neutral-600">
+            Research BUY is underwriting clearance — not an order and not a size. Do not auto-size from
+            implied %/yr. MoS ≠ live IV. FCF advisory ≠ underwrite. Paper HML_RD ≠ this BUY engine.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -553,6 +558,10 @@ export function UniversePage() {
           </Link>
         </div>
       </div>
+
+      {mode === "buy" && (
+        <BuyPerformanceBookPanel universeVersion={rank?.universe_version} />
+      )}
 
       <div className="flex flex-wrap gap-2">
         {MODES.map((m) => (

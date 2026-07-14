@@ -40,7 +40,7 @@ describe("decisionChains (first principles, no opinion)", () => {
     const adv = buy.advisory_not_gates.find((a) => a.id === "P2_FCF")
     expect(adv).toBeTruthy()
     expect(adv!.gate_kind).toBe("advisory")
-    expect(buy.steps.map((s) => s.id)).toEqual(["F1", "F2", "F3", "F4", "F5", "F6"])
+    expect(buy.steps.map((s) => s.id)).toEqual(["F1", "F2", "F3", "F3b", "F4", "F5", "F6"])
   })
 
   it("D_RANK_R3 pins R3 weights and excludes opinion", () => {

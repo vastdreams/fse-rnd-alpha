@@ -127,6 +127,10 @@ export interface RowEnrichment {
   /** Gross profit created per $ of cumulative R&D. */
   rd_prod?: number | null
   rule40?: number | null
+  /** 20-session average dollar volume (SEP cache); null = UNKNOWN */
+  liquidity_usd?: number | null
+  adv_usd_20d?: number | null
+  tradability_note?: string | null
 }
 
 export interface RankedRow extends RowEnrichment {
@@ -711,3 +715,21 @@ export const gradeTone = (g: string): string =>
       : g === "C"
         ? "border-amber-300 bg-amber-50 text-amber-900"
         : "border-neutral-300 bg-neutral-100 text-neutral-700"
+
+export interface BuyPerformanceBook {
+  status: "empty" | "ready" | "partial"
+  universe_version: string | null
+  note: string
+  snapshots: unknown[]
+  summary: unknown | null
+  engine: string
+  distinct_from: string[]
+}
+
+export const getBuyPerformanceBook = (universeVersion?: string | null) => {
+  const qs = universeVersion
+    ? `?universe_version=${encodeURIComponent(universeVersion)}`
+    : ""
+  return fetchApiCached<BuyPerformanceBook>(`/api/universe/buy-performance-book${qs}`)
+}
+

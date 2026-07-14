@@ -272,7 +272,7 @@ export function ScreenerRow({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-5">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-6">
             <Col label="Price" value={formatUsd4(r.price_live)} tip="Latest quoted market price. [pass-through]" />
             <Col
               label="Target"
@@ -310,6 +310,15 @@ export function ScreenerRow({
               tip={formulaTip(
                 "F_FMT_USD_COMPACT",
                 `Latest panel revenue. Exact: ${formatUsd4(r.revenue_usd)}.`
+              )}
+            />
+            <Col
+              label="ADV 20d"
+              value={formatUsdCompact(r.adv_usd_20d ?? r.liquidity_usd)}
+              tip={formulaTip(
+                "F_ADV_USD_20D",
+                r.tradability_note ||
+                  "20-session average dollar volume from SEP cache. UNKNOWN when volume missing — not a size order."
               )}
             />
           </div>

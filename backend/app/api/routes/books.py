@@ -25,6 +25,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.services.tradability import adv_usd_from_bars
+from app.services.price_history_service import get_cached_price_history
 from app.api.routes.auth import get_current_user
 from app.contracts.research import BookConstraint, BookHolding, MetricVector, SavedBook
 
@@ -137,15 +139,19 @@ async def _vector_flags(
     for row in rows:
         raw = row["vector"] if isinstance(row["vector"], dict) else json.loads(row["vector"])
         float_fcf = ((raw.get("float_fcf_share") or {}).get("value"))
+        liq = raw.get("liquidity_usd")
+        if liq is None:
+            hist = get_cached_price_history(str(row["ticker"]).upper(), years=1, immutable_only=True)
+            liq = adv_usd_from_bars((hist or {}).get("bars") or [])
         flags[row["ticker"]] = {
             "completeness_grade": row["completeness_grade"],
             "kill_active": row["kill_active"],
             "stale": row["stale"],
             "float_fcf_share": float_fcf,
-            # Stance/liquidity require an explicitly persisted research field.
-            # Their absence is Unknown and relevant enabled constraints fail closed.
+            # Stance still requires an explicitly persisted research field.
+            # Liquidity falls back to 20d ADV from SEP cache; still Unknown if volume missing.
             "stance": raw.get("research_stance"),
-            "liquidity_usd": raw.get("liquidity_usd"),
+            "liquidity_usd": liq,
             "sector": raw.get("sector"),
         }
     return flags

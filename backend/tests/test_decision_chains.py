@@ -68,3 +68,10 @@ def test_stance_decision_provenance_blob():
     blob = stance_decision_provenance()
     assert blob["decision_chain_id"] == "D_STANCE_BUY"
     assert "F1" in blob["hard_gate_ids"]
+
+
+def test_f3b_live_vs_sealed_is_hard_gate():
+    buy = chain_by_id("D_STANCE_BUY")
+    step = next(s for s in buy["steps"] if s["id"] == "F3b")
+    assert step["gate_kind"] == "hard"
+    assert "F_LIVE_VS_SEALED_GATE" in step["formula_ids"]

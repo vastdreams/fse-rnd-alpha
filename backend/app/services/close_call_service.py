@@ -11,8 +11,10 @@ Pipeline (fail-closed):
   ROI runs (weighted) → aggregate score
   Stance BUY|HOLD|WATCH|OUT|UNKNOWN + horizon
 
-BUY requires: kill off, completeness A|B, mos_live > 0, catalyst known,
-aggregate ≥ 65, confidence ≥ med. Unknown never imputed.
+BUY requires: kill off, completeness A|B, sealed mos_live > 0,
+live vs-target (gap_to_median) > 0, catalyst known, aggregate ≥ 65,
+confidence ≥ med. Unknown never imputed. Sealed MoS ≠ live intrinsic value;
+implied return is gap-close maths, not a forecast; paper HML_RD ≠ this engine.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ from app.services.stance_scores import (
     score_valuation_from_gap,
 )
 
-ENGINE_VERSION = "close_call_v1"
+ENGINE_VERSION = "close_call_v2"
 
 # Bootstrap curated anchors (kept as seed; live store is catalyst_event_cache / claims).
 _ANCHOR_CATALOG: dict[str, list[dict[str, Any]]] = {
@@ -66,8 +68,13 @@ _ANCHOR_CATALOG: dict[str, list[dict[str, Any]]] = {
 _PRECEDENCE: list[dict[str, str]] = [
     {
         "id": "P1_MOS",
-        "label": "FRSH/DOCU-like MoS+",
-        "rule": "Live MoS (gap vs median FV) must be > 0 to underwrite BUY",
+        "label": "Sealed MoS+",
+        "rule": "Sealed mos_live must be > 0 (frozen research MoS — not live intrinsic value)",
+    },
+    {
+        "id": "P1b_LIVE_GAP",
+        "label": "Live vs-target still open",
+        "rule": "gap_to_median (live tape vs sealed median target) must be > 0 to underwrite BUY",
     },
     {
         "id": "P2_FCF",
@@ -270,9 +277,10 @@ def build_close_call_waterfall(
     bars = price_bars or []
 
     mos = _mv(vector, "mos_live")
-    gap = vr.get("gap_to_median")
-    if gap is None and mos is not None:
-        gap = mos
+    # Explicit live gap only — do not silently substitute sealed MoS here.
+    # Horizon maths may fall back to mos when live gap is absent.
+    live_gap = vr.get("gap_to_median") if isinstance(vr, dict) else None
+    gap = live_gap if live_gap is not None else mos
     fcfm = _mv(vector, "fcfm_sbc")
     rule40 = _mv(vector, "rule40")
     roic = _mv(vector, "roic")
@@ -570,6 +578,9 @@ def build_close_call_waterfall(
         if p["id"] == "P1_MOS":
             matched = None if mos is None else mos > 0
             evidence = "unknown" if mos is None else f"mos_live={mos:.3f}"
+        elif p["id"] == "P1b_LIVE_GAP":
+            matched = None if live_gap is None else live_gap > 0
+            evidence = "unknown" if live_gap is None else f"gap_to_median={live_gap:.3f}"
         elif p["id"] == "P2_FCF":
             matched = None if fcfm is None else fcfm > 0
             evidence = "unknown" if fcfm is None else f"fcfm_sbc={fcfm:.3f}"
@@ -664,36 +675,67 @@ def build_close_call_waterfall(
         )
         blockers.append(f"Completeness {grade or 'unknown'} — need A or B to BUY")
 
-    # Step 3 MoS
+    # Step 3 sealed MoS
     if mos is None:
         node(
             "F3",
-            "MoS live > 0",
+            "Sealed MoS > 0",
             "UNKNOWN",
-            "mos_live missing",
+            "mos_live missing — sealed MoS is not live intrinsic value",
             data_fields=["mos_live"],
-            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+            formula_ids=["F_MOS_LIVE"],
         )
-        blockers.append("MoS live unknown")
+        blockers.append("Sealed MoS unknown")
     elif mos > 0:
         node(
             "F3",
-            "MoS live > 0",
+            "Sealed MoS > 0",
             "PASS",
-            f"mos_live={mos:.1%}",
+            f"mos_live={mos:.1%} (frozen research MoS — not live IV)",
             data_fields=["mos_live"],
-            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+            formula_ids=["F_MOS_LIVE"],
         )
     else:
         node(
             "F3",
-            "MoS live > 0",
+            "Sealed MoS > 0",
             "FAIL",
-            f"mos_live={mos:.1%} — no margin of safety",
+            f"mos_live={mos:.1%} — no sealed margin of safety",
             data_fields=["mos_live"],
-            formula_ids=["F_MOS_LIVE", "F_VS_MEDIAN_PCT"],
+            formula_ids=["F_MOS_LIVE"],
         )
-        blockers.append("Live MoS ≤ 0")
+        blockers.append("Sealed MoS ≤ 0")
+
+    # Step 3b live vs sealed target
+    if live_gap is None:
+        node(
+            "F3b",
+            "Live vs-target > 0",
+            "UNKNOWN",
+            "gap_to_median missing — will not underwrite BUY without a live tape gap",
+            data_fields=["gap_to_median", "price_live", "fair_px_med"],
+            formula_ids=["F_VS_MEDIAN_PCT", "F_LIVE_VS_SEALED_GATE"],
+        )
+        blockers.append("Live vs-target unknown")
+    elif live_gap > 0:
+        node(
+            "F3b",
+            "Live vs-target > 0",
+            "PASS",
+            f"gap_to_median={live_gap:.1%}",
+            data_fields=["gap_to_median", "price_live", "fair_px_med"],
+            formula_ids=["F_VS_MEDIAN_PCT", "F_LIVE_VS_SEALED_GATE"],
+        )
+    else:
+        node(
+            "F3b",
+            "Live vs-target > 0",
+            "FAIL",
+            f"gap_to_median={live_gap:.1%} — live tape closed/through the sealed target",
+            data_fields=["gap_to_median", "price_live", "fair_px_med"],
+            formula_ids=["F_VS_MEDIAN_PCT", "F_LIVE_VS_SEALED_GATE"],
+        )
+        blockers.append("Live vs-target ≤ 0 — tape closed the sealed MoS gap")
 
     # Step 4 catalyst
     if l4.status == "known":
@@ -746,7 +788,13 @@ def build_close_call_waterfall(
         blockers.append(f"Aggregate score {agg_score} < 65")
 
     # Confidence
-    crit_unknown = l4.status != "known" or mos is None or grade is None or kill_unknown
+    crit_unknown = (
+        l4.status != "known"
+        or mos is None
+        or live_gap is None
+        or grade is None
+        or kill_unknown
+    )
     if crit_unknown or kill:
         confidence = "none" if (l4.status != "known" or kill or kill_unknown) else "low"
     elif blockers:
@@ -762,6 +810,8 @@ def build_close_call_waterfall(
         and grade in ("A", "B")
         and mos is not None
         and mos > 0
+        and live_gap is not None
+        and live_gap > 0
         and l4.status == "known"
         and agg_score is not None
         and agg_score >= 65
@@ -772,7 +822,7 @@ def build_close_call_waterfall(
     horizon_years: Optional[int] = None
     horizon_note: Optional[str] = None
     implied: Optional[float] = None
-    g_for_h = gap if gap is not None else mos
+    g_for_h = live_gap if live_gap is not None else mos
     if g_for_h is not None and g_for_h > 0:
         if g_for_h >= 0.6:
             horizon_years = 3
@@ -783,7 +833,8 @@ def build_close_call_waterfall(
         implied = _annualized(g_for_h, horizon_years)
         horizon_note = (
             f"If the live→target gap ({g_for_h*100:.0f}%) closes over {horizon_years}y, "
-            f"implied ≈ {implied*100:.1f}%/yr. Convergence math — not a forecast."
+            f"implied ≈ {implied*100:.1f}%/yr. Convergence math — not a forecast; "
+            f"do not auto-size from this rate. Distinct from paper HML_RD."
         )
 
     if buy_ok:
@@ -792,8 +843,8 @@ def build_close_call_waterfall(
             "F6",
             "Stance",
             "BUY",
-            f"All gates cleared · confidence={confidence} · {horizon_years}y horizon",
-            data_fields=["F1", "F2", "F3", "F4", "F5", "confidence"],
+            f"All gates cleared · confidence={confidence} · {horizon_years}y horizon · clearance ≠ order",
+            data_fields=["F1", "F2", "F3", "F3b", "F4", "F5", "confidence"],
             formula_ids=["F_HOLD_HORIZON", "F_IMPLIED_ANN_RETURN"],
         )
     elif kill_unknown:
@@ -815,14 +866,24 @@ def build_close_call_waterfall(
             data_fields=["kill_active", "mos_live"],
             formula_ids=["F_MOS_LIVE"],
         )
-    elif l4.status != "known" or mos is None:
+    elif live_gap is not None and live_gap <= 0:
+        stance = "HOLD"
+        node(
+            "F6",
+            "Stance",
+            "HOLD",
+            "Live tape closed/through sealed target — sealed MoS alone is not underwriting",
+            data_fields=["gap_to_median", "mos_live"],
+            formula_ids=["F_VS_MEDIAN_PCT", "F_LIVE_VS_SEALED_GATE"],
+        )
+    elif l4.status != "known" or mos is None or live_gap is None:
         stance = "UNKNOWN"
         node(
             "F6",
             "Stance",
             "UNKNOWN",
             "Critical inputs unknown — not confident enough to BUY",
-            data_fields=["L4.status", "mos_live"],
+            data_fields=["L4.status", "mos_live", "gap_to_median"],
         )
     elif grade not in ("A", "B"):
         stance = "WATCH"
@@ -848,7 +909,7 @@ def build_close_call_waterfall(
         horizon_years = None
         implied = None
         if stance == "UNKNOWN":
-            horizon_note = "Horizon withheld — stance UNKNOWN until catalyst/MoS known."
+            horizon_note = "Horizon withheld — stance UNKNOWN until catalyst/MoS/live gap known."
 
     aggregate = StanceAggregate(
         score=agg_score,

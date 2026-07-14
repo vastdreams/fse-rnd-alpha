@@ -5,7 +5,7 @@
  */
 import { Link } from "react-router-dom"
 import { gradeTone, type RankedRow, type StanceListRow } from "@/lib/api/universe"
-import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4 } from "@/lib/formatMetrics"
+import { formatMultiple4, formatNumber4, formatPercent4, formatUsd4, formatUsdCompact } from "@/lib/formatMetrics"
 import {
   computeSellCeiling,
   fmtSellUpside,
@@ -137,7 +137,11 @@ export function BuyDenseRow({
           <span className="text-[10px] tabular-nums text-neutral-600">
             {stance.horizon_years}y
             {stance.implied_ann_return != null && (
-              <> · ≈{formatPercent4(stance.implied_ann_return, true)}/yr</>
+              <>
+                {" "}
+                · ≈{formatPercent4(stance.implied_ann_return, true)}/yr gap-close
+                <span className="font-normal text-neutral-500"> (not a forecast · not a size)</span>
+              </>
             )}
           </span>
         )}
@@ -153,6 +157,13 @@ export function BuyDenseRow({
         {r.price_is_derived ? "research price basis" : r.price_source || "quote source"}
         {r.price_as_of ? ` as of ${r.price_as_of}` : ""} · financials as of {dateLabel(r.fundamentals_as_of)} · all money figures USD
         {r.price_stale ? " · quote stale" : ""}
+        {" · "}
+        ADV 20d {r.adv_usd_20d != null ? formatUsdCompact(r.adv_usd_20d) : "unknown"}
+        <span className="text-neutral-400"> · capacity not auto-sized</span>
+      </div>
+      <div className="mt-1 pl-0 text-[9px] leading-snug text-neutral-600 sm:pl-14">
+        Research BUY = underwriting clearance, not an order. MoS is frozen research MoS (not live IV).
+        FCF match is advisory only. Paper HML_RD ≠ this BUY engine.
       </div>
 
       {/* Row 2 — valuation: exactly how the target and sell ceiling relate */}
