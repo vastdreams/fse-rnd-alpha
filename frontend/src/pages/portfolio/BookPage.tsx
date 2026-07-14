@@ -7,13 +7,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { ErrorBanner } from "@/components/research/ErrorBanner"
 import { notifyBookChanged } from "@/hooks/useServerBookCount"
-import { equalWeightHoldings, MAX_POSITION_WEIGHT_PCT } from "@/lib/bookOps"
+import { equalWeightHoldings, applyProxyWeights, MAX_POSITION_WEIGHT_PCT } from "@/lib/bookOps"
 import {
   createBook,
   getBookAuditPack,
   getSizingBound,
   listBooks,
   lockBook,
+  postSizingProxy,
   saveBook,
   setPrimaryBook,
   unlockBook,
@@ -35,6 +36,7 @@ export function BookPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState("My research book")
   const [sizingBound, setSizingBound] = useState<SizingBound | null>(null)
+  const [proxyBusy, setProxyBusy] = useState(false)
   const bookIdRef = useRef<string | null>(null)
   const reloadGenerationRef = useRef(0)
 
@@ -165,6 +167,33 @@ export function BookPage() {
     if (book?.locked_at) return
     if (holdings.length === 0) return
     setHoldings((prev) => equalWeightHoldings([], prev))
+  }
+
+  const applyConstructionProxy = async () => {
+    if (book?.locked_at || holdings.length === 0) return
+    setProxyBusy(true)
+    setError(null)
+    try {
+      const proxy = await postSizingProxy(
+        holdings.map((h) => h.ticker),
+        book?.universe_version || undefined
+      )
+      if (!proxy.holdings.length) {
+        setError("No cleared BUY theses in this book — the construction proxy only weights BUY clearances.")
+        return
+      }
+      setHoldings((prev) => applyProxyWeights(prev, proxy.holdings))
+      const dropped = proxy.dropped_non_buy?.length
+        ? ` · dropped non-BUY: ${proxy.dropped_non_buy.join(", ")}`
+        : ""
+      setStatus(
+        `Applied construction proxy (${proxy.weights_sum_pct.toFixed(1)}% across ${proxy.n_eligible} BUY clearances)${dropped}. Not a validated edge claim.`
+      )
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setProxyBusy(false)
+    }
   }
 
   const save = async () => {
@@ -300,13 +329,15 @@ export function BookPage() {
       {sizingBound && (
         <div className="rounded-xl border border-neutral-300 bg-neutral-50 p-4" data-testid="sizing-wall">
           <h3 className="text-sm font-semibold text-neutral-950">
-            Sizing wall — validated bound is {(sizingBound.f_max_fraction * 100).toFixed(1)}% today
+            Validated edge bound — {(sizingBound.f_max_fraction * 100).toFixed(1)}% of capital
           </h3>
           <p className="mt-1 text-[12px] text-neutral-700">{sizingBound.verdict}</p>
           {sizingBound.f_max_fraction === 0 && (
-            <p className="mt-1 text-[12px] font-medium text-neutral-800">
-              Capital sizing is on you until the ledger earns it — the platform will not size positions
-              from a premium whose confidence interval includes zero.
+            <p className="mt-1 text-[12px] text-neutral-800">
+              That bound does not ban a book — it only means the paper premium does not unlock
+              Kelly size. Use the <span className="font-semibold">construction proxy</span> below
+              to split capital among cleared BUY theses (weave · score · MoS · skew), capped at{" "}
+              {MAX_POSITION_WEIGHT_PCT}% per name.
             </p>
           )}
         </div>
@@ -439,6 +470,15 @@ export function BookPage() {
               className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-xs text-black hover:bg-muted"
             >
               Rebalance equally
+            </button>
+            <button
+              type="button"
+              onClick={() => void applyConstructionProxy()}
+              disabled={Boolean(book.locked_at) || proxyBusy || holdings.length === 0}
+              className="min-h-11 rounded-lg border border-black bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-40"
+              title="Declared weave-weighted split among cleared BUY theses only. Not a validated edge claim."
+            >
+              {proxyBusy ? "Weighting…" : "Apply construction proxy"}
             </button>
             <span
               className={`text-xs font-medium ${

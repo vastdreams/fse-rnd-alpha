@@ -657,6 +657,31 @@
       "status": "audited"
     },
     {
+      "id": "F_SIZING_PROXY",
+      "name": "Cleared-BUY construction proxy (weave-weighted relative split)",
+      "expression": "raw = 0.40·softplus(weave) + 0.25·(score/100) + 0.20·clip(mos,0,2)/2 + 0.15·skew_comp; weight = waterfill(raw → 100%, cap 15%)",
+      "surfaces": [
+        "api.books.sizing_proxy",
+        "book_page.sizing_wall",
+        "universe.build_portfolio"
+      ],
+      "compute": [
+        "backend/app/services/sizing_proxy.py",
+        "contracts/sizing-proxy.json"
+      ],
+      "display": [
+        "frontend/src/pages/portfolio/BookPage.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_sizing_proxy.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "Construction heuristic only: splits a user-chosen book among close_call_v3 BUY clearances. Does not unlock validated f_max and makes no expected-return claim. Weights declared in sizing-proxy.json, never fitted to history."
+      },
+      "status": "audited"
+    },
+    {
       "id": "F_FALSIFICATION_RULES",
       "name": "Pre-registered falsification rules (thesis engine watchdog)",
       "expression": "R1 rolling 5y NW t(HML_RD) < 1.0 for 4 consecutive quarters → μ_claim := 0, BUY→HOLD · R2 sealed ledger n≥36 months with excess t < 0 → engine retired publicly · R3 MoS-bucket gap-closure calibration off > 2× → band model revision",

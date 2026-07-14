@@ -5,21 +5,23 @@
 import {
   createBook,
   listBooks,
+  postSizingProxy,
   saveBook,
   type BookHolding,
   type Breach,
 } from "@/lib/api/universe"
-import { appendUnallocatedHoldings } from "@/lib/bookOps"
+import { appendUnallocatedHoldings, applyProxyWeights } from "@/lib/bookOps"
 import { notifyBookChanged } from "@/hooks/useServerBookCount"
 
 export type AddToBookResult =
-  | { ok: true; bookId: string; holdings: BookHolding[]; added: number }
+  | { ok: true; bookId: string; holdings: BookHolding[]; added: number; proxyApplied?: boolean }
   | { ok: false; breaches: Breach[] }
   | { ok: false; error: string }
 
 export async function addTickersToPrimaryBook(
   tickers: string[],
-  universeVersion?: string
+  universeVersion?: string,
+  opts?: { applyConstructionProxy?: boolean }
 ): Promise<AddToBookResult> {
   const unique = [...new Set(tickers.map((t) => t.toUpperCase()).filter(Boolean))]
   if (!unique.length) return { ok: false, error: "No tickers selected." }
@@ -48,15 +50,27 @@ export async function addTickersToPrimaryBook(
       revision = createdBook?.revision
     }
     const before = new Set(existing.map((h) => h.ticker.toUpperCase()))
-    // Adds are research candidates, not an implicit rebalance. This keeps a
-    // custom allocation intact and makes 1–6-name drafts actionable under the
-    // 15% per-name limit until the owner explicitly allocates them.
-    const holdings = appendUnallocatedHoldings(unique, existing)
+    let holdings = appendUnallocatedHoldings(unique, existing)
+    let proxyApplied = false
+    if (opts?.applyConstructionProxy) {
+      try {
+        const proxy = await postSizingProxy(
+          holdings.map((h) => h.ticker),
+          universeVersion
+        )
+        if (proxy.holdings.length) {
+          holdings = applyProxyWeights(holdings, proxy.holdings)
+          proxyApplied = true
+        }
+      } catch {
+        // Fall through with unallocated weights — save still proceeds.
+      }
+    }
     const res = await saveBook(bookId, holdings, undefined, revision)
     if ("breaches" in res) return { ok: false, breaches: res.breaches }
     notifyBookChanged()
     const added = unique.filter((t) => !before.has(t)).length
-    return { ok: true, bookId, holdings, added }
+    return { ok: true, bookId, holdings, added, proxyApplied }
   } catch (e) {
     return { ok: false, error: String(e) }
   }

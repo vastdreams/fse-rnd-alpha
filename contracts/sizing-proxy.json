@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "SIZING_PROXY_V1",
+  "title": "Cleared-BUY construction proxy — relative weights inside a user-chosen book",
+  "authority": "Declared heuristic for distributing capital among names that already cleared close_call_v3. NOT a validated expected-return claim and NOT a substitute for f_max. The validated factor bound stays separate and can remain zero.",
+  "eligibility": "stance === BUY only; non-BUY names get weight 0 and are excluded from the normalisation",
+  "inputs": {
+    "weave_score": {
+      "weight": 0.4,
+      "transform": "softplus",
+      "note": "Ordinal thesis weave — same sealed z-blend used for ranking attribution"
+    },
+    "stance_score": {
+      "weight": 0.25,
+      "transform": "linear_0_100",
+      "note": "Close-call aggregate score / 100"
+    },
+    "mos_live": {
+      "weight": 0.2,
+      "transform": "clip_0_to_2_then_scale",
+      "note": "Sealed MoS clipped to [0, 2] then / 2 — larger discount gets more weight, capped"
+    },
+    "payoff_skew": {
+      "weight": 0.15,
+      "transform": "below_band_full_else_clip_0_to_10_then_scale",
+      "note": "below_band → full credit (1.0); else clip skew to [0, 10] / 10"
+    }
+  },
+  "softplus_beta": 1.0,
+  "per_name_cap_pct": 15.0,
+  "target_sum_pct": 100.0,
+  "missing_input_policy": "contribution 0 for that family; if all families zero, fall back to equal weight among eligible names",
+  "disclosures": [
+    "This proxy only answers: given I am putting capital into these cleared theses, how do I split it? It does not say how much total capital is justified.",
+    "Validated f_max from the paper premium remains the only claim about edge-sized capital; when that bound is zero, the proxy still allocates relative weights inside the book.",
+    "Weights are capped at 15% per name to match the existing max_name_pct book constraint.",
+    "Input weights are declared, never fitted to the contaminated return history."
+  ]
+}

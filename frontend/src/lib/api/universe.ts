@@ -886,3 +886,33 @@ export interface SizingBound {
 
 export const getSizingBound = () => fetchApiCached<SizingBound>("/api/books/sizing-bound")
 
+export interface SizingProxyHolding {
+  ticker: string
+  weight_pct: number
+  raw_score: number
+  components: Record<string, number | string | null | undefined>
+}
+
+export interface SizingProxyResponse {
+  engine: string
+  contract_id: string
+  n_eligible: number
+  per_name_cap_pct: number
+  target_sum_pct: number
+  weights_sum_pct: number
+  holdings: SizingProxyHolding[]
+  disclosures: string[]
+  note: string
+  universe_version?: string
+  dropped_non_buy?: string[]
+}
+
+export const postSizingProxy = (tickers: string[], universeVersion?: string) =>
+  fetchApi<SizingProxyResponse>("/api/books/sizing-proxy", {
+    method: "POST",
+    body: JSON.stringify({
+      tickers,
+      universe_version: universeVersion || undefined,
+    }),
+  })
+

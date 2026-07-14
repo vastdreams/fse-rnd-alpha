@@ -92,16 +92,22 @@ def test_books_max_factor_sizing_breach():
         "AAA": {"stance": "BUY", "kill_active": False, "completeness_grade": "A"},
         "BBB": {"stance": "HOLD", "kill_active": False, "completeness_grade": "A"},
     }
-    breaches = evaluate_breaches(
+    # Zero validated bound no longer blocks construction weights.
+    breaches_zero = evaluate_breaches(
         holdings, [BookConstraint(kind="max_factor_sizing")], flags
+    )
+    assert not [b for b in breaches_zero if b["kind"] == "max_factor_sizing"]
+
+    # Positive explicit limit still walls off overweight BUY books.
+    breaches = evaluate_breaches(
+        holdings, [BookConstraint(kind="max_factor_sizing", limit=5.0)], flags
     )
     sizing = [b for b in breaches if b["kind"] == "max_factor_sizing"]
     assert len(sizing) == 1 and sizing[0]["ticker"] == "AAA"
     assert "validated bound" in sizing[0]["detail"]
 
-    # Override acknowledges the sizing is the owner's, not the engine's.
     holdings[0].override_reason = "manual sizing accepted"
     breaches2 = evaluate_breaches(
-        holdings, [BookConstraint(kind="max_factor_sizing")], flags
+        holdings, [BookConstraint(kind="max_factor_sizing", limit=5.0)], flags
     )
     assert not [b for b in breaches2 if b["kind"] == "max_factor_sizing"]

@@ -6,6 +6,32 @@ import type { BookHolding, SavedBookRecord } from "@/lib/api/universe"
 
 export const MAX_POSITION_WEIGHT_PCT = 15
 
+/** Apply server construction-proxy weights onto existing holdings (0 for unknowns). */
+export function applyProxyWeights(
+  existing: BookHolding[],
+  proxyHoldings: Array<{ ticker: string; weight_pct: number }>
+): BookHolding[] {
+  const now = new Date().toISOString().slice(0, 19)
+  const byProxy = new Map(
+    proxyHoldings.map((h) => [h.ticker.toUpperCase(), h.weight_pct] as const)
+  )
+  const map = new Map<string, BookHolding>()
+  for (const holding of existing) {
+    const ticker = holding.ticker.toUpperCase()
+    map.set(ticker, {
+      ...holding,
+      ticker,
+      weight_pct: byProxy.has(ticker) ? byProxy.get(ticker)! : holding.weight_pct,
+    })
+  }
+  for (const [ticker, weight_pct] of byProxy) {
+    if (!map.has(ticker)) {
+      map.set(ticker, { ticker, weight_pct, added_at: now })
+    }
+  }
+  return Array.from(map.values())
+}
+
 export function primaryBookHoldingsCount(books: SavedBookRecord[]): number {
   if (!books.length) return 0
   return (books.find((book) => book.is_primary) || books[0]).holdings?.length ?? 0

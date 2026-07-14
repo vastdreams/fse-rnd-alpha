@@ -66,7 +66,7 @@ function FirstRunBanner() {
           <span className="font-semibold">2.</span> You select cleared theses into a book.
         </li>
         <li>
-          <span className="font-semibold">3.</span> The sizing bound is validated-evidence only — zero today, so capital sizing stays yours.
+          <span className="font-semibold">3.</span> Construction proxy splits the book among cleared theses (weave-weighted, 15% cap) — validated Kelly bound stays separate and may be zero.
         </li>
       </ol>
       <button

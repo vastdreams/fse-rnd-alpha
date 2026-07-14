@@ -501,7 +501,9 @@ export function UniversePage() {
     setAdding(true)
     setBookMsg(null)
     setError(null)
-    const res = await addTickersToPrimaryBook(tickers, rank?.universe_version)
+    const res = await addTickersToPrimaryBook(tickers, rank?.universe_version, {
+      applyConstructionProxy: strataView,
+    })
     setAdding(false)
     if (!res.ok) {
       if ("breaches" in res && res.breaches) {
@@ -511,7 +513,11 @@ export function UniversePage() {
       }
       return
     }
-    setBookMsg(`Added ${res.added} new · book now ${res.holdings.length} holdings.`)
+    setBookMsg(
+      `Added ${res.added} new · book now ${res.holdings.length} holdings` +
+        (res.proxyApplied ? " · construction proxy weights applied" : "") +
+        "."
+    )
     setSelected(new Set())
     // Build-portfolio flow: land on the book, where the sizing wall
     // (max_factor_sizing, bound 0 today) is immediately visible.

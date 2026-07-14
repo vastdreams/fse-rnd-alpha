@@ -31,6 +31,8 @@ from app.api.routes.auth import get_current_user
 from app.contracts.research import BookConstraint, BookHolding, MetricVector, SavedBook
 from app.services.factor_sizing import f_max as factor_f_max
 from app.services.factor_sizing import sizing_payload
+from app.services.sizing_proxy import proxy_weights
+from app.services.thesis_fields import weave_composite
 
 router = APIRouter()
 
@@ -48,9 +50,9 @@ DEFAULT_CONSTRAINTS = [
     BookConstraint(kind="max_name_pct", limit=15.0),
     BookConstraint(kind="max_incomplete_pct", limit=20.0),
     BookConstraint(kind="ban_kill_active"),
-    # Validated-evidence sizing wall: total BUY-clearance weight may not exceed
-    # the factor sizing bound (contracts/factor-premium.json). limit=None means
-    # "computed from the sealed contract at evaluation time" — zero today.
+    # Validated-evidence sizing wall: only enforced when f_max > 0. When the
+    # bound is zero, construction uses the declared sizing proxy (relative
+    # weights among cleared BUYs) — not a fake Kelly unlock.
     BookConstraint(kind="max_factor_sizing"),
 ]
 _MANDATORY_CONSTRAINTS = {constraint.kind: constraint for constraint in DEFAULT_CONSTRAINTS}
@@ -270,13 +272,15 @@ def evaluate_breaches(
                         }
                     )
         elif c.kind == "max_factor_sizing":
-            # Sizing wall: total weight in BUY-clearance names may not exceed
-            # the validated bound (as % of capital). limit=None → computed from
-            # the sealed factor-premium contract; zero with today's numbers.
+            # Enforce only when a positive validated bound exists. A zero bound
+            # means "no Kelly claim" — not "ban all BUY weights." Relative
+            # construction then uses sizing_proxy (contracts/sizing-proxy.json).
             bound_pct = c.limit if c.limit is not None else factor_f_max(None, 0) * 100.0
+            if bound_pct <= 0:
+                continue
             buy_holdings = [h for h in holdings if fl(h).get("stance") == "BUY"]
             buy_weight = sum(h.weight_pct for h in buy_holdings)
-            if buy_weight > bound_pct:
+            if buy_weight > bound_pct + 1e-9:
                 for h in buy_holdings:
                     if not h.override_reason:
                         breaches.append(
@@ -285,8 +289,8 @@ def evaluate_breaches(
                                 "ticker": h.ticker,
                                 "detail": (
                                     f"BUY-clearance weight {buy_weight:.1f}% > validated bound "
-                                    f"{bound_pct:.1f}% — no validated edge, no size; override "
-                                    "to acknowledge the sizing is yours, not the engine's"
+                                    f"{bound_pct:.1f}% — override to acknowledge sizing above "
+                                    "the evidence-backed cap"
                                 ),
                             }
                         )
@@ -365,7 +369,145 @@ async def get_sizing_bound(
     except Exception:
         n_months = 0
     payload = sizing_payload(sigma_book_sq=None, n_sealed_months=n_months)
-    payload["note"] = "Research only — not investment advice. The bound caps BUY-clearance weight via the max_factor_sizing book constraint."
+    payload["note"] = (
+        "Research only — not investment advice. Validated f_max only caps BUY weight when "
+        "positive; when zero, use the construction proxy (/api/books/sizing-proxy) for "
+        "relative weights among cleared theses."
+    )
+    payload["construction_proxy"] = {
+        "endpoint": "/api/books/sizing-proxy",
+        "contract": "SIZING_PROXY_V1",
+        "role": "Relative split among cleared BUY names — not a validated edge claim.",
+    }
+    return payload
+
+
+class SizingProxyRequest(BaseModel):
+    tickers: list[str] = Field(min_length=1)
+    universe_version: Optional[str] = None
+
+
+@router.post("/sizing-proxy")
+async def post_sizing_proxy(
+    body: SizingProxyRequest,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Weave-weighted construction proxy for cleared BUY tickers.
+
+    Returns suggested weight_pct that sum to ≤100% with a 15% per-name cap.
+    Non-BUY names are dropped. Validated f_max is untouched.
+    """
+    tickers = sorted({t.strip().upper() for t in body.tickers if t and t.strip()})
+    if not tickers:
+        raise HTTPException(400, "tickers required")
+
+    uv = body.universe_version
+    if not uv:
+        uv = await db.scalar(
+            text(
+                "SELECT universe_version FROM universe_builds "
+                "WHERE is_active AND status='sealed' LIMIT 1"
+            )
+        )
+    if not uv:
+        raise HTTPException(404, "No active sealed universe")
+
+    # Reuse the same stance waterfall path the list endpoint uses — but we only
+    # need BUY confirmation + scores. Pull vectors + run close-call cheaply.
+    from app.api.routes.universe_company import (
+        _anchor_known_at_vector,
+        _utc_naive,
+    )
+    from app.services.catalyst_event_service import load_catalyst_anchors_from_db_rows
+    from app.services.close_call_service import build_close_call_waterfall
+    from app.services.price_history_service import get_cached_price_history as _gph
+
+    res = await db.execute(
+        text(
+            "SELECT ticker, vector FROM metric_vectors "
+            "WHERE universe_version=:uv AND ticker = ANY(:tickers)"
+        ),
+        {"uv": uv, "tickers": tickers},
+    )
+    vectors = {
+        str(t).upper(): MetricVector.model_validate(v if isinstance(v, dict) else json.loads(v))
+        for t, v in res.fetchall()
+    }
+    if not vectors:
+        raise HTTPException(404, "No vectors for the requested tickers in this universe")
+
+    claim_res = await db.execute(
+        text(
+            """SELECT claim.ticker, claim.value_text, claim.excerpt_locator,
+                      claim.extracted_at, snapshot.available_date
+               FROM evidence_claims AS claim
+               JOIN universe_evidence_refs AS ref ON ref.claim_id = claim.claim_id
+               JOIN source_snapshots AS snapshot ON snapshot.snapshot_id = claim.snapshot_id
+               WHERE ref.universe_version=:universe_version
+                 AND claim.field='catalyst_anchor'
+                 AND claim.ticker = ANY(:tickers)"""
+        ),
+        {"tickers": list(vectors), "universe_version": uv},
+    )
+    known_anchor_rows = [
+        row
+        for row in claim_res.fetchall()
+        if (
+            (vector := vectors.get(str(row.ticker).upper())) is not None
+            and _anchor_known_at_vector(
+                vector_computed_at=vector.computed_at,
+                claim_extracted_at=row.extracted_at,
+                snapshot_available_date=row.available_date,
+            )
+        )
+    ]
+    anchors_by_ticker = load_catalyst_anchors_from_db_rows(known_anchor_rows)
+
+    rows_for_proxy: list[dict] = []
+    for ticker, vec in vectors.items():
+        hist = _gph(ticker, years=3, immutable_only=True)
+        cutoff = _utc_naive(vec.computed_at).date().isoformat()
+        bars = [
+            bar
+            for bar in ((hist or {}).get("bars") or [])
+            if str(bar.get("date") or "")[:10] <= cutoff
+        ]
+        price = bars[-1]["close"] if bars else None
+        fair = vec.fair_px_med.value if vec.fair_px_med else None
+        gap = (fair / price - 1.0) if price and fair and fair > 0 and price > 0 else None
+        wf = build_close_call_waterfall(
+            ticker,
+            uv,
+            vec,
+            valuation_range={"gap_to_median": gap, "price_stale": False},
+            price_bars=bars,
+            extra_anchors=anchors_by_ticker.get(ticker, []),
+        )
+        weave = None
+        if isinstance(vec.weave_z, dict):
+            try:
+                weave, _partial = weave_composite(vec.weave_z)
+            except Exception:
+                weave = None
+        rows_for_proxy.append(
+            {
+                "ticker": ticker,
+                "stance": wf.aggregate.stance,
+                "score": wf.aggregate.score,
+                "weave_score": weave,
+                "mos_live": vec.mos_live.value if vec.mos_live else None,
+                "payoff_skew": vec.payoff_skew.value if vec.payoff_skew else None,
+                "payoff_skew_label": vec.payoff_skew_label,
+            }
+        )
+
+    payload = proxy_weights(rows_for_proxy)
+    payload["universe_version"] = uv
+    payload["requested"] = tickers
+    payload["dropped_non_buy"] = sorted(
+        t for t in tickers if t not in {h["ticker"] for h in payload["holdings"]}
+    )
     return payload
 
 
