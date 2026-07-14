@@ -509,6 +509,29 @@
         "cite": "Distinct from paper HML_RD / RD20 — tracks research BUY clearance sets only"
       },
       "status": "audited"
+    },
+    {
+      "id": "F_SIM_BUY_GATES",
+      "name": "Simulated BUY study proxy gates (pre-registered)",
+      "expression": "G1 sealed MoS>0 · G2 gap-to-median at sim date>0 · G3 PIT tape event · G4 completeness proxy — per contracts/simulated-buy-gates.json",
+      "surfaces": [
+        "api.universe.buy-sim-study"
+      ],
+      "compute": [
+        "backend/app/services/buy_simulation.py",
+        "scripts/simulate_buy_history.py"
+      ],
+      "display": [
+        "frontend/src/components/research/BuyPerformanceBook.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_buy_simulation.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "SIMULATED robustness study — look-ahead contaminated by construction (fair bands, grades, membership); never the sealed track record"
+      },
+      "status": "audited"
     }
   ]
 }

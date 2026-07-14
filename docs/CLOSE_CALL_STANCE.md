@@ -36,6 +36,25 @@ Paper `HML_RD` / RD20 is a publication factor engine. It does **not** prove the 
 - `GET /api/universe/stances?stance=BUY` → gated list
 - Rank rows include `provenance` (`D_RANK_R3`) + ADV / `liquidity_usd` tradability strip
 
+## Validation (mathematical trust test)
+Two separate tracks — never mixed:
+
+1. **Sealed ledger** (`buy_set_snapshots kind='sealed'`) — the only allocator-facing
+   track record. Starts 2026-07. Served by `GET /api/universe/buy-performance-book`
+   (which filters `kind='sealed'`). Forward returns per
+   `backend/app/services/buy_performance_book.py`.
+2. **Simulated robustness study** (`sim_proxy_v1`) — pre-registered proxy gates in
+   `contracts/simulated-buy-gates.json` (frozen before results; any edit voids the study),
+   run by `scripts/simulate_buy_history.py` over the ~3y immutable price cache with SPY
+   benchmark (`scripts/cache_benchmark_bars.py`). Newey–West t-stats on monthly
+   equal-weight excess returns, hit rate, max drawdown. Stored as `kind='simulated'`
+   snapshots + frozen artifact `data/exports/buy_sim_study_v1.json`, served read-only by
+   `GET /api/universe/buy-sim-study`.
+
+What the study is **not**: not paper HML_RD, not a clean PIT backtest (fair bands,
+completeness grades, and universe membership are today's, applied backwards — every
+look-ahead is listed in the contract's `disclosures` and rendered verbatim in the UI).
+
 ## Engine
 `backend/app/services/close_call_service.py` · `close_call_v2`  
 Tests: `backend/tests/test_close_call_service.py`, `backend/tests/test_decision_chains.py`

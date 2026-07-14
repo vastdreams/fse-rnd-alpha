@@ -16,10 +16,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
 import json
 import os
-import sys
 import uuid
 from datetime import date, datetime, timezone
 
@@ -45,8 +43,8 @@ async def seal(universe_version: str, as_of: date, members: list[dict], engine: 
             await conn.execute(
                 """INSERT INTO buy_set_snapshots
                    (snapshot_id, universe_version, as_of_date, sealed_at, engine_version,
-                    source_sha, n_buy, note)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""",
+                    source_sha, n_buy, note, kind)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'sealed')""",
                 snapshot_id,
                 universe_version,
                 as_of,

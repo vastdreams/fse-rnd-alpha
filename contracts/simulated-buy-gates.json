@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "study_id": "sim_proxy_v1",
+  "title": "Pre-registered proxy gates for the SIMULATED historical BUY robustness study",
+  "registered_at": "2026-07-14",
+  "authority": "Frozen BEFORE study results were computed. Any gate change requires a new study_id and a fresh run; results under an edited contract are void.",
+  "distinct_from": ["D_STANCE_BUY (close_call_v2)", "HML_RD", "RD20", "paper_publication_track"],
+  "purpose": "Mathematical robustness check of the BUY logic shape (undervalued + tape event + quality screen) over the available 3-year price cache. It is NOT the clean sealed track record, which starts 2026-07 and lives in buy_set_snapshots kind='sealed'.",
+  "rebalance": {
+    "frequency": "monthly",
+    "date_rule": "first trading day of each calendar month present in the price cache",
+    "warmup_months_skipped": 2,
+    "entry_rule": "first close strictly after the rebalance date (same convention as buy_performance_book.forward_return)"
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "name": "Sealed MoS > 0",
+      "rule": "vector.mos_live > 0 (fair band sealed at panel date_l)",
+      "disclosure": "LOOK-AHEAD: the fair band was estimated at date_l using fundamentals that were not available at earlier simulation dates."
+    },
+    {
+      "id": "G2",
+      "name": "Gap to median at simulation date > 0",
+      "rule": "(fair_px_med - close_at_sim_date) / close_at_sim_date > 0, close from PIT bars <= sim date",
+      "disclosure": "Price side is PIT; the fair_px_med side inherits the G1 look-ahead."
+    },
+    {
+      "id": "G3",
+      "name": "Tape event (PIT)",
+      "rule": ">=25% peak-to-trough drawdown in the trailing ~18 months of bars dated <= sim date; >=40 bars required, else the ticker is excluded (fail closed)",
+      "disclosure": "Fully PIT — mirrors close_call_service._detect_tape_event."
+    },
+    {
+      "id": "G4",
+      "name": "Completeness proxy",
+      "rule": "vector.completeness grade in {A, B} and kill_active is false (known)",
+      "disclosure": "NON-PIT: uses the current sealed vector's grade and kill state; historical grades and kill reviews do not exist before 2026-07."
+    }
+  ],
+  "inference": {
+    "horizons_sessions": [21, 63, 126],
+    "portfolio": "equal-weight across gate-passing tickers per rebalance date",
+    "benchmark": "SPY (FMP close, unadjusted — no adjClose from source; dividend drag understates SPY, flattering excess returns slightly)",
+    "statistics": ["mean excess return", "hit rate", "max drawdown of monthly book series", "Newey-West t-stat on monthly excess returns (Bartlett kernel, lags = overlap-aware)"],
+    "compute": ["backend/app/services/buy_simulation.py", "scripts/simulate_buy_history.py"]
+  },
+  "disclosures": [
+    "SIMULATED — this is a robustness study, not a track record. The clean sealed ledger starts 2026-07.",
+    "Fair bands are single-snapshot (date_l); every valuation gate is look-ahead-contaminated by construction.",
+    "Completeness grades and kill states are today's, applied backwards (survivorship of review effort, not of listing).",
+    "Universe membership is today's sealed universe applied backwards (membership look-ahead).",
+    "SPY benchmark is price-only (no dividends), which slightly overstates excess returns.",
+    "Price cache spans ~3 years only; no full-cycle evidence.",
+    "Simulated snapshots are stored with kind='simulated' and are never served by the sealed BUY performance book API."
+  ]
+}

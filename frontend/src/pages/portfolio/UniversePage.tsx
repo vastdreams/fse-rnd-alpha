@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useSearchParams } from "react-router-dom"
 import { ErrorBanner } from "@/components/research/ErrorBanner"
 import { ScreenerHeader, ScreenerRow } from "@/components/research/ScreenerRow"
-import { BuyPerformanceBookPanel } from "@/components/research/BuyPerformanceBook"
+import { BuyPerformanceBookPanel, SimulatedBuyStudyPanel } from "@/components/research/BuyPerformanceBook"
 import { addTickersToPrimaryBook } from "@/lib/addToBook"
 import { softAddWarnings } from "@/lib/bookOps"
 import {
@@ -560,7 +560,10 @@ export function UniversePage() {
       </div>
 
       {mode === "buy" && (
-        <BuyPerformanceBookPanel universeVersion={rank?.universe_version} />
+        <>
+          <BuyPerformanceBookPanel universeVersion={rank?.universe_version} />
+          <SimulatedBuyStudyPanel />
+        </>
       )}
 
       <div className="flex flex-wrap gap-2">

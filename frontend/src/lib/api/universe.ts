@@ -733,3 +733,52 @@ export const getBuyPerformanceBook = (universeVersion?: string | null) => {
   return fetchApiCached<BuyPerformanceBook>(`/api/universe/buy-performance-book${qs}`)
 }
 
+export interface SimStudyHorizon {
+  n_rebalances: number
+  mean_book_return: number | null
+  mean_excess_vs_benchmark: number | null
+  hit_rate: number | null
+  n_member_observations: number
+  max_drawdown_book: number | null
+  newey_west_excess: {
+    mean: number
+    t_stat: number
+    se: number
+    n: number
+    lags: number
+    kernel: string
+  } | null
+}
+
+export interface SimulatedBuyStudy {
+  kind: "simulated_buy_study"
+  study_id: string
+  label: string
+  generated_at: string
+  universe_version: string
+  gates_contract: string
+  gates_contract_sha256: string
+  benchmark: { ticker: string; source: string | null; start: string | null; end: string | null }
+  cache_span: {
+    start: string
+    end: string
+    n_tickers_with_bars: number
+    n_tickers_missing_cache: number
+    missing_cache: string[]
+  }
+  rebalances: { as_of: string; n_buy: number; members: string[] }[]
+  excluded_missing_data: Record<string, number>
+  inference: { horizon_unit: string; horizons: Record<string, SimStudyHorizon> }
+  disclosures: string[]
+  clean_ledger_note: string
+}
+
+export interface BuySimStudyResponse {
+  status: "ready" | "absent"
+  note?: string
+  study: SimulatedBuyStudy | null
+}
+
+export const getBuySimStudy = () =>
+  fetchApiCached<BuySimStudyResponse>("/api/universe/buy-sim-study")
+

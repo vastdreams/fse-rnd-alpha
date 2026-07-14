@@ -999,7 +999,7 @@ async def buy_performance_book(
                     """SELECT snapshot_id, universe_version, as_of_date, sealed_at,
                               engine_version, n_buy, note
                          FROM buy_set_snapshots
-                        WHERE universe_version=:uv
+                        WHERE universe_version=:uv AND kind='sealed'
                         ORDER BY as_of_date DESC
                         LIMIT 24"""
                 ),
@@ -1061,6 +1061,40 @@ async def buy_performance_book(
     }
 
 
+@router.get("/buy-sim-study")
+async def buy_sim_study(user: dict = Depends(get_current_user)) -> dict:
+    """Frozen SIMULATED robustness-study artifact (sim_proxy_v1). Read-only.
+
+    Distinct from the sealed BUY performance book: this is the pre-registered
+    proxy-gate study, look-ahead contaminated by construction and labeled so.
+    Absent artifact → honest empty payload, never a fabricated study.
+    """
+
+    from pathlib import Path as _Path
+
+    data_root = _Path("/app/data") if _Path("/app/data").exists() else (
+        _Path(__file__).resolve().parents[4] / "data"
+    )
+    artifact_path = data_root / "exports" / "buy_sim_study_v1.json"
+    if not artifact_path.exists():
+        return {
+            "status": "absent",
+            "note": (
+                "No simulated study artifact in this release. Run "
+                "scripts/simulate_buy_history.py against the immutable price cache. "
+                "This never affects the sealed BUY ledger."
+            ),
+            "study": None,
+        }
+    try:
+        study = json.loads(artifact_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=503, detail=f"Study artifact unreadable ({exc})")
+    if study.get("kind") != "simulated_buy_study":
+        raise HTTPException(status_code=503, detail="Study artifact has unexpected kind — refusing to serve")
+    return {"status": "ready", "study": study}
+
+
 @router.post("/buy-performance-book/seal")
 async def seal_buy_performance_book(
     universe_version: Optional[str] = None,
@@ -1087,7 +1121,8 @@ async def seal_buy_performance_book(
         dup = await db.execute(
             text(
                 """SELECT snapshot_id FROM buy_set_snapshots
-                   WHERE universe_version=:uv AND as_of_date=:as_of LIMIT 1"""
+                   WHERE universe_version=:uv AND as_of_date=:as_of
+                     AND kind='sealed' LIMIT 1"""
             ),
             {"uv": uv, "as_of": as_of},
         )
@@ -1105,8 +1140,8 @@ async def seal_buy_performance_book(
             text(
                 """INSERT INTO buy_set_snapshots
                    (snapshot_id, universe_version, as_of_date, sealed_at, engine_version,
-                    source_sha, n_buy, note)
-                   VALUES (:id, :uv, :as_of, :sealed, :engine, :sha, :n, :note)"""
+                    source_sha, n_buy, note, kind)
+                   VALUES (:id, :uv, :as_of, :sealed, :engine, :sha, :n, :note, 'sealed')"""
             ),
             {
                 "id": snapshot_id,
@@ -1122,7 +1157,7 @@ async def seal_buy_performance_book(
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"buy_set_snapshots unavailable — run migration 021 ({exc})",
+            detail=f"buy_set_snapshots unavailable — run migrations 021+022 ({exc})",
         ) from exc
 
     for m in members:
