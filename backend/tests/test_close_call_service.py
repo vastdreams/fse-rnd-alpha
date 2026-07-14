@@ -30,6 +30,12 @@ def _vec(**kwargs) -> MetricVector:
         rev_cagr=_mv(0.05),
         kill_active=False,
         table20_pass_count=8,
+        # Thesis fields (close_call_v3): base vector clears the thesis gates so
+        # each test isolates its own failure mode.
+        rd_composite=_mv(1.2),
+        rd_elig=True,
+        survivable=True,
+        payoff_skew=_mv(3.5),
         completeness=ResearchCompleteness(
             grade="B",
             filing_fetched=True,
@@ -312,6 +318,93 @@ def test_missing_live_gap_is_unknown_not_buy():
     )
     assert wf.aggregate.stance == "UNKNOWN"
     assert any(n["id"] == "F3b" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)
+
+
+def test_rd_ineligible_blocks_buy():
+    """Outside the validated RD cohort → no factor spine → never BUY."""
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86), rd_elig=False, rd_composite=_mv(-0.4)),
+        valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance != "BUY"
+    assert any(n["id"] == "F0" and n["result"] == "FAIL" for n in wf.aggregate.flowchart)
+    assert any("RD cohort" in b or "factor spine" in b for b in wf.aggregate.blockers)
+
+
+def test_rd_unknown_blocks_buy_fail_closed():
+    """Pre-thesis universe (rd_elig missing) must block BUY, not pass silently."""
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86), rd_elig=None, rd_composite=MetricValue()),
+        valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance != "BUY"
+    assert any(n["id"] == "F0" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)
+
+
+def test_survivability_fail_and_unknown_block_buy():
+    for surv, expected in ((False, "FAIL"), (None, "UNKNOWN")):
+        wf = build_close_call_waterfall(
+            ticker="EGAN",
+            universe_version="uv_test",
+            vector=_vec(ticker="EGAN", mos_live=_mv(0.86), survivable=surv),
+            valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+            price_bars=_bars_spike_crash(),
+        )
+        assert wf.aggregate.stance != "BUY", f"survivable={surv}"
+        assert any(n["id"] == "F2b" and n["result"] == expected for n in wf.aggregate.flowchart)
+
+
+def test_low_payoff_skew_blocks_buy_but_below_band_passes():
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86), payoff_skew=_mv(1.5)),
+        valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance != "BUY"
+    assert any(n["id"] == "F3c" and n["result"] == "FAIL" for n in wf.aggregate.flowchart)
+
+    wf2 = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(
+            ticker="EGAN",
+            mos_live=_mv(0.86),
+            payoff_skew=MetricValue(),
+            payoff_skew_label="below_band",
+        ),
+        valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+        price_bars=_bars_spike_crash(),
+    )
+    assert any(n["id"] == "F3c" and n["result"] == "PASS" for n in wf2.aggregate.flowchart)
+    assert wf2.aggregate.stance == "BUY"
+
+
+def test_skew_unknown_blocks_buy():
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86), payoff_skew=MetricValue()),
+        valuation_range={"gap_to_median": 0.86, "fair_px_med": 12.24},
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance != "BUY"
+    assert any(n["id"] == "F3c" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)
+
+
+def test_skew_floor_matches_contract():
+    """PAYOFF_SKEW_MIN must equal the sealed thesis contract's min_ratio."""
+    from app.services.close_call_service import PAYOFF_SKEW_MIN
+    from app.services.thesis_fields import load_thesis_contract
+
+    assert PAYOFF_SKEW_MIN == load_thesis_contract()["payoff_skew"]["min_ratio"]
 
 
 def test_stale_quote_gap_is_unknown_not_pass():

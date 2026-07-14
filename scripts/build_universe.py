@@ -310,6 +310,8 @@ def main() -> None:
 
     # Cross-sectional inputs for offering_quality_z
     oq_components: dict[str, dict[str, float | None]] = {}
+    # Live prices captured per ticker for the payoff-skew thesis field
+    live_prices: dict[str, dict | None] = {}
 
     panel_run_id = file_sha(PANEL_CSV)[:16]
 
@@ -598,6 +600,9 @@ def main() -> None:
             "rule40": vec.rule40.value,
             "concentration": concentration.value,
         }
+        live_prices[t] = (
+            {"price": m["price"], "price_date": m["price_date"]} if m and m.get("price") else None
+        )
 
     # ---- offering_quality_z (cross-sectional robust z; ≥3 known components) ----
     comp_names = ["retention", "gm", "rd_prod", "rule40", "concentration"]
@@ -620,6 +625,63 @@ def main() -> None:
                 formula="Σ z(retention, gm, rd_prod, rule40, −concentration); ≥3 known components; MAD z winsor ±3",
                 engine_version=ENGINE_VERSION,
             )
+
+    # ---- thesis fields (contracts/thesis-gates.json; cross-sectional) ----------
+    from app.services.thesis_fields import compute_thesis_fields, load_thesis_contract
+
+    thesis_contract = load_thesis_contract()
+    thesis_rows = []
+    for v in vectors:
+        px = live_prices.get(v.ticker)
+        thesis_rows.append(
+            {
+                "rd_int": v.rd_int.value,
+                "rd_capital": v.rd_capital.value,
+                "rd_prod": v.rd_prod.value,
+                "rd_mom": v.rd_mom.value,
+                "roic": v.roic.value,
+                "gm": v.gm.value,
+                "fcfm_sbc": v.fcfm_sbc.value,
+                "rule40": v.rule40.value,
+                "runway_yrs": v.runway_yrs.value,
+                "dilution_ann": v.dilution_ann.value,
+                "retention": v.retention.value,
+                "mos_live": v.mos_live.value,
+                "ret_3m": v.ret_3m.value,
+                "ret_12m": v.ret_12m.value,
+                "drawdown_from_peak": v.drawdown_from_peak.value,
+                "price": px["price"] if px else None,
+                "fair_px_lo": v.fair_px_lo.value,
+                "fair_px_hi": v.fair_px_hi.value,
+            }
+        )
+    for v, tf in zip(vectors, compute_thesis_fields(thesis_rows, thesis_contract)):
+        rd_dates = [
+            mv for mv in (v.rd_int, v.rd_capital, v.rd_prod, v.rd_mom) if mv.value is not None
+        ]
+        if tf["rd_composite"] is not None and rd_dates:
+            v.rd_composite = MetricValue(
+                value=tf["rd_composite"],
+                as_of_date=max(mv.as_of_date for mv in rd_dates if mv.as_of_date),
+                available_date=max(mv.available_date for mv in rd_dates if mv.available_date),
+                claim_ids=[],
+                formula="mean robust-z(rd_int, rd_capital, rd_prod, rd_mom) — thesis-gates.json rd_composite",
+                engine_version=ENGINE_VERSION,
+            )
+        v.rd_elig = tf["rd_elig"]
+        v.survivable = tf["survivable"]
+        px = live_prices.get(v.ticker)
+        if tf["payoff_skew"] is not None and px:
+            v.payoff_skew = MetricValue(
+                value=tf["payoff_skew"],
+                as_of_date=px["price_date"],
+                available_date=px["price_date"],
+                claim_ids=[],
+                formula="(fair_px_hi − price)/(price − fair_px_lo) — thesis-gates.json payoff_skew",
+                engine_version=ENGINE_VERSION,
+            )
+        v.payoff_skew_label = tf["payoff_skew_label"]
+        v.weave_z = tf["weave"]
 
     # ---- completeness grading --------------------------------------------------
     for v in vectors:

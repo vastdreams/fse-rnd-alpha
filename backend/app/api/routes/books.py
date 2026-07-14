@@ -29,6 +29,8 @@ from app.services.tradability import adv_usd_from_bars
 from app.services.price_history_service import get_cached_price_history
 from app.api.routes.auth import get_current_user
 from app.contracts.research import BookConstraint, BookHolding, MetricVector, SavedBook
+from app.services.factor_sizing import f_max as factor_f_max
+from app.services.factor_sizing import sizing_payload
 
 router = APIRouter()
 
@@ -46,6 +48,10 @@ DEFAULT_CONSTRAINTS = [
     BookConstraint(kind="max_name_pct", limit=15.0),
     BookConstraint(kind="max_incomplete_pct", limit=20.0),
     BookConstraint(kind="ban_kill_active"),
+    # Validated-evidence sizing wall: total BUY-clearance weight may not exceed
+    # the factor sizing bound (contracts/factor-premium.json). limit=None means
+    # "computed from the sealed contract at evaluation time" — zero today.
+    BookConstraint(kind="max_factor_sizing"),
 ]
 _MANDATORY_CONSTRAINTS = {constraint.kind: constraint for constraint in DEFAULT_CONSTRAINTS}
 
@@ -263,6 +269,27 @@ def evaluate_breaches(
                             "detail": f"{h.ticker} research stance is {label}",
                         }
                     )
+        elif c.kind == "max_factor_sizing":
+            # Sizing wall: total weight in BUY-clearance names may not exceed
+            # the validated bound (as % of capital). limit=None → computed from
+            # the sealed factor-premium contract; zero with today's numbers.
+            bound_pct = c.limit if c.limit is not None else factor_f_max(None, 0) * 100.0
+            buy_holdings = [h for h in holdings if fl(h).get("stance") == "BUY"]
+            buy_weight = sum(h.weight_pct for h in buy_holdings)
+            if buy_weight > bound_pct:
+                for h in buy_holdings:
+                    if not h.override_reason:
+                        breaches.append(
+                            {
+                                "kind": c.kind,
+                                "ticker": h.ticker,
+                                "detail": (
+                                    f"BUY-clearance weight {buy_weight:.1f}% > validated bound "
+                                    f"{bound_pct:.1f}% — no validated edge, no size; override "
+                                    "to acknowledge the sizing is yours, not the engine's"
+                                ),
+                            }
+                        )
         elif c.kind == "liquidity_floor" and c.limit is not None:
             for h in holdings:
                 liquidity = fl(h).get("liquidity_usd")
@@ -312,6 +339,34 @@ def evaluate_breaches(
                 }
             )
     return breaches
+
+
+@router.get("/sizing-bound")
+async def get_sizing_bound(
+    db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)
+) -> dict:
+    """The validated-evidence sizing wall: bound, both frozen premium series, and why.
+
+    σ²_book requires ≥ 12 sealed monthly BUY snapshots; we report the sealed
+    count honestly and the bound stays 0 until both the edge and the variance
+    are validated.
+    """
+    n_months = 0
+    try:
+        n_months = int(
+            await db.scalar(
+                text(
+                    "SELECT count(DISTINCT date_trunc('month', as_of_date)) "
+                    "FROM buy_set_snapshots WHERE kind='sealed'"
+                )
+            )
+            or 0
+        )
+    except Exception:
+        n_months = 0
+    payload = sizing_payload(sigma_book_sq=None, n_sealed_months=n_months)
+    payload["note"] = "Research only — not investment advice. The bound caps BUY-clearance weight via the max_factor_sizing book constraint."
+    return payload
 
 
 @router.get("")

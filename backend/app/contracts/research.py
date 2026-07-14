@@ -167,6 +167,21 @@ class MetricVector(BaseModel):
     carve_out: Optional[bool] = None
     route: Optional[Literal["fcf_positive", "pre_fcf", "carved_out"]] = None
 
+    # --- Thesis fields (contracts/thesis-gates.json; sealed cross-sectionally
+    # at build time). Absent on pre-thesis universes -> UNKNOWN -> fail-closed.
+    rd_composite: MetricValue = Field(default_factory=MetricValue)
+    rd_elig: Optional[bool] = Field(
+        default=None, description="Top-quintile RD composite within the sealed universe (paper spine proxy)"
+    )
+    survivable: Optional[bool] = Field(
+        default=None, description="Hard survivability floors from thesis-gates.json; UNKNOWN blocks BUY"
+    )
+    payoff_skew: MetricValue = Field(default_factory=MetricValue)
+    payoff_skew_label: Optional[Literal["below_band"]] = None
+    weave_z: Optional[dict[str, Optional[float]]] = Field(
+        default=None, description="Per-family weave z-scores (z_rd, z_quality, z_valuation, z_momentum) — ordinal rank inputs only"
+    )
+
     # --- Research completeness (separate axis)
     completeness: "ResearchCompleteness"
 
@@ -327,6 +342,7 @@ class BookConstraint(BaseModel):
         "ban_kill_active",
         "ban_on_hold",
         "liquidity_floor",
+        "max_factor_sizing",
     ]
     limit: Optional[float] = None
     enabled: bool = True

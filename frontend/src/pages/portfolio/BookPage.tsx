@@ -11,6 +11,7 @@ import { equalWeightHoldings, MAX_POSITION_WEIGHT_PCT } from "@/lib/bookOps"
 import {
   createBook,
   getBookAuditPack,
+  getSizingBound,
   listBooks,
   lockBook,
   saveBook,
@@ -19,6 +20,7 @@ import {
   type BookHolding,
   type Breach,
   type SavedBookRecord,
+  type SizingBound,
 } from "@/lib/api/universe"
 
 export function BookPage() {
@@ -30,6 +32,9 @@ export function BookPage() {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [acknowledgements, setAcknowledgements] = useState<Set<string>>(() => new Set())
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createName, setCreateName] = useState("My research book")
+  const [sizingBound, setSizingBound] = useState<SizingBound | null>(null)
   const bookIdRef = useRef<string | null>(null)
   const reloadGenerationRef = useRef(0)
 
@@ -73,6 +78,21 @@ export function BookPage() {
     void reload()
   }, [reload])
 
+  // The sizing wall is informational; failure to load never blocks the book.
+  useEffect(() => {
+    let cancelled = false
+    getSizingBound()
+      .then((b) => {
+        if (!cancelled) setSizingBound(b)
+      })
+      .catch(() => {
+        if (!cancelled) setSizingBound(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const book = useMemo(() => books.find((b) => b.book_id === bookId) || null, [books, bookId])
   const totalWeight = holdings.reduce((s, h) => s + (h.weight_pct || 0), 0)
   const isDirty = useMemo(() => {
@@ -93,7 +113,7 @@ export function BookPage() {
   const pendingAcknowledgements = holdings.filter((h) => !acknowledgements.has(h.ticker.toUpperCase())).length
 
   const create = async () => {
-    const name = prompt("Book name?", "My research book")
+    const name = createName.trim()
     if (!name) return
     setError(null)
     try {
@@ -103,6 +123,8 @@ export function BookPage() {
       setBookId(r.book_id)
       setHoldings([])
       setAcknowledgements(new Set())
+      setCreateOpen(false)
+      setCreateName("My research book")
     } catch (e) {
       setError(String(e))
     }
@@ -232,13 +254,63 @@ export function BookPage() {
           </Link>
           <button
             type="button"
-            onClick={create}
+            onClick={() => setCreateOpen((v) => !v)}
             className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white"
           >
             New book
           </button>
         </div>
       </div>
+
+      {createOpen && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void create()
+          }}
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white p-3"
+        >
+          <label htmlFor="new-book-name" className="text-sm font-medium text-neutral-900">
+            Book name
+          </label>
+          <input
+            id="new-book-name"
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+            autoFocus
+            className="h-10 w-64 rounded-lg border border-border px-3 text-sm text-black"
+          />
+          <button
+            type="submit"
+            disabled={!createName.trim()}
+            className="min-h-10 rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Create (starts empty)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreateOpen(false)}
+            className="text-sm text-neutral-600 underline"
+          >
+            Cancel
+          </button>
+        </form>
+      )}
+
+      {sizingBound && (
+        <div className="rounded-xl border border-neutral-300 bg-neutral-50 p-4" data-testid="sizing-wall">
+          <h3 className="text-sm font-semibold text-neutral-950">
+            Sizing wall — validated bound is {(sizingBound.f_max_fraction * 100).toFixed(1)}% today
+          </h3>
+          <p className="mt-1 text-[12px] text-neutral-700">{sizingBound.verdict}</p>
+          {sizingBound.f_max_fraction === 0 && (
+            <p className="mt-1 text-[12px] font-medium text-neutral-800">
+              Capital sizing is on you until the ledger earns it — the platform will not size positions
+              from a premium whose confidence interval includes zero.
+            </p>
+          )}
+        </div>
+      )}
 
       {books.length > 1 && (
         <div className="flex flex-wrap gap-1.5">

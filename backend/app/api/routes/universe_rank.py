@@ -43,6 +43,7 @@ from app.services.rank_row_invariants import (
     compute_live_vs_target_usd,
 )
 from app.services.decision_provenance import rank_row_provenance
+from app.services.thesis_fields import weave_composite
 from app.services.tradability import adv_usd_from_bars, capacity_note
 from app.services.price_history_service import get_cached_price_history
 from app.services.rank_service import RankEngine, RankRequest
@@ -216,6 +217,33 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
         r["liquidity_usd"] = adv
         r["adv_usd_20d"] = adv
         r["tradability_note"] = capacity_note(adv)
+
+        # Thesis fields + weave attribution (contracts/thesis-gates.json).
+        # The weave is ordinal ordering with declared weights — never a return
+        # claim and never a clearance. Pre-thesis vectors stay UNKNOWN.
+        if v is not None:
+            r["rd_elig"] = v.rd_elig
+            r["rd_composite"] = v.rd_composite.value
+            r["survivable"] = v.survivable
+            r["payoff_skew"] = v.payoff_skew.value
+            r["payoff_skew_label"] = v.payoff_skew_label
+            r["weave_z"] = v.weave_z
+            if v.weave_z:
+                score, partial = weave_composite(v.weave_z)
+                r["weave_score"] = score
+                r["weave_partial"] = partial
+            else:
+                r["weave_score"] = None
+                r["weave_partial"] = True
+        else:
+            r["rd_elig"] = None
+            r["rd_composite"] = None
+            r["survivable"] = None
+            r["payoff_skew"] = None
+            r["payoff_skew_label"] = None
+            r["weave_z"] = None
+            r["weave_score"] = None
+            r["weave_partial"] = True
 
         r["provenance"] = rank_row_provenance(r)
 

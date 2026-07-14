@@ -12,6 +12,7 @@ import { FinancialsCharts } from "@/components/research/FinancialsCharts"
 import { FinancialsTab } from "@/components/research/FinancialsTab"
 import { PriceChart } from "@/components/research/PriceChart"
 import { StanceTab } from "@/components/research/StanceTab"
+import { ThesisCard } from "@/components/research/ThesisCard"
 import { ValuationBand } from "@/components/research/ValuationBand"
 import { addTickersToPrimaryBook } from "@/lib/addToBook"
 import { softAddWarnings } from "@/lib/bookOps"
@@ -287,10 +288,13 @@ export function CompanyResearchPage() {
 
       {tab === "overview" && <OverviewTab data={data} open={open} goStance={() => setTab("stance")} />}
       {tab === "stance" && (
-        <StanceTab
-          waterfall={data.close_call_waterfall}
-          dataMode={data.close_call_data_mode}
-        />
+        <div className="space-y-3">
+          {data.thesis ? <ThesisCard thesis={data.thesis} /> : null}
+          <StanceTab
+            waterfall={data.close_call_waterfall}
+            dataMode={data.close_call_data_mode}
+          />
+        </div>
       )}
       {tab === "financials" && <FinancialsTab ticker={v.ticker} />}
       {tab === "business" && <BusinessTab data={data} open={open} />}

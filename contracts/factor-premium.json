@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "FACTOR_PREMIUM_V1",
+  "title": "Frozen HML_RD factor premium series — the only numbers allowed to size capital",
+  "authority": "Values copied verbatim from paper_latex/data/publication_snapshot.json (frozen publication artifact). Regenerating the snapshot requires re-freezing this contract; tests pin the values.",
+  "sizing_series": "annual_hml_premium",
+  "series": {
+    "annual_hml_premium": {
+      "label": "Headline annual HML_RD premium (July–June formation)",
+      "mean_pct_per_year": 3.7276651505056915,
+      "nw_std_error": 3.3809493262821455,
+      "t_statistic": 1.1025498434798522,
+      "n_years": 30,
+      "significant": false,
+      "source": "publication_snapshot.json payload.annual_hml_premium (hac_adjusted)",
+      "role": "SIZING AUTHORITY — conservative bound max(0, mean − 1.96·SE) is zero with these numbers"
+    },
+    "rd_factor_premium": {
+      "label": "Alternative rd_factor_premium construction",
+      "mean_pct_per_year": 5.4,
+      "t_statistic": 2.424,
+      "p_value": 0.0216,
+      "significant": true,
+      "source": "publication_snapshot.json payload.publication_stats.rd_factor_premium",
+      "role": "SUPPORTING EVIDENCE ONLY — displayed beside the headline, never sizes capital"
+    }
+  },
+  "sizing_rule": {
+    "mu_claim": "max(0, mean_pct_per_year − 1.96 × nw_std_error) of the sizing_series, in %/yr",
+    "f_max": "0.25 × (mu_claim/100) / sigma_book_sq — fractional Kelly on the conservative CI bound",
+    "sigma_source": "realized monthly equal-weight returns of the SEALED BUY ledger; requires ≥ 12 sealed months, else UNKNOWN → f_max = 0",
+    "per_name_cap": "min(f_max / n_buy, 0.05 × ADV20d × 21 / capital)",
+    "note": "No validated edge, no size. With the frozen headline numbers mu_claim = 0 and f_max = 0: the engine says so plainly instead of inventing a bound."
+  },
+  "disclosures": [
+    "The headline premium is not statistically significant (t=1.10); its conservative bound is zero and therefore the sizing bound is zero today.",
+    "The alternative construction is significant but is a different series; sizing from the more favourable of two series would be selection bias, so it never sizes.",
+    "Neither series is a per-name expected return; both are cross-sectional portfolio premia."
+  ]
+}

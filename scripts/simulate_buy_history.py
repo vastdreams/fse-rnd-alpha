@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
 PATH: scripts/simulate_buy_history.py
-PURPOSE: Run the SIMULATED historical BUY robustness study (sim_proxy_v1).
+PURPOSE: Run the SIMULATED historical BUY robustness study.
 
-Pre-registered gates: contracts/simulated-buy-gates.json — frozen before
-results. Pure math lives in backend/app/services/buy_simulation.py.
+Two pre-registered studies, each frozen before results:
+  --study v1 → sim_proxy_v1 (contracts/simulated-buy-gates.json)
+  --study v2 → sim_proxy_v2 (contracts/simulated-buy-gates-v2.json) — the v1
+    proxy plus the close_call_v3 thesis gates (RD cohort, survivability, skew).
 
-The output artifact is a frozen JSON an allocator can audit. It is NOT the
-sealed track record; every disclosure from the contract is copied in verbatim.
+Pure math lives in backend/app/services/buy_simulation.py. The output artifact
+is a frozen JSON an allocator can audit. It is NOT the sealed track record;
+every disclosure from the contract is copied in verbatim.
 
 Usage:
   DATABASE_URL=... python3 scripts/simulate_buy_history.py \
-    [--universe-version univ_...] [--benchmark SPY] [--persist] \
-    [--output data/exports/buy_sim_study_v1.json]
+    [--study v2] [--universe-version univ_...] [--benchmark SPY] [--persist] \
+    [--output data/exports/buy_sim_study_v2.json]
 """
 
 from __future__ import annotations
@@ -33,7 +36,9 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.services.buy_simulation import (  # noqa: E402
     HORIZONS_SESSIONS,
     STUDY_ID,
+    STUDY_ID_V2,
     evaluate_gates,
+    evaluate_gates_v2,
     forward_return_pit,
     parse_bars,
     rebalance_dates,
@@ -41,7 +46,18 @@ from app.services.buy_simulation import (  # noqa: E402
 )
 from app.services.price_history_service import get_cached_price_history  # noqa: E402
 
-GATES_CONTRACT = ROOT / "contracts" / "simulated-buy-gates.json"
+STUDIES = {
+    "v1": {
+        "study_id": STUDY_ID,
+        "contract": ROOT / "contracts" / "simulated-buy-gates.json",
+        "default_output": ROOT / "data" / "exports" / "buy_sim_study_v1.json",
+    },
+    "v2": {
+        "study_id": STUDY_ID_V2,
+        "contract": ROOT / "contracts" / "simulated-buy-gates-v2.json",
+        "default_output": ROOT / "data" / "exports" / "buy_sim_study_v2.json",
+    },
+}
 
 
 def database_url() -> str:
@@ -68,7 +84,11 @@ async def _vector_rows(universe_version: str | None) -> tuple[str, list[dict]]:
         rows = await conn.fetch(
             """SELECT ticker, completeness_grade, kill_active,
                       (vector->'mos_live'->>'value')::float8   AS mos,
-                      (vector->'fair_px_med'->>'value')::float8 AS fair_px_med
+                      (vector->'fair_px_med'->>'value')::float8 AS fair_px_med,
+                      (vector->>'rd_elig')::boolean             AS rd_elig,
+                      (vector->>'survivable')::boolean          AS survivable,
+                      (vector->'payoff_skew'->>'value')::float8 AS payoff_skew,
+                      vector->>'payoff_skew_label'              AS payoff_skew_label
                  FROM metric_vectors WHERE universe_version=$1 ORDER BY ticker""",
             uv,
         )
@@ -79,7 +99,7 @@ async def _vector_rows(universe_version: str | None) -> tuple[str, list[dict]]:
         await conn.close()
 
 
-async def _persist_simulated(uv: str, per_date: list[dict]) -> int:
+async def _persist_simulated(uv: str, per_date: list[dict], study_id: str) -> int:
     import asyncpg
 
     conn = await asyncpg.connect(database_url())
@@ -100,7 +120,7 @@ async def _persist_simulated(uv: str, per_date: list[dict]) -> int:
                     uv,
                     row["as_of"],
                     datetime.now(timezone.utc),
-                    STUDY_ID,
+                    study_id,
                     os.environ.get("RELEASE_SHA"),
                     len(row["members"]),
                     "SIMULATED robustness study (contracts/simulated-buy-gates.json) — not a sealed track record",
@@ -120,15 +140,29 @@ async def _persist_simulated(uv: str, per_date: list[dict]) -> int:
 
 async def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--study", choices=("v1", "v2"), default="v1")
     ap.add_argument("--universe-version", default=None)
     ap.add_argument("--benchmark", default="SPY")
     ap.add_argument("--years", type=int, default=3)
-    ap.add_argument("--persist", action="store_true", help="Write kind='simulated' snapshots to DB")
-    ap.add_argument("--output", default=str(ROOT / "data" / "exports" / "buy_sim_study_v1.json"))
+    ap.add_argument("--persist", action="store_true", help="Write kind='simulated' snapshots to DB (v1 only — the unique key is per universe/date/kind)")
+    ap.add_argument("--output", default=None)
     args = ap.parse_args()
 
-    contract = json.loads(GATES_CONTRACT.read_text())
-    contract_sha = hashlib.sha256(GATES_CONTRACT.read_bytes()).hexdigest()
+    study = STUDIES[args.study]
+    study_id: str = study["study_id"]
+    gates_contract: Path = study["contract"]
+    output_path = Path(args.output) if args.output else study["default_output"]
+    if args.persist and args.study != "v1":
+        raise SystemExit(
+            "--persist is v1-only: buy_set_snapshots is unique per (universe, date, kind) "
+            "and the v1 simulated rows already occupy those slots. The v2 deliverable is "
+            "the frozen artifact served by /buy-sim-study."
+        )
+
+    contract = json.loads(gates_contract.read_text())
+    if contract.get("study_id") != study_id:
+        raise SystemExit(f"Contract {gates_contract} study_id != {study_id} — refusing to run")
+    contract_sha = hashlib.sha256(gates_contract.read_bytes()).hexdigest()
 
     uv, vectors = await _vector_rows(args.universe_version)
 
@@ -166,14 +200,28 @@ async def main() -> None:
             if parsed is None:
                 excluded_missing_data[t] = excluded_missing_data.get(t, 0) + 1
                 continue
-            res = evaluate_gates(
-                parsed=parsed,
-                as_of=as_of,
-                mos=v["mos"],
-                fair_px_med=v["fair_px_med"],
-                grade=v["completeness_grade"],
-                kill_active=v["kill_active"],
-            )
+            if args.study == "v2":
+                res = evaluate_gates_v2(
+                    parsed=parsed,
+                    as_of=as_of,
+                    mos=v["mos"],
+                    fair_px_med=v["fair_px_med"],
+                    grade=v["completeness_grade"],
+                    kill_active=v["kill_active"],
+                    rd_elig=v["rd_elig"],
+                    survivable=v["survivable"],
+                    payoff_skew=v["payoff_skew"],
+                    payoff_skew_label=v["payoff_skew_label"],
+                )
+            else:
+                res = evaluate_gates(
+                    parsed=parsed,
+                    as_of=as_of,
+                    mos=v["mos"],
+                    fair_px_med=v["fair_px_med"],
+                    grade=v["completeness_grade"],
+                    kill_active=v["kill_active"],
+                )
             if res["decision"] == "excluded":
                 excluded_missing_data[t] = excluded_missing_data.get(t, 0) + 1
             elif res["decision"] == "buy":
@@ -188,15 +236,15 @@ async def main() -> None:
 
     persisted = 0
     if args.persist:
-        persisted = await _persist_simulated(uv, per_date)
+        persisted = await _persist_simulated(uv, per_date, study_id)
 
     artifact = {
         "kind": "simulated_buy_study",
-        "study_id": STUDY_ID,
+        "study_id": study_id,
         "label": "SIMULATED — robustness study, not a track record",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "universe_version": uv,
-        "gates_contract": "contracts/simulated-buy-gates.json",
+        "gates_contract": str(gates_contract.relative_to(ROOT)),
         "gates_contract_sha256": contract_sha,
         "benchmark": {
             "ticker": args.benchmark,
@@ -226,7 +274,7 @@ async def main() -> None:
         "clean_ledger_note": "The clean sealed BUY ledger (kind='sealed') starts 2026-07 and is the only allocator-facing track record.",
     }
 
-    out = Path(args.output)
+    out = output_path
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(artifact, indent=2, sort_keys=True))
     print(

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "FALSIFICATION_RULES_V1",
+  "title": "Pre-registered falsification rules for the thesis engine",
+  "authority": "Registered before the sealed ledger accrues evidence. Editing a rule after registration voids it; add a new versioned rule instead. Rules display and demand action — nothing retires silently.",
+  "registered_at": "2026-07-14",
+  "engine_scope": "close_call_v3 (Repriced × R&D-Validated × Survivable)",
+  "rules": [
+    {
+      "id": "R1_FACTOR_DECAY",
+      "label": "Factor spine decay",
+      "rule": "Rolling 5-year Newey–West t-statistic of the HML_RD premium < 1.0 for four consecutive quarters",
+      "consequence": "The factor spine claim drops to zero: μ_claim := 0, sizing bound stays 0, and F0 keeps gating but every BUY carries a 'spine decayed' banner pending re-validation. BUY→HOLD for names whose only support was the spine.",
+      "inputs": "Quarterly re-run of the paper factor regression on extending data",
+      "evaluable_when": "The rolling factor series is re-computed quarterly (not yet wired into the product)"
+    },
+    {
+      "id": "R2_LEDGER_FAILURE",
+      "label": "Sealed ledger failure",
+      "rule": "With n ≥ 36 sealed monthly snapshots, the equal-weight BUY book's excess return over SPY has t < 0",
+      "consequence": "The engine version is retired publicly: the What-to-Buy view states the ledger falsified close_call_v3 and no successor ships without a written post-mortem.",
+      "inputs": "buy_set_snapshots kind='sealed' forward returns vs benchmark",
+      "evaluable_when": "36 sealed monthly snapshots exist (ledger began 2026-07)"
+    },
+    {
+      "id": "R3_CALIBRATION",
+      "label": "Fair-band calibration break",
+      "rule": "Realized gap-closure by MoS bucket deviates from the convergence assumption by more than 2× in either direction",
+      "consequence": "The band model (valuation triangulation) is revised and re-sealed; implied-return copy is suspended until the revision ships.",
+      "inputs": "Sealed MoS buckets vs realized 12m forward gap closure",
+      "evaluable_when": "≥ 12 sealed months of forward outcomes per bucket"
+    }
+  ],
+  "display_requirement": "Every rule with its live status (armed_passing / armed_not_yet_evaluable / breached) must be visible on the BUY performance book surface. A breached rule is a product event, not a log line."
+}

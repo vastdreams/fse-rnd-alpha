@@ -101,4 +101,49 @@ describe("BuyDenseRow", () => {
     expect(html).toContain("Sell ceiling")
     expect(html).toContain("$110.2")
   })
+
+  it("renders the thesis strip with skew, RD cohort, survivability and dated catalyst", () => {
+    const withThesis: RankedRow = {
+      ...row,
+      payoff_skew: 4.2,
+      payoff_skew_label: null,
+      rd_elig: true,
+      rd_composite: 1.8,
+      survivable: true,
+    }
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuyDenseRow
+          r={withThesis}
+          displayRank={1}
+          stance={stance}
+          selectEnabled={false}
+          selected={false}
+          onToggle={() => undefined}
+        />
+      </MemoryRouter>
+    )
+    expect(html).toContain("skew 4.2:1")
+    expect(html).toContain("RD cohort ✓ (1.8σ)")
+    expect(html).toContain("survivable ✓")
+    expect(html).toContain("dated catalyst ✓")
+  })
+
+  it("thesis strip is honest about UNKNOWN fields (pre-thesis universes)", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuyDenseRow
+          r={row}
+          displayRank={1}
+          stance={stance}
+          selectEnabled={false}
+          selected={false}
+          onToggle={() => undefined}
+        />
+      </MemoryRouter>
+    )
+    expect(html).toContain("skew: UNKNOWN")
+    expect(html).toContain("RD cohort UNKNOWN")
+    expect(html).toContain("survivability UNKNOWN")
+  })
 })

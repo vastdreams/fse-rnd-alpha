@@ -8,12 +8,20 @@
 ## Flow
 L0 tape event (SEP) → L1 dated anchors (verified catalog only) → L2 fundamentals → L3 gates/kill → L4 catalyst clarity → weighted ROI runs → stance.
 
-## BUY gates (all required — hard)
+## BUY gates (all required — hard) — Repriced × R&D-Validated × Survivable
+- **F0** `rd_elig` true — top-quintile RD composite within the sealed universe
+  (`contracts/thesis-gates.json`). The paper factor spine is the only selection
+  component with published inference; cross-sectional evidence only, never a
+  per-name return claim.
 - kill off
 - completeness A|B
+- **F2b** `survivable` true — hard floors (cash engine FCF+/Rule-of-40, runway,
+  dilution, retention). A dead company collects no factor premium.
 - sealed `mos_live` > 0 (frozen research MoS — **not** live intrinsic value)
 - live `gap_to_median` > 0 (F3b — tape must still show value vs sealed target)
-- L4 catalyst **known** (no invented news)
+- **F3c** `payoff_skew` ≥ 3:1 (or price below the low lens) — band asymmetry
+  must favour the long; the band is a model output, not market data.
+- L4 catalyst **known** with **dated** anchors inside the tape-event window (no invented news)
 - aggregate score ≥ 65
 - confidence med|high
 
@@ -55,6 +63,14 @@ What the study is **not**: not paper HML_RD, not a clean PIT backtest (fair band
 completeness grades, and universe membership are today's, applied backwards — every
 look-ahead is listed in the contract's `disclosures` and rendered verbatim in the UI).
 
+## Sizing (separate layer — validated evidence only)
+Only the frozen paper premium sizes capital: `f_max = 0.25 · max(0, λ_headline −
+1.96·SE_NW) / σ²_book` (`backend/app/services/factor_sizing.py`). With today's
+frozen numbers (λ=3.73%/yr, NW SE 3.38, t=1.10) the bound is **zero** — the
+product says "no validated edge, no size" until the sealed ledger or the factor
+evidence strengthens. Skew and p* justify the shape of a bet, never its size.
+Falsification rules are pre-registered in `contracts/falsification-rules.json`.
+
 ## Engine
-`backend/app/services/close_call_service.py` · `close_call_v2`  
-Tests: `backend/tests/test_close_call_service.py`, `backend/tests/test_decision_chains.py`
+`backend/app/services/close_call_service.py` · `close_call_v3`  
+Tests: `backend/tests/test_close_call_service.py`, `backend/tests/test_decision_chains.py`, `backend/tests/test_thesis_fields.py`

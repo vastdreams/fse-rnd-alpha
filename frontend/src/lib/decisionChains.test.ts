@@ -40,7 +40,33 @@ describe("decisionChains (first principles, no opinion)", () => {
     const adv = buy.advisory_not_gates.find((a) => a.id === "P2_FCF")
     expect(adv).toBeTruthy()
     expect(adv!.gate_kind).toBe("advisory")
-    expect(buy.steps.map((s) => s.id)).toEqual(["F1", "F2", "F3", "F3b", "F4", "F5", "F6"])
+    expect(buy.steps.map((s) => s.id)).toEqual([
+      "F0",
+      "F1",
+      "F2",
+      "F2b",
+      "F3",
+      "F3b",
+      "F3c",
+      "F4",
+      "F5",
+      "F6",
+    ])
+  })
+
+  it("thesis gates F0/F2b/F3c are hard and fail closed", () => {
+    const buy = decisionChainById("D_STANCE_BUY")
+    for (const [sid, fid] of [
+      ["F0", "F_RD_COMPOSITE"],
+      ["F2b", "F_SURVIVABILITY_FLOORS"],
+      ["F3c", "F_PAYOFF_SKEW"],
+    ] as const) {
+      const step = buy.steps.find((s) => s.id === sid)
+      expect(step, sid).toBeTruthy()
+      expect(step!.gate_kind).toBe("hard")
+      expect(step!.on_unknown).toBe("block_buy")
+      expect(step!.formula_ids).toContain(fid)
+    }
   })
 
   it("D_RANK_R3 pins R3 weights and excludes opinion", () => {

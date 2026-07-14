@@ -532,6 +532,152 @@
         "cite": "SIMULATED robustness study — look-ahead contaminated by construction (fair bands, grades, membership); never the sealed track record"
       },
       "status": "audited"
+    },
+    {
+      "id": "F_RD_COMPOSITE",
+      "name": "RD composite + top-quintile eligibility (paper spine proxy)",
+      "expression": "rd_composite = mean(robust_z(rd_int), robust_z(rd_capital), robust_z(rd_prod), robust_z(rd_mom)); rd_elig = rd_composite ≥ Q80(universe)",
+      "surfaces": [
+        "api.universe.company.close_call",
+        "stance_tab.F0",
+        "thesis_card.spine"
+      ],
+      "compute": [
+        "backend/app/services/thesis_fields.py:rd_composite_scores",
+        "backend/app/services/thesis_fields.py:rd_eligibility"
+      ],
+      "display": [
+        "frontend/src/components/research/StanceTab.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_thesis_fields.py",
+        "backend/tests/test_close_call_service.py"
+      ],
+      "reference": {
+        "kind": "paper",
+        "cite": "HML_RD paper — cross-sectional R&D premium. The composite is a within-universe quintile PROXY for the paper cohort, not the July–June formation; never a per-name return claim."
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_SURVIVABILITY_FLOORS",
+      "name": "Survivability hard floors",
+      "expression": "(fcfm_sbc > 0 ∨ rule40 ≥ 40) ∧ runway_yrs ≥ 2 (UNKNOWN tolerated iff FCF>0) ∧ dilution_ann ≤ 0.08 ∧ retention ≥ 0.90 (UNKNOWN tolerated) — thresholds sealed in contracts/thesis-gates.json",
+      "surfaces": [
+        "api.universe.company.close_call",
+        "stance_tab.F2b",
+        "thesis_card.floors"
+      ],
+      "compute": [
+        "backend/app/services/thesis_fields.py:survivability"
+      ],
+      "display": [
+        "frontend/src/components/research/StanceTab.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_thesis_fields.py",
+        "backend/tests/test_close_call_service.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "Declared floors, not validated survival predictors — a cheap high-R&D company that dies never collects the factor premium. Any required UNKNOWN blocks BUY."
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_PAYOFF_SKEW",
+      "name": "Payoff skew from the sealed fair band",
+      "expression": "(fair_px_hi − price) / (price − fair_px_lo); price ≤ fair_px_lo → 'below band' (passes); gate floor 3:1",
+      "surfaces": [
+        "api.universe.company.close_call",
+        "stance_tab.F3c",
+        "thesis_card.skew"
+      ],
+      "compute": [
+        "backend/app/services/thesis_fields.py:payoff_skew"
+      ],
+      "display": [
+        "frontend/src/components/research/StanceTab.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_thesis_fields.py",
+        "backend/tests/test_close_call_service.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "Band asymmetry — the band is a sealed model output, not market data. Skew justifies the shape of the bet, never its size."
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_REPRICE_BREAK_EVEN",
+      "name": "Market-implied repricing probability p*",
+      "expression": "p* = (price − fair_px_med_base) / (fair_px_med_bull − fair_px_med_base); p* < 0 ⇒ the repricing thesis is a free option",
+      "surfaces": [
+        "api.universe.company.thesis",
+        "thesis_card.p_star"
+      ],
+      "compute": [
+        "backend/app/services/reprice_break_even.py:p_star"
+      ],
+      "display": [
+        "frontend/src/components/research/ThesisCard.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_reprice_break_even.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "Inverted scenario maths: we never assign a probability to the AI-SaaS repricing thesis; we display what the market charges for it. Display only — never gates, never sizes."
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FACTOR_SIZING_BOUND",
+      "name": "Validated-evidence sizing bound (fractional Kelly on the conservative CI)",
+      "expression": "μ_claim = max(0, λ_headline − 1.96·SE_NW); f_max = 0.25 · μ_claim / σ²_book; per-name w ≤ min(f_max/N_buy, 0.05·ADV20d·21/capital)",
+      "surfaces": [
+        "api.books.constraints",
+        "book_page.sizing_wall",
+        "thesis_card.size"
+      ],
+      "compute": [
+        "backend/app/services/factor_sizing.py"
+      ],
+      "display": [
+        "frontend/src/pages/portfolio/BookPage.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_factor_sizing.py"
+      ],
+      "reference": {
+        "kind": "paper",
+        "cite": "Headline annual HML_RD premium 3.73%/yr, NW SE 3.38 (t=1.10, not significant) → bound is ZERO today. The alternative rd_factor_premium (5.4%/yr, t=2.42) is displayed as supporting evidence but never sizes. No validated edge, no size."
+      },
+      "status": "audited"
+    },
+    {
+      "id": "F_FALSIFICATION_RULES",
+      "name": "Pre-registered falsification rules (thesis engine watchdog)",
+      "expression": "R1 rolling 5y NW t(HML_RD) < 1.0 for 4 consecutive quarters → μ_claim := 0, BUY→HOLD · R2 sealed ledger n≥36 months with excess t < 0 → engine retired publicly · R3 MoS-bucket gap-closure calibration off > 2× → band model revision",
+      "surfaces": [
+        "api.universe.buy-performance-book.falsification",
+        "buy_performance_book.rules_panel"
+      ],
+      "compute": [
+        "backend/app/services/factor_sizing.py:falsification_status"
+      ],
+      "display": [
+        "frontend/src/components/research/BuyPerformanceBook.tsx"
+      ],
+      "audit": [
+        "backend/tests/test_factor_sizing.py"
+      ],
+      "reference": {
+        "kind": "product",
+        "cite": "contracts/falsification-rules.json — registered before evidence accrues. Rules display and demand action; nothing retires silently."
+      },
+      "status": "audited"
     }
   ]
 }

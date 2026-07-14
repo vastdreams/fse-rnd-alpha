@@ -19,6 +19,8 @@ from datetime import date, timedelta
 from typing import Any, Optional
 
 STUDY_ID = "sim_proxy_v1"
+STUDY_ID_V2 = "sim_proxy_v2"
+PAYOFF_SKEW_MIN = 3.0  # must equal contracts/thesis-gates.json payoff_skew.min_ratio
 TAPE_WINDOW_DAYS = 548  # ~18 months, mirrors close_call_service._detect_tape_event
 TAPE_MIN_BARS = 40
 TAPE_DRAWDOWN = -0.25
@@ -108,6 +110,57 @@ def evaluate_gates(
         "gates": {"G1": g1, "G2": g2, "G3": g3, "G4": g4},
         "close_at_sim": round(px, 4),
         "gap_to_median": round((fair_px_med - px) / px, 6),
+    }
+
+
+def evaluate_gates_v2(
+    *,
+    parsed: list[tuple[date, float]],
+    as_of: date,
+    mos: Optional[float],
+    fair_px_med: Optional[float],
+    grade: Optional[str],
+    kill_active: Optional[bool],
+    rd_elig: Optional[bool],
+    survivable: Optional[bool],
+    payoff_skew: Optional[float],
+    payoff_skew_label: Optional[str] = None,
+) -> dict[str, Any]:
+    """sim_proxy_v2: the v1 proxy plus the thesis gates (G5 RD cohort, G6
+    survivability, G7 payoff skew). Missing thesis inputs → excluded,
+    fail-closed — an unknown never passes a gate (contracts/simulated-buy-gates-v2.json).
+    """
+    base = evaluate_gates(
+        parsed=parsed,
+        as_of=as_of,
+        mos=mos,
+        fair_px_med=fair_px_med,
+        grade=grade,
+        kill_active=kill_active,
+    )
+    missing = list(base.get("missing") or [])
+    if rd_elig is None:
+        missing.append("rd_elig")
+    if survivable is None:
+        missing.append("survivable")
+    skew_known = payoff_skew is not None or payoff_skew_label == "below_band"
+    if not skew_known:
+        missing.append("payoff_skew")
+    if missing:
+        return {"decision": "excluded", "missing": missing}
+
+    g5 = rd_elig is True
+    g6 = survivable is True
+    g7 = payoff_skew_label == "below_band" or (
+        payoff_skew is not None and payoff_skew >= PAYOFF_SKEW_MIN
+    )
+    gates = {**base["gates"], "G5": g5, "G6": g6, "G7": g7}
+    passed = base["decision"] == "buy" and g5 and g6 and g7
+    return {
+        "decision": "buy" if passed else "no_buy",
+        "gates": gates,
+        "close_at_sim": base["close_at_sim"],
+        "gap_to_median": base["gap_to_median"],
     }
 
 

@@ -131,6 +131,23 @@ export interface RowEnrichment {
   liquidity_usd?: number | null
   adv_usd_20d?: number | null
   tradability_note?: string | null
+  /** Thesis fields (contracts/thesis-gates.json). null = UNKNOWN (pre-thesis universe). */
+  rd_elig?: boolean | null
+  rd_composite?: number | null
+  survivable?: boolean | null
+  payoff_skew?: number | null
+  payoff_skew_label?: "below_band" | null
+  /** Per-family weave z-scores — ordinal rank attribution only. */
+  weave_z?: WeaveZ | null
+  weave_score?: number | null
+  weave_partial?: boolean
+}
+
+export interface WeaveZ {
+  z_rd: number | null
+  z_quality: number | null
+  z_valuation: number | null
+  z_momentum: number | null
 }
 
 export interface RankedRow extends RowEnrichment {
@@ -345,6 +362,8 @@ export interface CompanyResearch {
     note: string
   } | null
   dcf_runs: DcfRunRecord[]
+  /** Thesis object — sealed data + arithmetic only (thesis_v1). */
+  thesis?: ThesisObject | null
 }
 
 export interface DcfInputs {
@@ -716,6 +735,15 @@ export const gradeTone = (g: string): string =>
         ? "border-amber-300 bg-amber-50 text-amber-900"
         : "border-neutral-300 bg-neutral-100 text-neutral-700"
 
+export interface FalsificationRuleStatus {
+  id: string
+  label: string
+  rule: string
+  consequence: string
+  status: "armed_passing" | "armed_not_yet_evaluable" | "breached"
+  evidence: string | null
+}
+
 export interface BuyPerformanceBook {
   status: "empty" | "ready" | "partial"
   universe_version: string | null
@@ -724,6 +752,8 @@ export interface BuyPerformanceBook {
   summary: unknown | null
   engine: string
   distinct_from: string[]
+  /** Pre-registered falsification rules (contracts/falsification-rules.json). */
+  falsification?: FalsificationRuleStatus[]
 }
 
 export const getBuyPerformanceBook = (universeVersion?: string | null) => {
@@ -777,8 +807,82 @@ export interface BuySimStudyResponse {
   status: "ready" | "absent"
   note?: string
   study: SimulatedBuyStudy | null
+  /** Both frozen studies when present: sim_proxy_v1 and sim_proxy_v2. */
+  studies?: Record<string, SimulatedBuyStudy>
 }
 
 export const getBuySimStudy = () =>
   fetchApiCached<BuySimStudyResponse>("/api/universe/buy-sim-study")
+
+// Thesis object (sealed data + arithmetic; assembled by thesis_object.py) ----
+
+export interface ThesisFloorRow {
+  field: string
+  label: string
+  value: number | null
+  threshold: string
+}
+
+export interface ThesisPremiumSeries {
+  label: string
+  mean_pct_per_year: number
+  nw_std_error?: number
+  t_statistic: number
+  significant?: boolean
+  role: string
+  source: string
+}
+
+export interface ThesisObject {
+  engine_version: string
+  disagreement: {
+    price_live: number | null
+    price_stale: boolean | null
+    fair_px_lo: number | null
+    fair_px_med: number | null
+    fair_px_hi: number | null
+    mos_live_sealed: number | null
+    gap_to_median: number | null
+    note: string
+  }
+  cause: { tape_event: Record<string, unknown> | null; note: string }
+  repayment_engine: {
+    rd_composite: number | null
+    rd_elig: boolean | null
+    premium_series: Record<string, ThesisPremiumSeries>
+    note: string
+  }
+  survivability: { survivable: boolean | null; floors: ThesisFloorRow[] }
+  skew: { payoff_skew: number | null; payoff_skew_label: "below_band" | null; min_ratio: number }
+  p_star: {
+    p_star: number | null
+    price: number | null
+    v_base_med: number | null
+    v_rep_med: number | null
+    scenario_source: string | null
+    formula: string
+    reading: string
+    never_gates: boolean
+  }
+  resolution: { dated_anchors: Record<string, unknown>[]; note: string }
+  size: SizingBound
+}
+
+export interface SizingBound {
+  engine: string
+  mu_claim_pct_per_year: number
+  f_max_fraction: number
+  sigma_book_sq: number | null
+  n_sealed_months: number
+  kelly_fraction: number
+  formula: string
+  series: Record<string, ThesisPremiumSeries>
+  sizing_series: string
+  disclosures: string[]
+  verdict: string
+  why_zero: string[] | null
+  note?: string
+}
+
+export const getSizingBound = () => fetchApiCached<SizingBound>("/api/books/sizing-bound")
 

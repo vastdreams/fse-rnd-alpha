@@ -28,7 +28,14 @@ from app.api.deps import get_db
 from app.api.routes.auth import get_current_user, require_operator
 from app.contracts.recipes import LITERATURE_BINDS
 from app.contracts.research import MetricVector
-from app.services.close_call_service import build_close_call_waterfall
+from app.services.close_call_service import (
+    ENGINE_VERSION as CLOSE_CALL_ENGINE_VERSION,
+    _anchors_for,
+    _detect_tape_event,
+    build_close_call_waterfall,
+)
+from app.services.thesis_object import build_thesis_object
+from app.services.factor_sizing import falsification_status
 from app.services.buy_performance_book import (
     empty_book_payload,
     summarise_snapshot,
@@ -405,7 +412,44 @@ async def company_research(
         extra_anchors=extra,
     )
 
+    # Thesis object: sealed data + arithmetic only. The bull DCF leg (if any)
+    # feeds the display-only p* break-even; sealed months feed the sizing wall.
+    bull_dcf = None
+    for r in dcf_runs:
+        if r["scenario"] == "bull":
+            outputs = r["outputs"] if isinstance(r["outputs"], dict) else json.loads(r["outputs"])
+            if outputs.get("fair_px_med") is not None:
+                bull_dcf = {
+                    "fair_px_med": outputs.get("fair_px_med"),
+                    "source": f"dcf_runs {r['run_id']} scenario=bull ({r['created_at']})",
+                }
+                break
+    n_sealed_months = 0
+    try:
+        n_sealed_months = int(
+            await db.scalar(
+                text(
+                    "SELECT count(DISTINCT date_trunc('month', as_of_date)) "
+                    "FROM buy_set_snapshots WHERE kind='sealed'"
+                )
+            )
+            or 0
+        )
+    except Exception:
+        n_sealed_months = 0
+    tape_event = _detect_tape_event(price_bars)
+    anchors_kept, _anchor_miss = _anchors_for(t, tape_event, extra_anchors=extra)
+    thesis = build_thesis_object(
+        vec=vec,
+        valuation_range=valuation_range,
+        tape_event=tape_event,
+        dated_anchors=anchors_kept,
+        bull_dcf=bull_dcf,
+        n_sealed_months=n_sealed_months,
+    )
+
     return {
+        "thesis": thesis,
         "ticker": t,
         "universe_version": uv,
         "identity": idmap.get(t),
@@ -992,6 +1036,24 @@ async def buy_performance_book(
     """Sealed BUY-set track record. Empty until seal_buy_set / seal endpoint runs."""
 
     uv = universe_version or await _latest_version(db)
+
+    async def _falsification_panel() -> list[dict]:
+        """Pre-registered rule status — armed / not-yet-evaluable / breached."""
+        months = 0
+        try:
+            months = int(
+                await db.scalar(
+                    text(
+                        "SELECT count(DISTINCT date_trunc('month', as_of_date)) "
+                        "FROM buy_set_snapshots WHERE kind='sealed'"
+                    )
+                )
+                or 0
+            )
+        except Exception:
+            months = 0
+        return falsification_status(n_sealed_months=months)
+
     try:
         snaps = (
             await db.execute(
@@ -1008,10 +1070,14 @@ async def buy_performance_book(
         ).mappings().all()
     except Exception:
         # Table may not exist until migration 021 — fail closed with honest empty.
-        return empty_book_payload(universe_version=uv)
+        payload = empty_book_payload(universe_version=uv)
+        payload["falsification"] = falsification_status(n_sealed_months=0)
+        return payload
 
     if not snaps:
-        return empty_book_payload(universe_version=uv)
+        payload = empty_book_payload(universe_version=uv)
+        payload["falsification"] = await _falsification_panel()
+        return payload
 
     out_snaps = []
     for snap in snaps:
@@ -1058,6 +1124,7 @@ async def buy_performance_book(
         "summary": latest,
         "engine": "buy_performance_book_v1",
         "distinct_from": ["HML_RD", "RD20", "paper_publication_track"],
+        "falsification": await _falsification_panel(),
     }
 
 
@@ -1075,8 +1142,22 @@ async def buy_sim_study(user: dict = Depends(get_current_user)) -> dict:
     data_root = _Path("/app/data") if _Path("/app/data").exists() else (
         _Path(__file__).resolve().parents[4] / "data"
     )
-    artifact_path = data_root / "exports" / "buy_sim_study_v1.json"
-    if not artifact_path.exists():
+
+    def _load(name: str) -> Optional[dict]:
+        path = data_root / "exports" / name
+        if not path.exists():
+            return None
+        try:
+            loaded = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=503, detail=f"Study artifact {name} unreadable ({exc})")
+        if loaded.get("kind") != "simulated_buy_study":
+            raise HTTPException(status_code=503, detail=f"Study artifact {name} has unexpected kind — refusing to serve")
+        return loaded
+
+    v1 = _load("buy_sim_study_v1.json")
+    v2 = _load("buy_sim_study_v2.json")
+    if v1 is None and v2 is None:
         return {
             "status": "absent",
             "note": (
@@ -1085,14 +1166,19 @@ async def buy_sim_study(user: dict = Depends(get_current_user)) -> dict:
                 "This never affects the sealed BUY ledger."
             ),
             "study": None,
+            "studies": {},
         }
-    try:
-        study = json.loads(artifact_path.read_text())
-    except (OSError, json.JSONDecodeError) as exc:
-        raise HTTPException(status_code=503, detail=f"Study artifact unreadable ({exc})")
-    if study.get("kind") != "simulated_buy_study":
-        raise HTTPException(status_code=503, detail="Study artifact has unexpected kind — refusing to serve")
-    return {"status": "ready", "study": study}
+    return {
+        "status": "ready",
+        # Back-compat: `study` stays the v1 artifact when present.
+        "study": v1 or v2,
+        "studies": {k: s for k, s in (("sim_proxy_v1", v1), ("sim_proxy_v2", v2)) if s},
+        "note": (
+            "sim_proxy_v2 = v1 proxy + close_call_v3 thesis gates (RD cohort, survivability, "
+            "skew). Both are SIMULATED robustness studies with their look-aheads disclosed; "
+            "neither is the sealed track record."
+        ),
+    }
 
 
 @router.post("/buy-performance-book/seal")
@@ -1148,7 +1234,7 @@ async def seal_buy_performance_book(
                 "uv": uv,
                 "as_of": as_of,
                 "sealed": utc_now_naive(),
-                "engine": "close_call_v2",
+                "engine": CLOSE_CALL_ENGINE_VERSION,
                 "sha": None,
                 "n": len(members),
                 "note": "PIT research BUY clearance set — not paper HML_RD",

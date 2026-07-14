@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "study_id": "sim_proxy_v2",
+  "title": "Pre-registered proxy gates for the SIMULATED thesis-engine robustness study (v2)",
+  "registered_at": "2026-07-14",
+  "authority": "Frozen BEFORE study results were computed. Any gate change requires a new study_id and a fresh run; results under an edited contract are void. sim_proxy_v1 remains frozen and served unchanged.",
+  "distinct_from": ["D_STANCE_BUY (close_call_v3)", "HML_RD", "RD20", "paper_publication_track", "sim_proxy_v1"],
+  "purpose": "Does gating the drawdown proxy on the RD cohort + survivability + skew (the close_call_v3 thesis shape) improve on the naive v1 proxy? Answers the thesis-engine question directly; still NOT the clean sealed track record.",
+  "rebalance": {
+    "frequency": "monthly",
+    "date_rule": "first trading day of each calendar month present in the price cache",
+    "warmup_months_skipped": 2,
+    "entry_rule": "first close strictly after the rebalance date (same convention as buy_performance_book.forward_return)"
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "name": "Sealed MoS > 0",
+      "rule": "vector.mos_live > 0 (fair band sealed at panel date_l)",
+      "disclosure": "LOOK-AHEAD: the fair band was estimated at date_l using fundamentals that were not available at earlier simulation dates."
+    },
+    {
+      "id": "G2",
+      "name": "Gap to median at simulation date > 0",
+      "rule": "(fair_px_med - close_at_sim_date) / close_at_sim_date > 0, close from PIT bars <= sim date",
+      "disclosure": "Price side is PIT; the fair_px_med side inherits the G1 look-ahead."
+    },
+    {
+      "id": "G3",
+      "name": "Tape event (PIT)",
+      "rule": ">=25% peak-to-trough drawdown in the trailing ~18 months of bars dated <= sim date; >=40 bars required, else the ticker is excluded (fail closed)",
+      "disclosure": "Fully PIT — mirrors close_call_service._detect_tape_event."
+    },
+    {
+      "id": "G4",
+      "name": "Completeness proxy",
+      "rule": "vector.completeness grade in {A, B} and kill_active is false (known)",
+      "disclosure": "NON-PIT: uses the current sealed vector's grade and kill state; historical grades and kill reviews do not exist before 2026-07."
+    },
+    {
+      "id": "G5",
+      "name": "RD cohort eligibility (thesis F0 proxy)",
+      "rule": "vector.rd_elig is true (top-quintile RD composite within the sealed universe)",
+      "disclosure": "PIT-LAGGED PANEL: the R&D inputs are fundamentals with a conservative reporting lag — materially less contaminated than the fair bands, but the composite is computed on today's universe cross-section (membership look-ahead)."
+    },
+    {
+      "id": "G6",
+      "name": "Survivability floors (thesis F2b proxy)",
+      "rule": "vector.survivable is true (thesis-gates.json floors)",
+      "disclosure": "NON-PIT on retention (10-K overlay is today's filing); FCF/Rule-of-40/dilution/runway are lagged panel fields."
+    },
+    {
+      "id": "G7",
+      "name": "Payoff skew (thesis F3c proxy)",
+      "rule": "vector.payoff_skew >= 3 or payoff_skew_label == below_band, evaluated against the SEALED price basis",
+      "disclosure": "Inherits the full fair-band look-ahead (both lenses are today's model output)."
+    }
+  ],
+  "inference": {
+    "horizons_sessions": [21, 63, 126],
+    "portfolio": "equal-weight across gate-passing tickers per rebalance date",
+    "benchmark": "SPY (FMP close, unadjusted — no adjClose from source; dividend drag understates SPY, flattering excess returns slightly)",
+    "statistics": ["mean excess return", "hit rate", "max drawdown of monthly book series", "Newey-West t-stat on monthly excess returns (Bartlett kernel, lags = overlap-aware)", "side-by-side vs sim_proxy_v1 horizons"],
+    "compute": ["backend/app/services/buy_simulation.py", "scripts/simulate_buy_history.py"]
+  },
+  "disclosures": [
+    "SIMULATED — this is a robustness study, not a track record. The clean sealed ledger starts 2026-07.",
+    "Fair bands are single-snapshot (date_l); every valuation gate is look-ahead-contaminated by construction.",
+    "RD composite fields are PIT-lagged panel data but the quintile cut uses today's universe membership (membership look-ahead).",
+    "Completeness grades, kill states and retention are today's, applied backwards (survivorship of review effort, not of listing).",
+    "SPY benchmark is price-only (no dividends), which slightly overstates excess returns.",
+    "Price cache spans ~3 years only; no full-cycle evidence.",
+    "Simulated snapshots are stored with kind='simulated' and are never served by the sealed BUY performance book API."
+  ]
+}

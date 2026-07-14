@@ -166,6 +166,69 @@ export function BuyDenseRow({
         FCF match is advisory only. Paper HML_RD ≠ this BUY engine.
       </div>
 
+      {/* Thesis strip — the close_call_v3 gates behind this clearance */}
+      <div
+        className="mt-1 flex flex-wrap items-center gap-1.5 pl-0 text-[10px] sm:pl-14"
+        data-testid="thesis-strip"
+      >
+        <span
+          className={`rounded border px-1.5 py-0.5 font-semibold ${
+            r.payoff_skew_label === "below_band" || (r.payoff_skew != null && r.payoff_skew >= 3)
+              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+              : r.payoff_skew == null
+                ? "border-neutral-300 bg-neutral-100 text-neutral-600"
+                : "border-amber-300 bg-amber-50 text-amber-900"
+          }`}
+          title="Payoff skew from the sealed fair band: (high − price)/(price − low). Gate floor 3:1; price below the low lens passes as 'below band'."
+        >
+          {r.payoff_skew_label === "below_band"
+            ? "skew: below band"
+            : r.payoff_skew == null
+              ? "skew: UNKNOWN"
+              : `skew ${r.payoff_skew.toFixed(1)}:1`}
+        </span>
+        <span
+          className={`rounded border px-1.5 py-0.5 font-semibold ${
+            r.rd_elig === true
+              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+              : r.rd_elig === false
+                ? "border-amber-300 bg-amber-50 text-amber-900"
+                : "border-neutral-300 bg-neutral-100 text-neutral-600"
+          }`}
+          title="Top-quintile RD composite within the sealed universe — proxy for the validated paper cohort. Cross-sectional evidence, never a per-name return claim."
+        >
+          {r.rd_elig === true
+            ? `RD cohort ✓${r.rd_composite != null ? ` (${r.rd_composite.toFixed(1)}σ)` : ""}`
+            : r.rd_elig === false
+              ? "RD cohort ✗"
+              : "RD cohort UNKNOWN"}
+        </span>
+        <span
+          className={`rounded border px-1.5 py-0.5 font-semibold ${
+            r.survivable === true
+              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+              : r.survivable === false
+                ? "border-rose-300 bg-rose-50 text-rose-900"
+                : "border-neutral-300 bg-neutral-100 text-neutral-600"
+          }`}
+          title="Hard survivability floors (cash engine, runway, dilution, retention) from the sealed thesis contract. UNKNOWN blocks BUY."
+        >
+          {r.survivable === true
+            ? "survivable ✓"
+            : r.survivable === false
+              ? "floor failed"
+              : "survivability UNKNOWN"}
+        </span>
+        {stance?.stance === "BUY" && (
+          <span
+            className="rounded border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-900"
+            title="F4 passed: a dated, cited catalyst anchor exists inside the tape-event window."
+          >
+            dated catalyst ✓
+          </span>
+        )}
+      </div>
+
       {/* Row 2 — valuation: exactly how the target and sell ceiling relate */}
       <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-2 pl-0 sm:grid-cols-5 sm:pl-14">
         <MetricTile

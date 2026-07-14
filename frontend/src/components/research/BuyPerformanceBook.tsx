@@ -88,6 +88,33 @@ export function BuyPerformanceBookPanel({
           ))}
         </div>
       )}
+      {book.falsification?.length ? (
+        <div className="mt-3 border-t border-neutral-100 pt-2" data-testid="falsification-panel">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+            Pre-registered falsification rules — nothing retires silently
+          </div>
+          <ul className="mt-1 space-y-1">
+            {book.falsification.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-baseline gap-1.5 text-[11px]">
+                <span
+                  className={`rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                    r.status === "breached"
+                      ? "border-rose-300 bg-rose-50 text-rose-900"
+                      : r.status === "armed_passing"
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                        : "border-neutral-300 bg-neutral-100 text-neutral-600"
+                  }`}
+                >
+                  {r.status === "armed_not_yet_evaluable" ? "armed · not yet evaluable" : r.status.replace("_", " ")}
+                </span>
+                <span className="font-medium text-neutral-900">{r.label}:</span>
+                <span className="text-neutral-700">{r.rule}</span>
+                {r.evidence ? <span className="text-[10px] text-neutral-500">({r.evidence})</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -120,11 +147,25 @@ export function SimulatedBuyStudyPanel() {
     )
   }
 
-  const s = resp.study
+  const studies = Object.values(resp.studies ?? {})
+  const list = studies.length ? studies : [resp.study]
+  return (
+    <div className="space-y-2">
+      {list.map((s) => (
+        <SimStudyBlock key={s.study_id} s={s} />
+      ))}
+    </div>
+  )
+}
+
+function SimStudyBlock({ s }: { s: NonNullable<BuySimStudyResponse["study"]> }) {
   return (
     <div className="rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-2.5 text-[12px] text-violet-950">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="font-semibold">Simulated robustness study</div>
+        <div className="font-semibold">
+          Simulated robustness study · {s.study_id}
+          {s.study_id === "sim_proxy_v2" ? " (thesis gates: RD cohort + survivability + skew)" : ""}
+        </div>
         <div className="rounded bg-violet-200 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-900">
           SIMULATED — not a track record
         </div>

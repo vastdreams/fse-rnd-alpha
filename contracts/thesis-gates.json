@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "THESIS_GATES_V1",
+  "title": "Repriced x R&D-Validated x Survivable — thesis gate thresholds and weave weights",
+  "authority": "Declared and sealed before any results were computed against them. Never fitted to historical returns.",
+  "rd_composite": {
+    "components": ["rd_int", "rd_capital", "rd_prod", "rd_mom"],
+    "z_method": "median/MAD robust z, winsorised at +/-3 (rank_service.engine.robust_z)",
+    "min_known_components": 2,
+    "eligibility_quantile": 0.8,
+    "note": "Proxy for the paper RD20 cohort within the sealed universe. NOT the paper's July-June formation; labeled as such wherever displayed."
+  },
+  "survivability": {
+    "cash_engine": "fcfm_sbc > 0 OR rule40 >= 40",
+    "rule40_floor": 40.0,
+    "runway_years_floor": 2.0,
+    "runway_unknown_allowed_if_fcf_positive": true,
+    "dilution_ann_ceiling": 0.08,
+    "retention_floor": 0.9,
+    "retention_unknown_allowed": true,
+    "note": "Hard floors, not scores. A cheap high-R&D company that dies never collects the premium. Any required field UNKNOWN => survivable UNKNOWN => no BUY."
+  },
+  "payoff_skew": {
+    "expression": "(fair_px_hi - price) / (price - fair_px_lo)",
+    "min_ratio": 3.0,
+    "below_band_passes": true,
+    "note": "Price at or below fair_px_lo means downside-to-band is zero or negative: skew is undefined but favourable; the gate passes with the 'below band' label."
+  },
+  "weave_weights": {
+    "z_rd": 0.4,
+    "z_quality": 0.25,
+    "z_valuation": 0.2,
+    "z_momentum": 0.15,
+    "families": {
+      "z_rd": ["rd_composite"],
+      "z_quality": ["roic", "gm", "fcfm_sbc", "rule40"],
+      "z_valuation": ["mos_live"],
+      "z_momentum": ["ret_3m", "ret_12m", "drawdown_from_peak"]
+    },
+    "missing_family_policy": "contribution 0 with a visible partial-data flag; rank is ordinal and makes no return claim",
+    "note": "Weights are declared, not optimised. Fitting them to the contaminated pre-2026 history would launder look-ahead bias into the rank."
+  },
+  "disclosures": [
+    "The RD composite is a within-universe quintile proxy for the validated paper cohort, not the paper's July-June formation rule.",
+    "Survivability floors are declared judgments, not validated predictors of survival.",
+    "Payoff skew uses the sealed fair band; the band itself is a model output, not market data.",
+    "The weave orders names; it is never a return forecast and never sizes capital."
+  ]
+}

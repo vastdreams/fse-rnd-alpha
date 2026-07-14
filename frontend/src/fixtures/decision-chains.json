@@ -10,8 +10,8 @@
   "chains": [
     {
       "id": "D_STANCE_BUY",
-      "name": "Research BUY stance",
-      "first_principles": "BUY is underwriting clearance, not attractiveness and not a sizing order. Every hard gate is a measurable field; any missing critical input → UNKNOWN, not a guessed BUY. Implied annualised return is gap-close maths, not a forecast. Paper HML_RD is a different engine.",
+      "name": "Research BUY stance — Repriced × R&D-Validated × Survivable",
+      "first_principles": "BUY is underwriting clearance, not attractiveness and not a sizing order. The thesis is the intersection of independent evidence: the validated R&D factor cohort (paper spine — the only component with published inference), a measured repricing (sealed MoS, live gap, payoff skew), and hard survivability floors (a cheap R&D name that dies never collects the premium). Every hard gate is a measurable field; any missing critical input → UNKNOWN, not a guessed BUY. Implied annualised return is gap-close maths, not a forecast. Factor evidence is cross-sectional: no per-name expected return is ever claimed.",
       "engine": "backend/app/services/close_call_service.py",
       "docs": [
         "docs/CLOSE_CALL_STANCE.md",
@@ -25,6 +25,24 @@
         "implied_ann_return"
       ],
       "steps": [
+        {
+          "id": "F0",
+          "label": "Validated-factor eligibility (RD spine)",
+          "gate_kind": "hard",
+          "data_fields": [
+            "rd_elig",
+            "rd_composite"
+          ],
+          "formula_ids": [
+            "F_RD_COMPOSITE"
+          ],
+          "pass_if": "rd_elig === true",
+          "fail_if": "rd_elig === false",
+          "unknown_if": "rd_elig is null/missing (pre-thesis universe or unknown R&D inputs)",
+          "on_unknown": "block_buy",
+          "opinion": false,
+          "note": "Top-quintile RD composite within the sealed universe (thesis-gates.json) — proxy for the paper RD20 cohort, the only selection component backed by published inference. Cross-sectional evidence only: never a per-name return claim."
+        },
         {
           "id": "F1",
           "label": "Kill criterion off",
@@ -52,6 +70,28 @@
           "unknown_if": "grade missing",
           "on_unknown": "block_buy",
           "opinion": false
+        },
+        {
+          "id": "F2b",
+          "label": "Survivability floors",
+          "gate_kind": "hard",
+          "data_fields": [
+            "survivable",
+            "fcfm_sbc",
+            "rule40",
+            "runway_yrs",
+            "dilution_ann",
+            "retention"
+          ],
+          "formula_ids": [
+            "F_SURVIVABILITY_FLOORS"
+          ],
+          "pass_if": "survivable === true",
+          "fail_if": "survivable === false",
+          "unknown_if": "survivable is null/missing (required floor field unknown)",
+          "on_unknown": "block_buy",
+          "opinion": false,
+          "note": "Hard floors from thesis-gates.json: cash engine (FCF+ or Rule-of-40), runway, dilution, retention. Declared judgments, not validated predictors — but a dead company collects no factor premium."
         },
         {
           "id": "F3",
@@ -91,6 +131,26 @@
           "note": "Hard underwriting gate: sealed MoS alone cannot clear BUY when the live tape has already closed (or gone through) the target gap."
         },
         {
+          "id": "F3c",
+          "label": "Payoff skew ≥ 3:1",
+          "gate_kind": "hard",
+          "data_fields": [
+            "payoff_skew",
+            "payoff_skew_label",
+            "fair_px_lo",
+            "fair_px_hi"
+          ],
+          "formula_ids": [
+            "F_PAYOFF_SKEW"
+          ],
+          "pass_if": "payoff_skew ≥ 3 or payoff_skew_label === below_band",
+          "fail_if": "payoff_skew < 3",
+          "unknown_if": "payoff_skew null and no below_band label (band or price missing/degenerate)",
+          "on_unknown": "block_buy",
+          "opinion": false,
+          "note": "Band asymmetry (hi−P)/(P−lo) from the sealed fair band. Price at/below the low lens passes as 'below band'. The band is a model output, not market data — labeled as such."
+        },
+        {
           "id": "F4",
           "label": "Catalyst named (L4 known)",
           "gate_kind": "hard",
@@ -99,12 +159,12 @@
             "dated_anchors"
           ],
           "formula_ids": [],
-          "pass_if": "L4.status === known with dated anchors",
+          "pass_if": "L4.status === known with dated anchors inside the event window",
           "fail_if": "n/a — absence is UNKNOWN not FAIL",
-          "unknown_if": "L4.status !== known",
+          "unknown_if": "L4.status !== known (no dated anchor inside peak−30d…trough+45d)",
           "on_unknown": "block_buy",
           "opinion": false,
-          "note": "Will not invent news. No catalyst → UNKNOWN confidence."
+          "note": "Will not invent news. Anchors must be dated and fall inside the tape-event window; no dated catalyst → UNKNOWN confidence."
         },
         {
           "id": "F5",
@@ -129,7 +189,10 @@
           "label": "Stance emit",
           "gate_kind": "hard",
           "data_fields": [
+            "F0",
             "F1..F5",
+            "F2b",
+            "F3c",
             "confidence"
           ],
           "formula_ids": [
@@ -253,6 +316,20 @@
         }
       ],
       "advisory_not_gates": [
+        {
+          "id": "WEAVE_ATTRIBUTION",
+          "label": "Factor weave attribution (ordinal ordering only)",
+          "data_fields": [
+            "weave_z",
+            "weave_score",
+            "weave_partial"
+          ],
+          "formula_ids": [
+            "F_RD_COMPOSITE"
+          ],
+          "gate_kind": "advisory",
+          "note": "weave_score = 0.40·z_rd + 0.25·z_quality + 0.20·z_valuation + 0.15·z_momentum (declared in thesis-gates.json, never fitted to history). Missing family contributes 0 with weave_partial=true. Ordering only — never a return claim, never a clearance."
+        },
         {
           "id": "ABOVE_BAND_FLAG",
           "label": "Above fair band (Option B)",

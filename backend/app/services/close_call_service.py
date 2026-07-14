@@ -42,7 +42,12 @@ from app.services.stance_scores import (
     score_valuation_from_gap,
 )
 
-ENGINE_VERSION = "close_call_v2"
+ENGINE_VERSION = "close_call_v3"
+
+# Payoff-skew hard-gate floor. Single source of truth is the sealed
+# contracts/thesis-gates.json (payoff_skew.min_ratio); this constant must
+# match it — enforced by test_close_call_service.test_skew_floor_matches_contract.
+PAYOFF_SKEW_MIN = 3.0
 
 # Bootstrap curated anchors (kept as seed; live store is catalyst_event_cache / claims).
 _ANCHOR_CATALOG: dict[str, list[dict[str, Any]]] = {
@@ -66,6 +71,21 @@ _ANCHOR_CATALOG: dict[str, list[dict[str, Any]]] = {
 
 # Paper / desk precedence: stance must be judged against these rules.
 _PRECEDENCE: list[dict[str, str]] = [
+    {
+        "id": "P0_RD",
+        "label": "Validated RD cohort",
+        "rule": "rd_elig must be true — the paper factor spine is the only selection component with published inference",
+    },
+    {
+        "id": "P0b_SURVIVE",
+        "label": "Survivability floors",
+        "rule": "survivable must be true — hard floors from thesis-gates.json; a dead company collects no premium",
+    },
+    {
+        "id": "P0c_SKEW",
+        "label": "Payoff skew ≥ 3:1",
+        "rule": "payoff_skew ≥ 3 (or price below band) — band asymmetry must favour the long",
+    },
     {
         "id": "P1_MOS",
         "label": "Sealed MoS+",
@@ -296,6 +316,20 @@ def build_close_call_waterfall(
     kill_state = getattr(vector, "kill_active", None)
     kill = kill_state is True
     kill_unknown = kill_state is None
+    # Thesis fields (close_call_v3). Absent on pre-thesis universes -> None
+    # -> the new hard gates read UNKNOWN and block BUY (fail-closed).
+    rd_elig = getattr(vector, "rd_elig", None)
+    rd_composite = _mv(vector, "rd_composite")
+    survivable = getattr(vector, "survivable", None)
+    skew = _mv(vector, "payoff_skew")
+    skew_label = getattr(vector, "payoff_skew_label", None)
+    skew_ok: Optional[bool]
+    if skew_label == "below_band":
+        skew_ok = True
+    elif skew is None:
+        skew_ok = None
+    else:
+        skew_ok = skew >= PAYOFF_SKEW_MIN
     comp = getattr(vector, "completeness", None)
     grade = getattr(comp, "grade", None) if comp else None
     claims_n = int(getattr(comp, "claims_n", 0) or 0) if comp else 0
@@ -582,7 +616,19 @@ def build_close_call_waterfall(
     for p in _PRECEDENCE:
         matched: Optional[bool]
         evidence: str
-        if p["id"] == "P1_MOS":
+        if p["id"] == "P0_RD":
+            matched = rd_elig if isinstance(rd_elig, bool) else None
+            evidence = "unknown" if rd_elig is None else f"rd_elig={rd_elig}, rd_composite={rd_composite if rd_composite is not None else 'unknown'}"
+        elif p["id"] == "P0b_SURVIVE":
+            matched = survivable if isinstance(survivable, bool) else None
+            evidence = "unknown" if survivable is None else f"survivable={survivable}"
+        elif p["id"] == "P0c_SKEW":
+            matched = skew_ok
+            evidence = (
+                "unknown" if skew_ok is None
+                else ("below_band" if skew_label == "below_band" else f"payoff_skew={skew:.2f}")
+            )
+        elif p["id"] == "P1_MOS":
             matched = None if mos is None else mos > 0
             evidence = "unknown" if mos is None else f"mos_live={mos:.3f}"
         elif p["id"] == "P1b_LIVE_GAP":
@@ -635,6 +681,38 @@ def build_close_call_waterfall(
             )
         )
 
+    # Step 0 validated-factor eligibility (RD spine)
+    rd_detail = f"rd_composite={rd_composite:.2f}" if rd_composite is not None else "rd_composite unknown"
+    if rd_elig is True:
+        node(
+            "F0",
+            "RD spine eligibility",
+            "PASS",
+            f"Top-quintile RD composite in sealed universe ({rd_detail}) — paper-cohort proxy",
+            data_fields=["rd_elig", "rd_composite"],
+            formula_ids=["F_RD_COMPOSITE"],
+        )
+    elif rd_elig is False:
+        node(
+            "F0",
+            "RD spine eligibility",
+            "FAIL",
+            f"Not in the top RD quintile ({rd_detail}) — outside the validated factor cohort",
+            data_fields=["rd_elig", "rd_composite"],
+            formula_ids=["F_RD_COMPOSITE"],
+        )
+        blockers.append("Outside validated RD cohort — no factor spine behind a BUY")
+    else:
+        node(
+            "F0",
+            "RD spine eligibility",
+            "UNKNOWN",
+            "rd_elig missing (pre-thesis universe or unknown R&D inputs) — will not BUY without the validated spine",
+            data_fields=["rd_elig", "rd_composite"],
+            formula_ids=["F_RD_COMPOSITE"],
+        )
+        blockers.append("RD cohort eligibility unknown")
+
     # Step 1 kill
     if kill:
         node(
@@ -681,6 +759,37 @@ def build_close_call_waterfall(
             data_fields=["completeness_grade"],
         )
         blockers.append(f"Completeness {grade or 'unknown'} — need A or B to BUY")
+
+    # Step 2b survivability floors
+    if survivable is True:
+        node(
+            "F2b",
+            "Survivability floors",
+            "PASS",
+            "Cash engine, runway, dilution and retention floors all clear (thesis-gates.json)",
+            data_fields=["survivable", "fcfm_sbc", "rule40", "runway_yrs", "dilution_ann", "retention"],
+            formula_ids=["F_SURVIVABILITY_FLOORS"],
+        )
+    elif survivable is False:
+        node(
+            "F2b",
+            "Survivability floors",
+            "FAIL",
+            "A hard floor failed — a company that dies collects no factor premium",
+            data_fields=["survivable", "fcfm_sbc", "rule40", "runway_yrs", "dilution_ann", "retention"],
+            formula_ids=["F_SURVIVABILITY_FLOORS"],
+        )
+        blockers.append("Survivability floor failed")
+    else:
+        node(
+            "F2b",
+            "Survivability floors",
+            "UNKNOWN",
+            "A required floor field is unknown — will not assume survival",
+            data_fields=["survivable", "fcfm_sbc", "rule40", "runway_yrs", "dilution_ann", "retention"],
+            formula_ids=["F_SURVIVABILITY_FLOORS"],
+        )
+        blockers.append("Survivability unknown")
 
     # Step 3 sealed MoS
     if mos is None:
@@ -743,6 +852,38 @@ def build_close_call_waterfall(
             formula_ids=["F_VS_MEDIAN_PCT", "F_LIVE_VS_SEALED_GATE"],
         )
         blockers.append("Live vs-target ≤ 0 — tape closed the sealed MoS gap")
+
+    # Step 3c payoff skew
+    if skew_ok is True:
+        skew_txt = "price below the low lens (downside-to-band ≤ 0)" if skew_label == "below_band" else f"skew={skew:.1f}:1"
+        node(
+            "F3c",
+            "Payoff skew ≥ 3:1",
+            "PASS",
+            f"{skew_txt} — band asymmetry favours the long (band is a model output, not market data)",
+            data_fields=["payoff_skew", "payoff_skew_label", "fair_px_lo", "fair_px_hi"],
+            formula_ids=["F_PAYOFF_SKEW"],
+        )
+    elif skew_ok is False:
+        node(
+            "F3c",
+            "Payoff skew ≥ 3:1",
+            "FAIL",
+            f"skew={skew:.1f}:1 < {PAYOFF_SKEW_MIN:.0f}:1 — not enough asymmetry to underwrite",
+            data_fields=["payoff_skew", "payoff_skew_label", "fair_px_lo", "fair_px_hi"],
+            formula_ids=["F_PAYOFF_SKEW"],
+        )
+        blockers.append(f"Payoff skew below {PAYOFF_SKEW_MIN:.0f}:1")
+    else:
+        node(
+            "F3c",
+            "Payoff skew ≥ 3:1",
+            "UNKNOWN",
+            "payoff_skew missing (band or sealed price unknown) — will not assume asymmetry",
+            data_fields=["payoff_skew", "payoff_skew_label", "fair_px_lo", "fair_px_hi"],
+            formula_ids=["F_PAYOFF_SKEW"],
+        )
+        blockers.append("Payoff skew unknown")
 
     # Step 4 catalyst
     if l4.status == "known":
@@ -812,7 +953,10 @@ def build_close_call_waterfall(
         confidence = "med"
 
     buy_ok = (
-        not kill
+        rd_elig is True
+        and survivable is True
+        and skew_ok is True
+        and not kill
         and not kill_unknown
         and grade in ("A", "B")
         and mos is not None
@@ -851,7 +995,7 @@ def build_close_call_waterfall(
             "Stance",
             "BUY",
             f"All gates cleared · confidence={confidence} · {horizon_years}y horizon · clearance ≠ order",
-            data_fields=["F1", "F2", "F3", "F3b", "F4", "F5", "confidence"],
+            data_fields=["F0", "F1", "F2", "F2b", "F3", "F3b", "F3c", "F4", "F5", "confidence"],
             formula_ids=["F_HOLD_HORIZON", "F_IMPLIED_ANN_RETURN"],
         )
     elif kill_unknown:

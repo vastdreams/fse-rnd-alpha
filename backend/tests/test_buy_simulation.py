@@ -109,6 +109,76 @@ def test_evaluate_gates_kill_or_grade_blocks():
     assert evaluate_gates(**common, grade="A", kill_active=True)["gates"]["G4"] is False
 
 
+def _v2_common(parsed):
+    return dict(
+        parsed=parsed,
+        as_of=date(2025, 3, 15),
+        mos=0.2,
+        fair_px_med=90.0,
+        grade="A",
+        kill_active=False,
+    )
+
+
+def test_evaluate_gates_v2_buy_happy_path():
+    from app.services.buy_simulation import evaluate_gates_v2
+
+    closes = [100.0] * 30 + [70.0] * 30
+    parsed = parse_bars(bars_from(date(2025, 1, 1), closes))
+    res = evaluate_gates_v2(
+        **_v2_common(parsed), rd_elig=True, survivable=True, payoff_skew=3.5
+    )
+    assert res["decision"] == "buy"
+    assert res["gates"] == {
+        "G1": True, "G2": True, "G3": True, "G4": True, "G5": True, "G6": True, "G7": True,
+    }
+
+
+def test_evaluate_gates_v2_thesis_gates_block():
+    from app.services.buy_simulation import evaluate_gates_v2
+
+    closes = [100.0] * 30 + [70.0] * 30
+    parsed = parse_bars(bars_from(date(2025, 1, 1), closes))
+    common = _v2_common(parsed)
+    assert evaluate_gates_v2(**common, rd_elig=False, survivable=True, payoff_skew=3.5)["gates"]["G5"] is False
+    assert evaluate_gates_v2(**common, rd_elig=True, survivable=False, payoff_skew=3.5)["gates"]["G6"] is False
+    low_skew = evaluate_gates_v2(**common, rd_elig=True, survivable=True, payoff_skew=1.2)
+    assert low_skew["gates"]["G7"] is False and low_skew["decision"] == "no_buy"
+    # Below band passes G7 without a numeric skew.
+    below = evaluate_gates_v2(
+        **common, rd_elig=True, survivable=True, payoff_skew=None, payoff_skew_label="below_band"
+    )
+    assert below["gates"]["G7"] is True and below["decision"] == "buy"
+
+
+def test_evaluate_gates_v2_missing_thesis_inputs_excluded():
+    from app.services.buy_simulation import evaluate_gates_v2
+
+    closes = [100.0] * 30 + [70.0] * 30
+    parsed = parse_bars(bars_from(date(2025, 1, 1), closes))
+    res = evaluate_gates_v2(
+        **_v2_common(parsed), rd_elig=None, survivable=None, payoff_skew=None
+    )
+    assert res["decision"] == "excluded"
+    assert set(res["missing"]) == {"rd_elig", "survivable", "payoff_skew"}
+
+
+def test_v2_gates_contract_is_registered_and_frozen_shape():
+    import json as _json
+
+    from app.services.buy_simulation import PAYOFF_SKEW_MIN, STUDY_ID_V2
+
+    contract = _json.loads((ROOT / "contracts" / "simulated-buy-gates-v2.json").read_text())
+    assert contract["study_id"] == STUDY_ID_V2
+    gate_ids = [g["id"] for g in contract["gates"]]
+    assert gate_ids == ["G1", "G2", "G3", "G4", "G5", "G6", "G7"]
+    assert all(g.get("disclosure") for g in contract["gates"])
+    assert contract["disclosures"]
+    # Skew floor stays in lock-step with the thesis contract.
+    thesis = _json.loads((ROOT / "contracts" / "thesis-gates.json").read_text())
+    assert PAYOFF_SKEW_MIN == thesis["payoff_skew"]["min_ratio"]
+
+
 def test_rebalance_dates_skips_warmup():
     days = [date(2025, 1, 2), date(2025, 1, 15), date(2025, 2, 3), date(2025, 3, 3), date(2025, 4, 1)]
     assert rebalance_dates(days, warmup_months=2) == [date(2025, 3, 3), date(2025, 4, 1)]

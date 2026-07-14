@@ -4,7 +4,7 @@
  * Multi-select → server book; click-sort; CSV; factor chips; recipe pills.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { ErrorBanner } from "@/components/research/ErrorBanner"
 import { ScreenerHeader, ScreenerRow } from "@/components/research/ScreenerRow"
 import { BuyPerformanceBookPanel, SimulatedBuyStudyPanel } from "@/components/research/BuyPerformanceBook"
@@ -28,6 +28,7 @@ import {
   type SortKey,
 } from "@/lib/universeTable"
 import { resolveBuyViewMode } from "@/lib/universeBuyView"
+import { UniverseStrataView } from "@/pages/portfolio/UniverseStrataView"
 import { isPrimaryFactor } from "@/lib/universeFilters"
 import {
   computeSellCeiling,
@@ -188,12 +189,15 @@ const CSV_COLS = [
 
 export function UniversePage() {
   const selectEnabled = universeBookSelectEnabled()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const mode = (["buy", "etf", "all"].includes(params.get("mode") || "")
     ? params.get("mode")
     : "buy") as Mode
   const q = params.get("q") || ""
-  const reviewR3 = mode === "buy" && resolveBuyViewMode(params) === "candidates"
+  const buyView = resolveBuyViewMode(params)
+  const strataView = mode === "buy" && buyView === "strata"
+  const reviewR3 = mode === "buy" && buyView === "candidates"
   const requestedUniverseVersion = params.get("universe_version") || undefined
 
   const [rank, setRank] = useState<RankResponse | null>(null)
@@ -206,12 +210,12 @@ export function UniversePage() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   /** Cleared-BUY shortlist: top-10 by score (only when that view is active). */
-  const [pick10Only, setPick10Only] = useState(() => !reviewR3)
+  const [pick10Only, setPick10Only] = useState(() => mode === "buy" && buyView === "cleared")
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const selectionScopeRef = useRef<string | null>(null)
   const requestGenerationRef = useRef(0)
   const [factors, setFactors] = useState<Set<FactorId>>(
-    () => (mode === "buy" && !reviewR3 ? new Set(["stance_buy"]) : new Set())
+    () => (mode === "buy" && buyView === "cleared" ? new Set(["stance_buy"]) : new Set())
   )
 
   const setParam = (k: string, v: string) => {
@@ -274,7 +278,7 @@ export function UniversePage() {
   }
 
   const selectMode = (nextMode: Mode) => {
-    // What to Buy opens on ranked candidates (usable table), not the often-empty BUY shortlist.
+    // What to Buy opens on the three-strata decision surface (plain params).
     setFactors(new Set())
     setSortKey(null)
     setSelected(new Set())
@@ -283,7 +287,18 @@ export function UniversePage() {
     next.set("mode", nextMode)
     next.delete("review")
     next.delete("cleared")
-    if (nextMode === "buy") next.set("review", "1")
+    setParams(next, { replace: true })
+  }
+
+  const openStrata = () => {
+    setFactors(new Set())
+    setSortKey(null)
+    setSelected(new Set())
+    setPick10Only(false)
+    const next = new URLSearchParams(params)
+    next.set("mode", "buy")
+    next.delete("review")
+    next.delete("cleared")
     setParams(next, { replace: true })
   }
 
@@ -386,13 +401,13 @@ export function UniversePage() {
   const buyCount = clearedBuyRows.length
   const top10Buys = useMemo(() => clearedBuyRows.slice(0, 10), [clearedBuyRows])
   const top10TickerKey = top10Buys.map((row) => row.ticker).join("|")
-  const selectionScope = `${mode}:${reviewR3}:${rank?.universe_version ?? "pending"}:${top10TickerKey}`
+  const selectionScope = `${mode}:${buyView}:${rank?.universe_version ?? "pending"}:${top10TickerKey}`
 
   useEffect(() => {
     if (selectionScopeRef.current === selectionScope) return
     const timer = window.setTimeout(() => {
       selectionScopeRef.current = selectionScope
-      if (selectEnabled && mode === "buy" && !reviewR3) {
+      if (selectEnabled && mode === "buy" && buyView === "cleared") {
         setSelected(new Set(top10TickerKey ? top10TickerKey.split("|") : []))
         setPick10Only(true)
       } else {
@@ -400,10 +415,10 @@ export function UniversePage() {
       }
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [mode, reviewR3, selectEnabled, selectionScope, top10TickerKey])
+  }, [mode, buyView, selectEnabled, selectionScope, top10TickerKey])
 
   const displayRows =
-    mode === "buy" && !reviewR3 && pick10Only
+    mode === "buy" && buyView === "cleared" && pick10Only
       ? top10Buys
       : rankedRows
 
@@ -498,15 +513,22 @@ export function UniversePage() {
     }
     setBookMsg(`Added ${res.added} new · book now ${res.holdings.length} holdings.`)
     setSelected(new Set())
+    // Build-portfolio flow: land on the book, where the sizing wall
+    // (max_factor_sizing, bound 0 today) is immediately visible.
+    if (strataView) navigate("/app/book")
   }
 
   const active = MODES.find((m) => m.id === mode)!
-  const activeLabel = reviewR3
-    ? `What to Buy — ${rank?.n_ranked ?? "…"} ranked names`
-    : `Cleared BUY shortlist — ${buyCount}`
-  const activeBlurb = reviewR3
-    ? "Metric columns on the left. Score card (quality + why) on the right. Hover for definitions."
-    : "Only names that fully cleared the research BUY gates. Often empty — use ranked names above."
+  const activeLabel = strataView
+    ? `Select your portfolio — ${buyCount} complete ${buyCount === 1 ? "thesis" : "theses"}`
+    : reviewR3
+      ? `What to Buy — ${rank?.n_ranked ?? "…"} ranked names`
+      : `Cleared BUY shortlist — ${buyCount}`
+  const activeBlurb = strataView
+    ? "Three strata: complete theses (every gate passed) → near-misses (one named blocker) → weave rank (ordering only)."
+    : reviewR3
+      ? "Metric columns on the left. Score card (quality + why) on the right. Hover for definitions."
+      : "Only names that fully cleared the research BUY gates. Often empty — use ranked names above."
   const showStanceCols = mode === "buy"
   const visibleFactors = FACTORS.filter((f) => {
     if (f.modes && !f.modes.includes(mode)) return false
@@ -514,19 +536,9 @@ export function UniversePage() {
     return isPrimaryFactor(f.id)
   })
 
-  // Never leave investors on an empty cleared-BUY screen when candidates exist.
-  useEffect(() => {
-    if (loading || !rank || reviewR3 || mode !== "buy") return
-    if (buyCount === 0 && rank.n_ranked > 0) {
-      const next = new URLSearchParams(params)
-      next.set("mode", "buy")
-      next.set("review", "1")
-      next.delete("cleared")
-      setParams(next, { replace: true })
-      setFactors(new Set())
-      setPick10Only(false)
-    }
-  }, [loading, rank, reviewR3, mode, buyCount, params, setParams])
+  // Honest empty state: when zero theses clear, the strata view says so plainly.
+  // We never silently swap ranked candidates in as if they were cleared —
+  // the old auto-fallback to review=1 is intentionally gone.
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4 pb-28 sm:p-6 sm:pb-6">
@@ -601,21 +613,31 @@ export function UniversePage() {
         )}
         {mode === "buy" && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {reviewR3 ? (
+            {!strataView && (
+              <button
+                type="button"
+                onClick={openStrata}
+                className="rounded-lg border border-black bg-black px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                Portfolio selection (strata)
+              </button>
+            )}
+            {!reviewR3 && (
+              <button
+                type="button"
+                onClick={openReview}
+                className="rounded-lg border border-sky-800 bg-white px-3 py-1.5 text-xs font-semibold text-sky-950 hover:bg-sky-100"
+              >
+                Ranked list ({rank?.n_ranked ?? 0})
+              </button>
+            )}
+            {buyView !== "cleared" && (
               <button
                 type="button"
                 onClick={returnToBuyOnly}
                 className="rounded-lg border border-sky-800 bg-white px-3 py-1.5 text-xs font-semibold text-sky-950 hover:bg-sky-100"
               >
                 Cleared BUY only ({buyCount})
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={openReview}
-                className="rounded-lg border border-black bg-black px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Back to ranked list ({rank?.n_ranked ?? 0})
               </button>
             )}
           </div>
@@ -683,7 +705,18 @@ export function UniversePage() {
       )}
       {loading && <div className="p-8 text-center text-sm text-neutral-600">Loading…</div>}
 
-      {rank && !loading && mode === "buy" && (
+      {rank && !loading && strataView && (
+        <UniverseStrataView
+          rows={rankedRows}
+          stanceByTicker={stanceByTicker}
+          universeVersion={rank.universe_version}
+          selectEnabled={selectEnabled}
+          selected={selected}
+          onToggle={toggleSelect}
+        />
+      )}
+
+      {rank && !loading && mode === "buy" && !strataView && (
         <div className="rounded-xl border border-border bg-white">
           <div className="flex flex-wrap items-center gap-2 border-b border-border bg-neutral-50 px-3 py-2">
             {selectEnabled && (
@@ -879,10 +912,12 @@ export function UniversePage() {
               className="min-h-11 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
             >
               {adding
-                ? "Adding…"
-                : selected.size === 10
-                  ? "Add top 10 to Book"
-                  : `Add ${selected.size} to Book`}
+                ? "Building…"
+                : strataView
+                  ? `Build portfolio (${selected.size})`
+                  : selected.size === 10
+                    ? "Add top 10 to Book"
+                    : `Add ${selected.size} to Book`}
             </button>
             <button
               type="button"

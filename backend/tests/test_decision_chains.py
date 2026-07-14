@@ -86,3 +86,15 @@ def test_f3b_live_vs_sealed_is_hard_gate():
     step = next(s for s in buy["steps"] if s["id"] == "F3b")
     assert step["gate_kind"] == "hard"
     assert "F_LIVE_VS_SEALED_GATE" in step["formula_ids"]
+
+
+def test_thesis_gates_are_hard_and_ordered():
+    """close_call_v3 thesis gates: F0 RD spine, F2b survivability, F3c skew."""
+    buy = chain_by_id("D_STANCE_BUY")
+    ids = [s["id"] for s in buy["steps"]]
+    assert ids == ["F0", "F1", "F2", "F2b", "F3", "F3b", "F3c", "F4", "F5", "F6"]
+    for sid, fid in (("F0", "F_RD_COMPOSITE"), ("F2b", "F_SURVIVABILITY_FLOORS"), ("F3c", "F_PAYOFF_SKEW")):
+        step = next(s for s in buy["steps"] if s["id"] == sid)
+        assert step["gate_kind"] == "hard"
+        assert step["on_unknown"] == "block_buy"
+        assert fid in step["formula_ids"]

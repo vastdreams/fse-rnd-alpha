@@ -17,6 +17,7 @@ import { useAuthStore } from "@/stores/authStore"
 import { useEffect, useState } from "react"
 import { useServerBookCount } from "@/hooks/useServerBookCount"
 import { useTheme } from "@/components/theme-provider"
+import { getBuyPerformanceBook, type BuyPerformanceBook } from "@/lib/api/universe"
 
 const NAV_COLLAPSED_KEY = "fse_portfolio_nav_collapsed"
 
@@ -38,6 +39,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       return false
     }
   })
+  const [engineStatus, setEngineStatus] = useState<BuyPerformanceBook | null>(null)
+
+  // Thesis-engine trust chip: engine version, sealed universe, armed
+  // falsification rules. Informational only — failure to load renders nothing.
+  useEffect(() => {
+    if (!token || !user || !hydrated || isAuthPage) return
+    let cancelled = false
+    getBuyPerformanceBook()
+      .then((b) => {
+        if (!cancelled) setEngineStatus(b)
+      })
+      .catch(() => {
+        if (!cancelled) setEngineStatus(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token, user, hydrated, isAuthPage])
 
   useEffect(() => {
     if (!hydrated) hydrate()
@@ -128,7 +147,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             active={onUniverse && !onCompany}
             icon={<Search className="h-4 w-4" />}
             label="Universe"
-            hint="Buy · ETF · All"
+            hint="What to Buy · ETF · All"
             collapsed={collapsed}
           />
           <NavItem
@@ -160,6 +179,29 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           )}
         </nav>
+
+        {engineStatus && !collapsed && (
+          <div
+            className="mx-3 mb-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2"
+            data-testid="thesis-engine-chip"
+            title="The thesis engine behind every stance on this platform. Falsification rules are pre-registered — decaying evidence retires claims publicly."
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+              Thesis engine
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-neutral-800">{engineStatus.engine}</div>
+            <div className="text-[10px] text-neutral-500">
+              {engineStatus.universe_version
+                ? `universe ${engineStatus.universe_version.slice(0, 18)}`
+                : "no sealed universe"}
+            </div>
+            {engineStatus.falsification && engineStatus.falsification.length > 0 && (
+              <div className="text-[10px] text-neutral-500">
+                {engineStatus.falsification.length} falsification rules armed
+              </div>
+            )}
+          </div>
+        )}
 
         <div className={`space-y-1 border-t border-neutral-200 ${collapsed ? "p-1.5" : "p-3"}`}>
           {collapsed ? (
