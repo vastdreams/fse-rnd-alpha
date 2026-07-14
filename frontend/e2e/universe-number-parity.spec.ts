@@ -109,7 +109,7 @@ test("number parity: sealed golden tickers match card formatters and MoS/above-b
     })
   )
 
-  await page.goto("/app/universe?mode=buy")
+  await page.goto("/app/universe?mode=buy&review=1")
 
   const bundleSrc =
     (await page.locator('script[src*="assets/index-"]').first().getAttribute("src")) ||

@@ -121,7 +121,7 @@ test("renders a non-empty What-to-Buy view after rank and stance data load", asy
   await expect(page.getByText("BUY", { exact: true }).first()).toBeVisible()
 })
 
-test("defaults What-to-Buy to ranked candidates when no cleared BUY filter is set", async ({ page }) => {
+test("plain What-to-Buy lands on the strata decision surface; review=1 keeps the ranked table", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("fse_research_token", "test-token")
     localStorage.setItem(
@@ -196,7 +196,17 @@ test("defaults What-to-Buy to ranked candidates when no cleared BUY filter is se
     })
   })
 
+  // Plain /app lands on the strata decision surface with an honest empty state
+  // (no cleared theses here — MNDY is a one-blocker near-miss).
   await page.goto("/app/universe?mode=buy")
+
+  await expect(page.getByText(/Select your portfolio — 0 complete theses/)).toBeVisible()
+  await expect(page.getByText(/0 complete theses today — the gates are doing their job/)).toBeVisible()
+  await expect(page.getByText("blocked: Catalyst clarity UNKNOWN")).toBeVisible()
+  await expect(page.getByText("MNDY", { exact: true }).first()).toBeVisible()
+
+  // The classic ranked candidates table stays reachable via review=1.
+  await page.goto("/app/universe?mode=buy&review=1")
 
   await expect(page.getByText(/What to Buy — 1 ranked names/)).toBeVisible()
   await expect(page.getByText(/Score card \(quality \+ why\)/i)).toBeVisible()
@@ -541,7 +551,7 @@ test("card contracts: compact revenue, fair band, no duplicate MoS when equal to
     })
   )
 
-  await page.goto("/app/universe?mode=buy")
+  await page.goto("/app/universe?mode=buy&review=1")
 
   const card = page.locator("article").filter({ hasText: "KSPI" }).first()
   await expect(card).toBeVisible()
