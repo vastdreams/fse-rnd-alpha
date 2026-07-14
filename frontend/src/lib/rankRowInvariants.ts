@@ -68,7 +68,8 @@ export function fairBandZone(
   lo: number | null | undefined,
   hi: number | null | undefined
 ): "below" | "inside" | "above" | "unknown" {
-  if (!finite(price) || !finite(lo) || !finite(hi) || lo >= hi) return "unknown"
+  // lo == hi is a legal degenerate band; only inverted bands are unknown.
+  if (!finite(price) || !finite(lo) || !finite(hi) || lo > hi) return "unknown"
   if (price < lo) return "below"
   if (price > hi) return "above"
   return "inside"

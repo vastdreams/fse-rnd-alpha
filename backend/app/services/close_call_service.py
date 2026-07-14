@@ -19,7 +19,7 @@ implied return is gap-close maths, not a forecast; paper HML_RD ≠ this engine.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
 from app.contracts.research import (
@@ -117,7 +117,7 @@ def _detect_tape_event(bars: list[dict]) -> Optional[dict[str, Any]]:
     cutoff = bars[-1]["date"]
     try:
         end = date.fromisoformat(str(cutoff)[:10])
-        start_cut = date(end.year - 1, end.month, end.day) if end.month != 2 or end.day != 29 else date(end.year - 1, 2, 28)
+        start_cut = end - timedelta(days=548)  # ~18 months, matching docstring
         window = [b for b in bars if date.fromisoformat(str(b["date"])[:10]) >= start_cut]
     except Exception:
         window = bars[-400:]
@@ -210,7 +210,10 @@ def _score_valuation(mos: Optional[float], gap: Optional[float]) -> tuple[Option
     contrib: dict[str, float] = {}
     if mos is None and gap is None:
         return None, {}, ["mos_live", "gap_to_median"]
-    g = mos if mos is not None else gap
+    # Score the live gap when known — the tape is the tradable reality; the
+    # sealed MoS only backfills when no live gap exists. Mirrors F3/F3b gate
+    # precedence so scores cannot drift from the gates.
+    g = gap if gap is not None else mos
     s = score_valuation_from_gap(g)
     contrib["mos_or_gap"] = s
     if mos is None:
@@ -280,6 +283,10 @@ def build_close_call_waterfall(
     # Explicit live gap only — do not silently substitute sealed MoS here.
     # Horizon maths may fall back to mos when live gap is absent.
     live_gap = vr.get("gap_to_median") if isinstance(vr, dict) else None
+    # A stale cached quote is not the live tape. Fail closed: treat the gap
+    # as UNKNOWN so F3b blocks BUY rather than passing on a month-old print.
+    if live_gap is not None and isinstance(vr, dict) and vr.get("price_stale") is True:
+        live_gap = None
     gap = live_gap if live_gap is not None else mos
     fcfm = _mv(vector, "fcfm_sbc")
     rule40 = _mv(vector, "rule40")

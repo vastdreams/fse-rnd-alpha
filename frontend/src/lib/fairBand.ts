@@ -24,7 +24,8 @@ export function fairBandLayout(
   med: number | null | undefined,
   hi: number | null | undefined
 ): FairBandLayout | null {
-  if (lo == null || hi == null || !Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) {
+  // lo == hi is a legal degenerate band (all lenses agree); only reject inverted bands.
+  if (lo == null || hi == null || !Number.isFinite(lo) || !Number.isFinite(hi) || lo > hi) {
     return null
   }
 

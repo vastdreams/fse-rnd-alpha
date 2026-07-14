@@ -765,6 +765,26 @@ def main() -> None:
                     "SELECT materialize_universe_evidence_refs($1)",
                     universe_version,
                 )
+                # Bind PIT-valid catalyst anchors while the build is still
+                # 'building'. Refs are immutable after seal, and the stance
+                # engine only reads anchors joined through this table — without
+                # this bind the L4 catalyst gate sees zero anchors forever.
+                anchor_status = await conn.execute(
+                    """INSERT INTO universe_evidence_refs (universe_version, claim_id)
+                       SELECT DISTINCT $1, claim.claim_id
+                         FROM evidence_claims AS claim
+                         JOIN source_snapshots AS snapshot
+                           ON snapshot.snapshot_id = claim.snapshot_id
+                         JOIN metric_vectors AS vector_row
+                           ON vector_row.universe_version = $1
+                          AND vector_row.ticker = claim.ticker
+                        WHERE claim.field = 'catalyst_anchor'
+                          AND claim.extracted_at <= vector_row.computed_at
+                          AND snapshot.available_date <= vector_row.computed_at::date
+                       ON CONFLICT DO NOTHING""",
+                    universe_version,
+                )
+                print(f"  catalyst anchor refs bound: {anchor_status}")
                 if args.activate:
                     await conn.execute("SELECT pg_advisory_xact_lock(842183002)")
                     await conn.execute(

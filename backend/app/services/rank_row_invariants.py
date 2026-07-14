@@ -42,7 +42,9 @@ def fair_band_zone(
 ) -> str:
     if price is None or lo is None or hi is None:
         return "unknown"
-    if lo >= hi:
+    # lo == hi is a legal degenerate band (all lenses agree); only inverted
+    # bands are unknown. Keeps parity with the build-time ordering check.
+    if lo > hi:
         return "unknown"
     if price < lo:
         return "below"

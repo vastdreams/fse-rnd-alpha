@@ -30,10 +30,21 @@ class TestBreachWall:
         breaches = evaluate_breaches([h("WDAY", 10)], DEFAULT_CONSTRAINTS, flags)
         assert any(b["kind"] == "ban_kill_active" for b in breaches)
 
-    def test_kill_active_override_passes(self):
+    def test_active_kill_is_never_overridable(self):
+        """Kill is non-negotiable research hygiene: a free-text override may
+        waive UNKNOWN state but never an ACTIVE kill criterion."""
         flags = {"WDAY": {"kill_active": True, "completeness_grade": "A", "stale": False}}
         breaches = evaluate_breaches([h("WDAY", 10, "accepting kill risk, thesis X")], DEFAULT_CONSTRAINTS, flags)
+        assert any(b["kind"] == "ban_kill_active" for b in breaches)
+
+    def test_unknown_kill_override_passes(self):
+        flags = {"WDAY": {"kill_active": None, "completeness_grade": "A", "stale": False}}
+        breaches = evaluate_breaches([h("WDAY", 10, "kill review pending, thesis X")], DEFAULT_CONSTRAINTS, flags)
         assert not any(b["kind"] == "ban_kill_active" for b in breaches)
+
+    def test_lowercase_holding_ticker_matches_uppercase_flags(self):
+        flags = {"FRSH": {"kill_active": False, "completeness_grade": "A", "stale": False}}
+        assert evaluate_breaches([h("frsh", 10)], DEFAULT_CONSTRAINTS, flags) == []
 
     def test_unknown_kill_blocks_fail_closed(self):
         flags = {"UNKNOWN": {"kill_active": None, "completeness_grade": "A", "stale": False}}

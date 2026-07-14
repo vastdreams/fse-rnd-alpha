@@ -21,7 +21,11 @@ def forward_return(
     as_of: date,
     sessions: int,
 ) -> Optional[float]:
-    """PIT: first close on/after as_of → close ``sessions`` trading bars later."""
+    """PIT: first close strictly after as_of → close ``sessions`` bars later.
+
+    Entry is never the as_of close: seals happen intraday, so that close is
+    not yet known at decision time (look-ahead).
+    """
 
     if not bars or sessions < 1:
         return None
@@ -36,7 +40,7 @@ def forward_return(
         except (TypeError, ValueError, KeyError):
             continue
     ordered.sort(key=lambda x: x[0])
-    start_i = next((i for i, (d, _) in enumerate(ordered) if d >= as_of), None)
+    start_i = next((i for i, (d, _) in enumerate(ordered) if d > as_of), None)
     if start_i is None:
         return None
     end_i = start_i + sessions
@@ -90,6 +94,8 @@ def summarise_snapshot(
         "as_of": as_of.isoformat(),
         "universe_version": universe_version,
         "n_buy": len(members),
+        # Horizon keys are trading sessions, not calendar days (21s ≈ 1 month).
+        "horizon_unit": "trading_sessions",
         "horizons": {},
     }
     for h in HORIZONS_SESSIONS:
@@ -97,7 +103,7 @@ def summarise_snapshot(
             forward_return(bars_by_ticker.get(m["ticker"].upper(), []), as_of=as_of, sessions=h)
             for m in members
         ]
-        summary["horizons"][f"{h}d"] = {
+        summary["horizons"][f"{h}s"] = {
             "mean_equal_weight": equal_weight_book_return(rets),
             "hit_rate": hit_rate(rets),
             "n_observed": sum(1 for r in rets if r is not None),

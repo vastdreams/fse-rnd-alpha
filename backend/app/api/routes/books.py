@@ -164,6 +164,11 @@ def evaluate_breaches(
 ) -> list[dict]:
     """Constraint engine. Returns breach list; empty = save allowed."""
     breaches: list[dict] = []
+
+    def fl(h: BookHolding) -> dict:
+        # Vector flag keys are DB-uppercase; never miss on client casing.
+        return flags.get(h.ticker.upper()) or flags.get(h.ticker) or {}
+
     total = sum(h.weight_pct for h in holdings)
     if holdings and abs(total - 100.0) > 0.01 and total > 100.0001:
         breaches.append({"kind": "weights_sum", "detail": f"weights sum to {total:.2f}% > 100%"})
@@ -178,8 +183,10 @@ def evaluate_breaches(
                                      "detail": f"{h.ticker} {h.weight_pct:.1f}% > max {c.limit:.0f}%"})
         elif c.kind == "ban_kill_active":
             for h in holdings:
-                kill_state = flags.get(h.ticker, {}).get("kill_active")
-                if kill_state is not False and not h.override_reason:
+                kill_state = fl(h).get("kill_active")
+                # An ACTIVE kill is never overridable; only UNKNOWN may be
+                # waived with a reviewed reason.
+                if kill_state is True or (kill_state is not False and not h.override_reason):
                     breaches.append({"kind": c.kind, "ticker": h.ticker,
                                      "detail": (
                                          f"{h.ticker} has an ACTIVE kill criterion"
@@ -190,7 +197,7 @@ def evaluate_breaches(
             incomplete = [
                 h
                 for h in holdings
-                if flags.get(h.ticker, {}).get("completeness_grade") in ("Incomplete", None)
+                if fl(h).get("completeness_grade") in ("Incomplete", None)
             ]
             # Overrides are individual, reviewed exceptions. An override on an
             # unrelated name must not suppress incomplete exposure elsewhere.
@@ -211,7 +218,7 @@ def evaluate_breaches(
         elif c.kind == "max_sector_pct" and c.limit is not None:
             sectors: dict[str, list[BookHolding]] = {}
             for h in holdings:
-                sector = flags.get(h.ticker, {}).get("sector")
+                sector = fl(h).get("sector")
                 if not sector and not h.override_reason:
                     breaches.append(
                         {
@@ -236,7 +243,7 @@ def evaluate_breaches(
                             )
         elif c.kind == "max_float_fcf_share" and c.limit is not None:
             for h in holdings:
-                observed = flags.get(h.ticker, {}).get("float_fcf_share")
+                observed = fl(h).get("float_fcf_share")
                 if (observed is None or observed > c.limit) and not h.override_reason:
                     detail = (
                         f"{h.ticker} float-FCF share is Unknown"
@@ -246,7 +253,7 @@ def evaluate_breaches(
                     breaches.append({"kind": c.kind, "ticker": h.ticker, "detail": detail})
         elif c.kind == "ban_on_hold":
             for h in holdings:
-                stance = flags.get(h.ticker, {}).get("stance")
+                stance = fl(h).get("stance")
                 if stance in (None, "HOLD", "UNKNOWN") and not h.override_reason:
                     label = "Unknown" if stance in (None, "UNKNOWN") else "HOLD"
                     breaches.append(
@@ -258,7 +265,7 @@ def evaluate_breaches(
                     )
         elif c.kind == "liquidity_floor" and c.limit is not None:
             for h in holdings:
-                liquidity = flags.get(h.ticker, {}).get("liquidity_usd")
+                liquidity = fl(h).get("liquidity_usd")
                 if (liquidity is None or liquidity < c.limit) and not h.override_reason:
                     detail = (
                         f"{h.ticker} liquidity is Unknown"
@@ -273,8 +280,10 @@ def evaluate_breaches(
         breach.get("ticker") for breach in breaches if breach.get("kind") == "ban_kill_active"
     }
     for h in holdings:
-        kill_state = flags.get(h.ticker, {}).get("kill_active")
-        if kill_state is not False and not h.override_reason and h.ticker not in existing_kill_breaches:
+        kill_state = fl(h).get("kill_active")
+        if (
+            kill_state is True or (kill_state is not False and not h.override_reason)
+        ) and h.ticker not in existing_kill_breaches:
             breaches.append(
                 {
                     "kind": "ban_kill_active",
@@ -289,7 +298,7 @@ def evaluate_breaches(
 
     # Stale or Unknown freshness always needs an override (freshness SLA).
     for h in holdings:
-        stale = flags.get(h.ticker, {}).get("stale")
+        stale = fl(h).get("stale")
         if stale is not False and not h.override_reason:
             breaches.append(
                 {

@@ -312,3 +312,21 @@ def test_missing_live_gap_is_unknown_not_buy():
     )
     assert wf.aggregate.stance == "UNKNOWN"
     assert any(n["id"] == "F3b" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)
+
+
+def test_stale_quote_gap_is_unknown_not_pass():
+    """A >30d-old cached quote must not clear the live F3b gate."""
+    wf = build_close_call_waterfall(
+        ticker="EGAN",
+        universe_version="uv_test",
+        vector=_vec(ticker="EGAN", mos_live=_mv(0.86)),
+        valuation_range={
+            "gap_to_median": 0.40,
+            "fair_px_med": 12.24,
+            "price_live": 9.0,
+            "price_stale": True,
+        },
+        price_bars=_bars_spike_crash(),
+    )
+    assert wf.aggregate.stance != "BUY"
+    assert any(n["id"] == "F3b" and n["result"] == "UNKNOWN" for n in wf.aggregate.flowchart)

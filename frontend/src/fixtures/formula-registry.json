@@ -453,7 +453,7 @@
         "backend/app/services/dcf_service.py"
       ],
       "display": [
-        "frontend/src/pages/research/CompanyResearchPage.tsx"
+        "frontend/src/pages/portfolio/CompanyResearchPage.tsx"
       ],
       "audit": [
         "backend/tests/test_dcf_service.py"

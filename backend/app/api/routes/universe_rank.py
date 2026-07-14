@@ -45,6 +45,21 @@ from app.services.rank_row_invariants import (
 from app.services.decision_provenance import rank_row_provenance
 from app.services.tradability import adv_usd_from_bars, capacity_note
 from app.services.price_history_service import get_cached_price_history
+
+# ADV is derived from the immutable SEP disk cache; re-parsing a year of bars
+# per row per request is pure latency. Same TTL rationale as _vector_cache.
+_ADV_TTL_SECONDS = 300
+_adv_cache: dict[str, tuple[float, float | None]] = {}
+
+
+def _adv_usd_cached(ticker: str) -> float | None:
+    hit = _adv_cache.get(ticker)
+    if hit and (time.monotonic() - hit[0]) < _ADV_TTL_SECONDS:
+        return hit[1]
+    hist = get_cached_price_history(ticker, years=1, immutable_only=True)
+    adv = adv_usd_from_bars((hist or {}).get("bars") or [])
+    _adv_cache[ticker] = (time.monotonic(), adv)
+    return adv
 from app.services.rank_service import RankEngine, RankRequest
 
 logger = logging.getLogger(__name__)
@@ -197,9 +212,7 @@ async def _enrich_rows(rows: list[dict], vectors: list[MetricVector]) -> list[di
             r["net_profit_usd"] = None
 
         # Tradability strip — disk cache only; UNKNOWN when volume missing.
-        hist = get_cached_price_history(t, years=1, immutable_only=True)
-        bars = (hist or {}).get("bars") or []
-        adv = adv_usd_from_bars(bars)
+        adv = _adv_usd_cached(t)
         r["liquidity_usd"] = adv
         r["adv_usd_20d"] = adv
         r["tradability_note"] = capacity_note(adv)

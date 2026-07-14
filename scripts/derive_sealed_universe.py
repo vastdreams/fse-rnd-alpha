@@ -65,7 +65,8 @@ async def derive(parent_version: str, output_version: str, build_source_sha: str
             raise SystemExit(f"Universe version already exists: {output_version}")
 
         source_rows = await conn.fetch(
-            """SELECT ticker, vector, completeness_grade, route, kill_active, stale
+            """SELECT ticker, vector, completeness_grade, route, kill_active, stale,
+                      computed_at
                FROM metric_vectors WHERE universe_version=$1 ORDER BY ticker""",
             parent_version,
         )
@@ -124,7 +125,9 @@ async def derive(parent_version: str, output_version: str, build_source_sha: str
             for row in source_rows:
                 raw = row["vector"] if isinstance(row["vector"], dict) else json.loads(row["vector"])
                 raw["universe_version"] = output_version
-                raw["computed_at"] = now.isoformat()
+                # PIT: keep the parent's computed_at. Rewriting it to derive time
+                # would let evidence/tape newer than the parent seal become
+                # "known" to the clone and silently change stances.
                 await conn.execute(
                     """INSERT INTO metric_vectors
                        (ticker, universe_version, computed_at, vector,
@@ -132,7 +135,7 @@ async def derive(parent_version: str, output_version: str, build_source_sha: str
                        VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8)""",
                     row["ticker"],
                     output_version,
-                    now,
+                    row["computed_at"],
                     json.dumps(raw),
                     row["completeness_grade"],
                     row["route"],
@@ -140,6 +143,17 @@ async def derive(parent_version: str, output_version: str, build_source_sha: str
                     row["stale"],
                 )
             await conn.fetchval("SELECT materialize_universe_evidence_refs($1)", output_version)
+            # Copy every parent evidence ref (including catalyst_anchor claims
+            # not referenced inside vectors) so the clone sees the exact same
+            # evidence set as its parent. Refs are immutable after seal.
+            await conn.execute(
+                """INSERT INTO universe_evidence_refs (universe_version, claim_id)
+                   SELECT $1, claim_id FROM universe_evidence_refs
+                   WHERE universe_version=$2
+                   ON CONFLICT DO NOTHING""",
+                output_version,
+                parent_version,
+            )
             await conn.execute(
                 """UPDATE universe_builds
                    SET status='sealed', sealed_at=CURRENT_TIMESTAMP, is_active=false

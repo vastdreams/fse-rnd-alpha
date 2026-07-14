@@ -366,6 +366,7 @@ async def company_research(
             "price_live": live_px,
             "price_as_of": (profile or {}).get("price_as_of"),
             "price_source": (profile or {}).get("price_source"),
+            "price_stale": (profile or {}).get("price_stale"),
             "fair_value_source": valuation_source_label,
             "zone": zone,
             "gap_to_median": (med / live_px - 1) if (live_px and med) else None,
@@ -556,6 +557,9 @@ async def research_stances(
                 "horizon_note": agg.horizon_note,
                 "blockers": agg.blockers,
                 "watermark": agg.watermark,
+                # PIT ledger inputs — entry-time sealed MoS and live gap.
+                "mos_live": mos,
+                "gap_to_median": (vr or {}).get("gap_to_median"),
             }
         )
 
@@ -1079,6 +1083,22 @@ async def seal_buy_performance_book(
         raise HTTPException(status_code=400, detail="No cleared BUY rows to seal — refusing empty ledger")
 
     as_of = date_cls.today()
+    try:
+        dup = await db.execute(
+            text(
+                """SELECT snapshot_id FROM buy_set_snapshots
+                   WHERE universe_version=:uv AND as_of_date=:as_of LIMIT 1"""
+            ),
+            {"uv": uv, "as_of": as_of},
+        )
+        existing = dup.scalar()
+    except Exception:
+        existing = None
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"BUY set already sealed for {uv} on {as_of.isoformat()} ({existing})",
+        )
     snapshot_id = f"buysnap_{as_of.isoformat()}_{uuid.uuid4().hex[:12]}"
     try:
         await db.execute(
@@ -1118,8 +1138,8 @@ async def seal_buy_performance_book(
                 "t": m["ticker"],
                 "c": m.get("confidence"),
                 "s": m.get("score"),
-                "mos": None,
-                "gap": None,
+                "mos": m.get("mos_live"),
+                "gap": m.get("gap_to_median"),
                 "h": m.get("horizon_years"),
                 "imp": m.get("implied_ann_return"),
             },
