@@ -1,6 +1,12 @@
+# Default deny. Frontend and backend production images both build from the
+# repository root and must explicitly re-include only what they COPY.
 *
 !frontend/
 !frontend/**
 !deploy/
 !deploy/Dockerfile.frontend
 !deploy/nginx.conf
+!backend/
+!backend/**
+!contracts/
+!contracts/**
