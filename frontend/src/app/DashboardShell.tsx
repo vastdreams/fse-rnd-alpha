@@ -86,6 +86,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     })
   }
 
+  // Print-grade report documents render without any application chrome so the
+  // PDF renderer and browser print see only the two A4 pages.
+  const onPrintableReport = /^\/app\/company\/[^/]+\/report\//.test(location.pathname)
+  if (onPrintableReport) {
+    return <div className="min-h-screen bg-white text-neutral-900">{children}</div>
+  }
+
   const onUniverse =
     location.pathname === "/app" ||
     location.pathname === "/app/universe" ||

@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations, admin, analytics, auth, universe_rank, universe_company, books
+from app.api.routes import companies, factors, backtests, stats, fmp, ai_analysis, research, portfolio, papers, subscribe, donations, admin, analytics, auth, universe_rank, universe_company, books, company_reports
 from app.api.routes.auth import ensure_bootstrap_user
 from app.core.config import settings
 from app.core.observability import init_error_tracking
@@ -225,6 +225,7 @@ app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
 app.include_router(universe_rank.router, prefix="/api/universe", tags=["Universe Rank"])
 app.include_router(universe_company.router, prefix="/api/universe", tags=["Universe Rank"])
 app.include_router(books.router, prefix="/api/books", tags=["Books"])
+app.include_router(company_reports.router, prefix="/api/reports", tags=["Company Reports"])
 
 _RELEASE_METADATA_PATHS = frozenset(
     {

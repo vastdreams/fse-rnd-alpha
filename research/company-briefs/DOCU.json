@@ -1,0 +1,96 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "DocuSign, Inc. Form 10-K FY2026 (ended 2026-01-31)",
+      "locator": "sec:0001261333-26-000021",
+      "as_of_date": "2026-01-31",
+      "available_date": "2026-03-18",
+      "url": "https://www.sec.gov/Archives/edgar/data/1261333/000126133326000021/docu-20260131.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:DOCU",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "DocuSign 8-K — Q4/FY2026 results",
+      "locator": "sec:8-K:DOCU:2026-03-17",
+      "as_of_date": "2026-01-31",
+      "available_date": "2026-03-17",
+      "url": "https://www.sec.gov/Archives/edgar/data/1261333/000126133326000017/docu-20260317.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "DocuSign earnings announcement — EPS actual 1.01 (2026-03-17)",
+      "locator": "alphavantage:EARNINGS:DOCU:2026-03-17",
+      "as_of_date": "2026-01-31",
+      "available_date": "2026-03-17"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "The market treats DocuSign as a commoditized e-signature vendor in permanent deceleration. The sealed model sees a profitable agreement-workflow platform — 79% gross margin, 32% ROIC, shrinking share count — whose Intelligent Agreement Management pivot is funded by 20% R&D intensity, trading just below the low internal lens.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "DocuSign sells subscription software for preparing, executing, and managing agreements. E-signature remains the anchor product with dominant brand recognition; the growth vector is the Intelligent Agreement Management (IAM) platform — contract lifecycle management, AI-driven agreement analysis (Insights/Navigator), identity verification, and workflow integrations across Salesforce, Microsoft, and SAP estates. Revenue is overwhelmingly recurring subscriptions billed on envelope volume and seats, with net expansion driven by product attach. The cost structure has been rebuilt since 2022: operating discipline plus buybacks turned a dilution machine into a cash-return story with 15% SBC-adjusted FCF margin.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "E-signature is contested by Adobe (Acrobat Sign) bundling into Creative/Document Cloud, and low-price challengers (Dropbox Sign, PandaDoc, Zoho) commoditizing simple signing. The battleground has moved up-stack to agreement management: CLM specialists (Icertis, Ironclad, Sirion), and AI-native contract analysis startups. DocuSign's distribution — over a million paying customers and deep CRM integrations — is its structural advantage entering that fight; bundling pressure from Adobe and Microsoft is the structural threat.",
+      "cite_ids": ["A1"]
+    },
+    "moat": {
+      "body": "Brand-as-verb in e-signature, a large installed base with legal and compliance workflows wired into agreement flows, and network familiarity (signers become buyers). Switching costs concentrate in integrations and stored agreement repositories rather than the signature act itself — which is why the IAM pivot matters: repository plus AI analysis deepens lock-in beyond the commoditizing core. Sealed moat fields (retention, concentration) are Unknown in the vector and render as such; envelope-level stickiness is analyst judgment on cited filings.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: 8% revenue CAGR — the slowest of the six — but 79% gross margin, 15% SBC-adjusted FCF margin, 32% ROIC, and the most aggressive net buyback in the set (−3.2% annualized dilution). Rule of 40 sits at 23, carried by cash margin as growth matures.",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable, value-flavored. The stock fell 57% from $98 (January 2025) to $42 (February 2026); at $49 it sits just below the low internal lens ($52), so the payoff gate passes below-band. This is the narrowest band and shortest horizon (one year) in the cleared set: the model sees modest absolute upside to the high lens ($59) but favorable asymmetry because downside-to-band is negative. R&D composite +0.92σ keeps DOCU in the validated cohort — the IAM roadmap is the repayment engine if it converts installed-base trust into platform expansion. Survivability floors clear on strong FCF and shrinking share count.",
+      "cite_ids": ["A1", "A3", "A4"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors: Q4/FY2026 8-K and earnings (March 17, 2026, EPS 1.01); March 6, 2026 8-K; Q1 FY2027 report expected June 2026 cycle with IAM adoption metrics. Each quarterly print tests whether IAM attach is bending the growth curve before the buyback support story exhausts.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting: sealed band $52/$52/$59 against $49 — low and median lenses converge because the growth assumptions that separate them are conservative here. The licensed street snapshot (scenario table) typically carries a mean target modestly above our band, reflecting IAM optimism we deliberately do not underwrite. This is the one name where the internal model is more conservative than consensus; the position exists on asymmetry (below-band entry), not on a heroic fair-value gap. If price converges to the median lens the thesis is complete.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Point-in-time revision history is not yet stored on this platform; the report binds the latest licensed consensus snapshot with analyst counts and dispersion where provided. DocuSign's January fiscal year end offsets street annual estimates from calendar comparisons. Absent fields render Unknown rather than inferred.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Allan Thygesen (ex-Google commerce president) has been CEO since October 2022, hired explicitly to execute the platform pivot; headcount is roughly 6,800 after successive restructurings. Capital allocation is the clearest signal: sustained buybacks shrinking net share count 3%+ annually while holding 20% R&D intensity. Board and compensation detail is incorporated by reference from the proxy into the 10-K (Part III). Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound, and we do not proxy it; the 2022–2024 restructuring history is disclosed in filings.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared: R&D-cohort eligibility (+0.92σ composite), survivability floors on strong FCF and negative dilution, below-band payoff skew, dated catalysts bound at vector time, no kill criterion. Weave ordering places DOCU in the lower half of the cleared set — consistent with its slower growth — and the weave remains ordinal only.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks: e-signature commoditization outpacing IAM monetization; Adobe/Microsoft bundling compressing price; envelope volumes tied to hiring, housing, and deal activity (macro-cyclical); IAM competing against focused CLM vendors with deeper legal-workflow features; buyback support masking organic deceleration. Pre-registered falsification triggers: SBC-adjusted FCF margin negative, dilution above 8% (would require abandoning buybacks and issuing), kill-criterion filing, or survivability floor breach at a sealed rebuild — mechanical retirement. Monitoring KPIs: billings growth, IAM/platform revenue disclosure, net revenue retention when disclosed, envelope volume commentary, and buyback pace.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "Validated sizing bound (f_max) is zero — the frozen factor premium's confidence interval includes zero and no validated edge is claimed. The construction proxy weight below is a declared relative split among cleared BUYs with a 15% per-name cap; DOCU's shorter horizon and narrower band argue for the proxy's relative ranking handling it without manual override.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Provenance discipline: sealed values from the immutable universe build with claim-level evidence; overlays dated at fetch; licensed consensus from append-only PIT snapshots; narrative authored against the cited 10-K and 8-K filings and independently reviewed before publication. Note DocuSign's fiscal year ends January 31 — sealed trailing metrics span fiscal periods. Missing data renders Unknown. The company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

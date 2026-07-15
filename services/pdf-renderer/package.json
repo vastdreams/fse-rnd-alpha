@@ -1,0 +1,14 @@
+{
+  "name": "report-pdf-renderer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Deterministic two-page company brief PDF renderer (pinned Chromium via Playwright).",
+  "scripts": {
+    "render": "node render-report.mjs",
+    "test": "node validate.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.61.1"
+  }
+}

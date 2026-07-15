@@ -1,0 +1,96 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "Intuit Inc. Form 10-K FY2025",
+      "locator": "sec:0000896878-25-000035",
+      "as_of_date": "2025-07-31",
+      "available_date": "2025-09-03",
+      "url": "https://www.sec.gov/Archives/edgar/data/896878/000089687825000035/intu-20250731.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:INTU",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "Intuit 8-K — Q3 FY2026 results",
+      "locator": "sec:8-K:INTU:2026-05-20",
+      "as_of_date": "2026-04-30",
+      "available_date": "2026-05-20",
+      "url": "https://www.sec.gov/Archives/edgar/data/896878/000089687826000024/intu-20260520.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "Intuit earnings announcement — EPS actual 12.80 (2026-05-20)",
+      "locator": "alphavantage:EARNINGS:INTU:2026-05-20",
+      "as_of_date": "2026-04-30",
+      "available_date": "2026-05-20"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "A 68% drawdown has repriced Intuit as if AI assistants disintermediate TurboTax and QuickBooks. The sealed model reads a four-segment franchise with 81% gross margin, 59% ROIC, and 16% revenue growth whose own AI deployment across a proprietary small-business and consumer-finance data estate is the more probable outcome.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "Intuit operates four segments. Global Business Solutions is the core: QuickBooks accounting, payroll, payments, banking, and Mailchimp marketing automation for small and mid-market businesses — recurring, high-attach, ecosystem revenue. Consumer is TurboTax, seasonal but shifting toward assisted and full-service offerings. Credit Karma monetizes consumer-finance recommendations from credit data. ProTax serves professional preparers. The model compounds through cross-sell along the money flow of a small business: accounting to payroll to payments to credit. Pricing power and mix shift toward higher-value services have historically offset unit maturity in the US franchises.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "Competition is segment-specific: QuickBooks faces Xero, FreshBooks, and vertical SaaS unbundling; TurboTax faces H&R Block, free-file policy risk, and AI tax assistants; Credit Karma faces NerdWallet and bank-direct offers; Mailchimp faces Klaviyo and HubSpot at the low end. No single competitor attacks the integrated stack. The strategic threat is horizontal — foundation-model assistants absorbing tax preparation and bookkeeping workflows — which is also Intuit's own product roadmap across its data estate.",
+      "cite_ids": ["A1"]
+    },
+    "moat": {
+      "body": "Switching costs plus data scale. A small business running accounting, payroll, and payments through QuickBooks faces genuine migration pain; tax filers return by default with prior-year data. Proprietary transaction and credit data across segments trains underwriting and AI features competitors cannot easily replicate. Brand-driven customer acquisition in tax is a decades-old asset. Formal sealed moat fields (retention, concentration) are Unknown in the vector and displayed as such; the moat case here is analyst judgment on cited filings.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: 16% revenue CAGR, 81% gross margin — the highest of the six — 27% SBC-adjusted FCF margin, 59% ROIC, Rule of 40 at 43, and negative net dilution from buybacks. R&D intensity of 16% on a $17B+ revenue base is the largest absolute R&D budget in the cleared set.",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable in its largest-cap form. The stock fell from $798 (July 2025) to $254 (June 2026), an 68% drawdown, while fiscal 2026 quarters kept beating: Q3 FY2026 EPS of 12.80 filed May 20, 2026. Price ($275) sits between the low lens ($244) and median ($317) with 7.5:1 payoff skew to the high lens ($508). R&D composite +0.88σ keeps Intuit inside the validated cohort. Survivability is the strongest in the book: massive FCF, negative dilution, investment-grade balance sheet. Repayment: cohort premium plus multiple normalization on delivered AI-era earnings.",
+      "cite_ids": ["A1", "A3", "A4"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors: Q3 FY2026 8-K and earnings (May 20, 2026, EPS 12.80); June 11, 2026 8-K; fiscal Q4 and full-year FY2026 report expected August 2026 with FY2027 guidance — the single most likely repricing event, since guidance directly tests the AI-disintermediation narrative against management's own forecast.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting: sealed band $244/$317/$508 against $275. The high lens is wide here because the multiple-based lens reflects Intuit's historical premium rating; the low lens assumes permanent multiple compression. The licensed street snapshot (scenario table) typically sits between our median and high lens — unusually, consensus is above spot and closer to our band than in the other five names, making this the least contrarian thesis in the set. The disagreement is depth of AI-risk discount, not direction.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Point-in-time revision history is not yet stored on this platform; the report binds the latest licensed consensus snapshot, showing analyst counts and dispersion where the provider supplies them. Fiscal-year alignment matters: Intuit's July fiscal year end means street annual estimates lead calendar-year comparisons. Absent fields render Unknown.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Sasan Goodarzi has been CEO since 2019, leading the Credit Karma and Mailchimp acquisitions and the current AI-platform strategy; headcount is roughly 18,200. Capital allocation mixes large M&A with steady buybacks and a growing dividend — net share count is falling. Board and compensation detail is incorporated by reference from the proxy statement into the 10-K (Part III). Governance is conventional large-cap: single-class stock, independent board majority. Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound, and we do not proxy it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared: R&D-cohort eligibility (+0.88σ composite), survivability floors with the largest cash cushion in the set, 7.5:1 payoff skew against the 3:1 floor, dated catalysts bound at vector time, and no kill criterion. Weave ordering places INTU mid-set; ordinal only, no return claim.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks: AI assistants commoditizing tax prep and bookkeeping faster than Intuit monetizes its own AI; US free-file policy expansion attacking TurboTax economics; Credit Karma cyclicality with consumer credit; integration drag from acquired assets; premium-multiple compression persisting even with delivered earnings. Pre-registered falsification triggers: SBC-adjusted FCF margin negative (remote), dilution above 8%, kill-criterion filing, or survivability floor breach at any sealed rebuild — mechanical retirement of the BUY. Monitoring KPIs: GBS online ecosystem revenue growth, TurboTax Live mix, Credit Karma revenue trajectory, FY2027 guidance versus prior cycle.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "Validated sizing bound (f_max) is zero — the frozen factor premium's confidence interval includes zero and no validated edge is claimed. The construction proxy weight below is a declared relative split among the six cleared BUY theses with a 15% per-name cap; Intuit's size and liquidity make it the least capacity-constrained expression of the cohort.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Provenance discipline: sealed values from the immutable universe build with claim-level evidence; overlays dated at fetch; licensed consensus from append-only PIT snapshots; narrative authored against the cited 10-K and 8-K filings and independently reviewed before publication. Note Intuit's fiscal year ends July 31 — sealed trailing metrics span fiscal periods. Missing data renders Unknown. The company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

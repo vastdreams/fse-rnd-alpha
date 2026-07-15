@@ -1,0 +1,211 @@
+/*
+ * PATH: frontend/src/components/company-report/report-print.css
+ * PURPOSE: Deterministic A4 layout for the two-page company brief.
+ * The same fixed geometry is used on screen and in print so the PDF renderer
+ * validates exactly two pages with zero overflow.
+ */
+
+.report-document {
+  --report-ink: #171717;
+  --report-muted: #6b6b6b;
+  --report-line: #d9d9d4;
+  background: #ececea;
+  min-height: 100vh;
+  padding: 16px 0 48px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--report-ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.report-page {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto 16px;
+  padding: 14mm 15mm 12mm;
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.32;
+  font-size: 9.2pt;
+}
+
+.report-page * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.report-toolbar {
+  max-width: 210mm;
+  margin: 0 auto 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: system-ui, sans-serif;
+}
+
+.report-h1 {
+  font-size: 17pt;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.report-kicker {
+  font-family: system-ui, sans-serif;
+  font-size: 6.6pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--report-muted);
+}
+
+.report-section {
+  border-top: 1px solid var(--report-line);
+  padding-top: 4px;
+  margin-top: 6px;
+  break-inside: avoid;
+}
+
+.report-section h3 {
+  font-family: system-ui, sans-serif;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--report-muted);
+  margin: 0 0 2px;
+}
+
+.report-body {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.report-cite {
+  font-family: system-ui, sans-serif;
+  font-size: 6.4pt;
+  color: var(--report-muted);
+  vertical-align: super;
+  text-decoration: none;
+}
+
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px 10px;
+  margin-top: 3px;
+  font-family: system-ui, sans-serif;
+}
+
+.report-metric .label {
+  font-size: 6.4pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--report-muted);
+}
+
+.report-metric .value {
+  font-size: 9.4pt;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-metric .value.unknown {
+  color: var(--report-muted);
+  font-weight: 400;
+}
+
+.report-scenarios {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 3px;
+  font-family: system-ui, sans-serif;
+  font-size: 7.6pt;
+}
+
+.report-scenarios th,
+.report-scenarios td {
+  border-top: 1px solid var(--report-line);
+  padding: 2px 4px 2px 0;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-scenarios th {
+  font-size: 6.4pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--report-muted);
+  border-top: none;
+}
+
+.report-citations {
+  columns: 2;
+  column-gap: 8mm;
+  font-family: system-ui, sans-serif;
+  font-size: 6.2pt;
+  color: var(--report-muted);
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-citations li {
+  break-inside: avoid;
+  margin-bottom: 1px;
+}
+
+.report-footer {
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: 1px solid var(--report-line);
+  font-family: system-ui, sans-serif;
+  font-size: 6.2pt;
+  color: var(--report-muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-provenance {
+  display: inline-block;
+  font-family: system-ui, sans-serif;
+  font-size: 5.8pt;
+  border: 1px solid var(--report-line);
+  border-radius: 3px;
+  padding: 0 3px;
+  color: var(--report-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .report-document {
+    background: #ffffff;
+    padding: 0;
+  }
+
+  .report-toolbar {
+    display: none;
+  }
+
+  .report-page {
+    margin: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .report-page:last-child {
+    break-after: auto;
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "The Trade Desk, Inc. Form 10-K FY2025",
+      "locator": "sec:0001671933-26-000014",
+      "as_of_date": "2025-12-31",
+      "available_date": "2026-02-27",
+      "url": "https://www.sec.gov/Archives/edgar/data/1671933/000167193326000014/ttd-20251231.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:TTD",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "The Trade Desk 8-K — June 9, 2026",
+      "locator": "sec:8-K:TTD:2026-06-09",
+      "as_of_date": "2026-06-05",
+      "available_date": "2026-06-09",
+      "url": "https://www.sec.gov/Archives/edgar/data/1671933/000167193326000068/ttd-20260605.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "The Trade Desk 8-K — June 1, 2026",
+      "locator": "sec:8-K:TTD:2026-06-01",
+      "as_of_date": "2026-06-01",
+      "available_date": "2026-06-01",
+      "url": "https://www.sec.gov/Archives/edgar/data/1671933/000167193326000063/ttd-20260601.htm"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "An 86% drawdown — the deepest in the cleared set — prices The Trade Desk as structurally broken: walled gardens winning, Kokai stumbling, growth gone. The sealed model reads a still-growing (21% CAGR), 78%-gross-margin, 24%-ROIC platform whose independent-buy-side position becomes more valuable, not less, as retail media and CTV fragment.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "The Trade Desk operates a self-service, cloud-based demand-side platform (DSP): advertising agencies and brands use it to buy programmatic ads across display, video, audio, native, and — most importantly — connected TV, on the open internet outside Google's and Amazon's walled gardens. Revenue is a platform take-rate on gross spend, so it scales with client budgets rather than seats. Master service agreements with agency holding companies create multi-year spend relationships. Identity (UID2), retail data partnerships, and the AI-driven Kokai buying platform are the R&D program — 18% of revenue — that keeps the independent buy-side defensible.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "Programmatic ad buying splits between walled gardens (Google DV360/YouTube, Amazon DSP with retail data and Prime Video inventory) and the independent open internet, where The Trade Desk is the scale DSP against smaller rivals (Yahoo DSP, StackAdapt) and a consolidating supply side. Amazon's DSP push is the live competitive threat; CTV fragmentation (Netflix, Disney, streamers selling programmatically) is the live tailwind, since every new premium seller outside a walled garden needs an independent scaled buyer.",
+      "cite_ids": ["A1"]
+    },
+    "moat": {
+      "body": "Scale and neutrality: agencies consolidate open-internet spend on the platform with the deepest inventory, data, and measurement integrations that is not also selling its own media. Switching costs live in workflow, trained models on advertiser data, and MSA economics. UID2 adoption embeds The Trade Desk's identity rails across publishers. The moat is contested — Amazon attacks with bundled economics — and the sealed vector's formal moat fields (retention, concentration) are Unknown, rendered as such; the company's historically disclosed ~95% retention is a filing claim, not a platform-computed value.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: 21% revenue CAGR, 78% gross margin, 12% SBC-adjusted FCF margin, 24% ROIC, Rule of 40 at 33, and negative net dilution as buybacks offset SBC. The financial profile did not break in 2025–2026; the multiple did.",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable after a narrative collapse. The stock fell 86% from $124.50 (January 2025) to $17.33 (June 2026) across guidance misses and the Kokai transition; at $18.94 it sits at the low internal lens ($18.74) with 6.4:1 payoff skew to the high lens ($24.60). The R&D composite (+0.66σ) keeps TTD inside the validated cohort — Kokai, UID2, and CTV infrastructure are the repayment engine. Survivability floors clear on positive FCF, net cash, and shrinking share count: the company can out-invest smaller independents through the trough. One-year horizon; each quarterly print reprices the broken-growth narrative.",
+      "cite_ids": ["A1", "A3"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors: a cluster of 8-K filings through late May and June 2026 (May 29, June 1, June 9) covering corporate actions during the drawdown trough; Q2 2026 results expected August 2026 with spend-growth and Kokai adoption disclosure. CTV programmatic supply announcements from major streamers are exogenous catalysts that filings will reflect.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting: sealed band $18.74/$22.41/$24.60 against $18.94 — deliberately conservative lenses that assume the compressed multiple persists and only cash-flow growth accrues. The licensed street snapshot (scenario table) typically shows a wide dispersion: bulls underwriting a Kokai-led recovery far above our high lens, bears at spot. Our band ignores multiple re-rating entirely, which is the asymmetry: the position needs only band convergence, while any narrative repair is uncaptured upside. Both systems shown, never blended.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Point-in-time revision history is not yet stored on this platform; the report binds the latest licensed consensus snapshot with analyst counts and dispersion where the provider supplies them. Revision direction through 2025–2026 was persistently negative into the drawdown; that history is visible in the provider data but not yet sealed here, so it is described, not charted.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Jeff Green co-founded The Trade Desk and has been CEO since 2009 — founder leadership with high inside ownership and, per the 10-K's incorporated proxy detail, dual-class voting that concentrates control with him. That structure cuts both ways: long-horizon investment through drawdowns, weak minority-holder recourse after the 2025 execution stumbles. Headcount is roughly 3,800. Capital allocation: organic R&D plus buybacks, no dilutive M&A. Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound, and we do not proxy it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared: R&D-cohort eligibility (+0.66σ composite — the lowest of the six, but inside the quintile), survivability floors on positive FCF and negative dilution, 6.4:1 payoff skew against the 3:1 floor, dated catalysts bound at vector time, no kill criterion. Weave ordering places TTD last among the six cleared names; ordinal only.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks: Amazon DSP bundling retail data and Prime Video inventory to undercut take-rates; agency consolidation pressuring pricing; Kokai transition churning large clients; ad-market cyclicality hitting take-rate revenue with operating leverage in reverse; founder-control governance limiting accountability; identity regulation disrupting UID2. Pre-registered falsification triggers: SBC-adjusted FCF margin negative, dilution above 8%, kill-criterion filing (restatement, going-concern, MSA-loss disclosure at kill scale), or survivability floor breach at any sealed rebuild — mechanical retirement of the BUY. Monitoring KPIs: gross spend growth, take-rate stability, CTV mix, top-client concentration commentary, and Kokai adoption disclosures each quarter.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "Validated sizing bound (f_max) is zero — the frozen factor premium's confidence interval includes zero and no validated edge is claimed. The construction proxy weight below is a declared relative split among cleared BUYs with a 15% per-name cap; TTD's last-place weave rank means the proxy naturally assigns it the smallest relative conviction in the set.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Provenance discipline: sealed values from the immutable universe build with claim-level evidence; overlays dated at fetch; licensed consensus from append-only PIT snapshots; narrative authored against the cited 10-K and 8-K filings and independently reviewed before publication. Take-rate and spend figures are company-disclosed magnitudes from filings, not platform-computed. Missing data renders Unknown. The company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

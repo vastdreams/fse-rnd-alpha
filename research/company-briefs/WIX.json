@@ -1,0 +1,97 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "Wix.com Ltd. Form 20-F FY2025",
+      "locator": "sec:0001628280-26-015222",
+      "as_of_date": "2025-12-31",
+      "available_date": "2026-03-05",
+      "url": "https://www.sec.gov/Archives/edgar/data/1576789/000162828026015222/wix-20251231.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:WIX",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "Wix 6-K — Q1 2026 results",
+      "locator": "sec:6-K:WIX:2026-05-13",
+      "as_of_date": "2026-03-31",
+      "available_date": "2026-05-13",
+      "url": "https://www.sec.gov/Archives/edgar/data/1576789/000162828026034370/wix-6xkxfirstquarter2026.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "Wix 6-K — June 2026 reorganization",
+      "locator": "sec:6-K:WIX:2026-06-08",
+      "as_of_date": "2026-06-08",
+      "available_date": "2026-06-08",
+      "url": "https://www.sec.gov/Archives/edgar/data/1576789/000162828026041382/wix-6xkxjunereorganization.htm"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "The market prices Wix as a low-growth website builder losing share to AI site generation. The sealed model reads the same evidence as a self-funding subscription base with heavy, productive R&D — AI tooling shipped inside the existing platform — trading far below every internal valuation lens after an 84% drawdown.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "Wix operates a cloud platform where individuals, businesses, and increasingly agencies build and run websites and web applications. Revenue is predominantly recurring subscriptions (Creative Subscriptions) plus Business Solutions attach — payments, bookings, e-commerce — layered on hosted sites. The drag-and-drop Editor, AI-assisted creation, and the developer-grade Studio/Corvid stack widen the funnel from consumers to professionals. Cost structure is R&D-heavy by design: roughly a third of revenue funds product, while gross margin near 67% and positive SBC-adjusted free cash flow fund that spend internally without dilution.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "The website-platform market spans DIY builders (Squarespace, GoDaddy), commerce-first platforms (Shopify), open-source (WordPress/Automattic), and AI-native site generators. Wix competes on breadth: one platform covering creation, hosting, commerce, and business operations. The professional/agency segment via Wix Studio is the key battleground, since agencies bring multi-site retention. AI lowers creation costs for everyone; distribution, hosting economics, and installed bases determine who monetizes it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "moat": {
+      "body": "Switching costs are the moat: a production website with connected domains, payments, bookings, and SEO history is costly to migrate. Retention economics rest on annual/multi-year subscriptions and business-critical attach. The moat direction is contested — AI site generation compresses the creation moat while raising the value of the hosted operating stack. Cited quantitative moat fields (net revenue retention, customer concentration) are Unknown in the sealed vector and shown as such.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: ~13% revenue CAGR, 67% gross margin, 13% SBC-adjusted FCF margin, and R&D intensity near 34% — the highest of the six cleared names. Share count is shrinking (negative annualized dilution). Rule of 40 sits at 26, carried by cash generation rather than growth.",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable. The stock fell 84% from its January 2025 peak to $40 in June 2026 while the business kept compounding revenue and cash flow. Price sits below the low internal lens ($102), so downside-to-band is negative and the payoff gate passes as below-band. The R&D composite (+1.32σ) places Wix in the validated top-quintile research cohort whose historical premium is the engine of repayment. Survivability floors clear on positive SBC-adjusted FCF with buybacks, not dilution. Resolution comes from quarterly reports repricing the AI-cannibalization narrative against reported cohort revenue.",
+      "cite_ids": ["A1", "A3"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors only: Q1 2026 results 6-K (May 13, 2026) with EPS actual −1.02 against the transition-quarter setup; June 8, 2026 6-K corporate reorganization; next scheduled quarterly report in August 2026. Each is a public filing that forces the market to re-mark the decline narrative against reported numbers.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting uses the sealed three-lens band: low $102, median $122, high $124 against a $53 price — margin of safety above 140%. The external sell-side mean target (licensed snapshot, table below when available) sits materially below our median, which is the disagreement this thesis is paid to hold: the street models continued deceleration; the sealed model prices the existing subscription base plus validated R&D productivity. No blended average is shown because the two systems answer different questions.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Estimate revision history is not yet stored point-in-time in this platform; only the latest licensed consensus snapshot is bound to this report and shown in the scenario table. Analyst counts and dispersion carry through the snapshot when the provider supplies them; anything absent renders Unknown rather than inferred.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Avishai Abrahami co-founded Wix and has led it as CEO since inception — founder leadership with the longest tenure among the six names. Headcount is roughly 4,400. Capital allocation has shifted from growth-at-all-cost to buybacks alongside sustained R&D, consistent with the negative net dilution in the sealed vector. Board composition and compensation detail are in the 20-F (Item 6). Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound to this platform, and we do not proxy it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared on the sealed universe: R&D-cohort eligibility (composite +1.32σ, top quintile), survivability floors, payoff skew (below-band pass), and a dated catalyst known at vector time. Weave ordering places WIX at the top of the cleared set; the weave is ordinal and makes no return claim.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks: AI-native site generation erodes new-cohort demand faster than existing-cohort attach grows; FX and macro sensitivity in the ~50% non-US base; negative GAAP EPS quarters pressuring the multiple; Israel operational concentration. Pre-registered falsification triggers: SBC-adjusted FCF margin turning negative, annualized dilution exceeding 8%, or a kill-criterion filing event — any of these retires the BUY automatically rather than being argued around. Monitoring KPIs: bookings growth, Studio/partners revenue mix, buyback pace, and gross margin trajectory, all re-checked at each sealed universe rebuild.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "The validated Kelly-style sizing bound (f_max) from the frozen factor evidence is currently zero — the premium's confidence interval still includes zero, so no validated edge is claimed. The construction proxy weight shown below is a declared relative split among cleared BUY theses, capped at 15% per name; it is portfolio construction, not evidence of expected return.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Every number carries provenance: sealed values from immutable universe build metric vectors with claim-level evidence; overlays (price, profile) dated at fetch; licensed consensus from an append-only PIT snapshot; narrative authored by the analyst against the cited filings and independently reviewed before publication. Missing data renders Unknown. Full audit trail: the company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

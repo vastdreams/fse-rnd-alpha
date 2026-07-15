@@ -35,6 +35,7 @@ import {
   formatResearchMetric4,
   formatUsd4,
 } from "@/lib/formatMetrics"
+import { listReports } from "@/lib/api/companyReports"
 
 const TABS = ["overview", "stance", "financials", "business", "research", "valuation", "audit", "memo"] as const
 type Tab = (typeof TABS)[number]
@@ -66,7 +67,23 @@ export function CompanyResearchPage() {
   const [drawerAxis, setDrawerAxis] = useState<string | null>(null)
   const [bookMsg, setBookMsg] = useState<string | null>(null)
   const [addingBook, setAddingBook] = useState(false)
+  const [publishedReportId, setPublishedReportId] = useState<string | null>(null)
   const requestGenerationRef = useRef(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setPublishedReportId(null)
+    void listReports(ticker, controller.signal)
+      .then((res) => {
+        if (controller.signal.aborted) return
+        const published = res.snapshots.find((s) => s.status === "published")
+        setPublishedReportId(published?.snapshot_id ?? null)
+      })
+      .catch(() => {
+        /* brief link is optional; absence is not an error */
+      })
+    return () => controller.abort()
+  }, [ticker])
 
   useEffect(() => {
     const generation = ++requestGenerationRef.current
@@ -262,6 +279,15 @@ export function CompanyResearchPage() {
           >
             {addingBook ? "Adding…" : "Add to Book"}
           </button>
+          {publishedReportId && (
+            <Link
+              to={`/app/company/${v.ticker}/report/${publishedReportId}`}
+              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-50"
+              data-testid="open-two-page-brief"
+            >
+              Two-page brief
+            </Link>
+          )}
           <Link
             to={`/app/universe?mode=buy&universe_version=${encodeURIComponent(data.universe_version)}`}
             className="text-xs font-medium text-neutral-700 hover:underline"

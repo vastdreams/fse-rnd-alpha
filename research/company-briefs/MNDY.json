@@ -1,0 +1,96 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "monday.com Ltd. Form 20-F FY2025",
+      "locator": "sec:0001178913-26-000870",
+      "as_of_date": "2025-12-31",
+      "available_date": "2026-03-13",
+      "url": "https://www.sec.gov/Archives/edgar/data/1845338/000117891326000870/zk2634436.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:MNDY",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "monday.com 6-K — Q1 2026 results",
+      "locator": "sec:6-K:MNDY:2026-05-11",
+      "as_of_date": "2026-03-31",
+      "available_date": "2026-05-11",
+      "url": "https://www.sec.gov/Archives/edgar/data/1845338/000117891326002499/zk2635240.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "monday.com earnings announcement — EPS actual 1.15 (2026-05-11)",
+      "locator": "alphavantage:EARNINGS:MNDY:2026-05-11",
+      "as_of_date": "2026-03-31",
+      "available_date": "2026-05-11"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "An 82% drawdown prices monday.com as a casualty of AI agents replacing work-management seats. The sealed model reads a 29%-growth, 89%-gross-margin multi-product platform — CRM, dev, service atop Work OS — whose seat-plus-usage economics and 26% R&D intensity make it a builder, not a victim, of the agent transition.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "monday.com sells Work OS, a cloud-native visual platform of configurable building blocks from which customers assemble their own workflow applications, alongside packaged products: monday CRM, monday dev, and monday service. Revenue is recurring subscriptions priced per seat and tier, expanding through seat growth, tier upgrades, and cross-product attach — the multi-product motion is the current growth engine as the core work-management category matures. Gross margin of 89% is the highest in the cleared set. The company is founder-led from Tel Aviv, sells bottom-up with an expanding enterprise sales overlay, and funds 26% R&D intensity from positive SBC-adjusted free cash flow.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "Work management is crowded: Asana, Smartsheet (taken private), Atlassian expanding from dev tooling, Notion from documents, ClickUp bundling everything, and Microsoft Planner/Loop pre-installed in the enterprise. monday.com differentiates as a platform rather than an app — customers configure their own systems — and by attacking adjacent categories (CRM against HubSpot/Salesforce low-end, service against Zendesk/Jira Service Management). AI agents are both threat (fewer human seats) and expansion vector (agents as billable actors on the platform).",
+      "cite_ids": ["A1"]
+    },
+    "moat": {
+      "body": "Configuration lock-in: customers who build their operating workflows on Work OS embed their process knowledge in the platform, making migration a re-implementation project rather than a data export. Multi-product attach deepens this with each added product. The brand's SMB-to-midmarket distribution engine is a repeatable acquisition asset. The moat is younger and shallower than the megacap names in this set — bottom-up SaaS churns at the edges — and sealed moat fields (retention, concentration) are Unknown in the vector, rendered as such.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: 29% revenue CAGR — second-fastest of the six — 89% gross margin, 10% SBC-adjusted FCF margin, Rule of 40 at 39, near-zero net dilution. ROIC prints negative (−45%) on GAAP operating losses against a small invested-capital base; cash economics, not accounting ROIC, carry the survivability case.",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable, growth-flavored. The stock collapsed 82% from $328 (February 2025) to $59 (April 2026); at $82 it remains far below the low internal lens ($123), so the payoff gate passes below-band with an 85% margin of safety to the sealed band. The R&D composite (+1.23σ) is second-highest in the set — the multi-product roadmap is the repayment engine. Survivability floors clear on positive SBC-adjusted FCF and a net-cash balance sheet, meaning the company can fund the agent transition through a long winter. Q1 2026 delivered EPS of 1.15 while the narrative said deceleration. Horizon three years.",
+      "cite_ids": ["A1", "A3", "A4"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors: Q1 2026 6-K and earnings (May 11, 2026, EPS 1.15); Q1 earnings call transcript (April cycle); Q2 2026 results expected August 2026 with updated full-year guidance and multi-product disclosure. Seat-count and net-dollar-retention prints inside those filings are the specific numbers that can break the AI-seat-loss narrative.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting: sealed band $123/$152/$191 against $82. The licensed street snapshot (scenario table) typically carries a mean target between spot and our low lens — the street underwrites continued deceleration plus multiple compression; the sealed model underwrites the delivered growth-plus-cash-flow combination inside the validated R&D cohort. The disagreement is almost entirely about terminal growth: consensus extrapolates the decelerating headline; the band prices the multi-product expansion the filings already disclose. Both are shown; neither is blended.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Point-in-time revision history is not yet stored on this platform; the report binds the latest licensed consensus snapshot with analyst counts and dispersion where the provider supplies them. Absent fields render Unknown. monday.com reports on calendar quarters, so street annual estimates align with calendar comparisons.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Co-founders Roy Mann and Eran Zinman lead as co-CEOs (Zinman named in the current profile overlay); founder control keeps product velocity high and is the disclosed governance trade-off — concentrated founder influence, dual-role leadership. Headcount is roughly 3,150. Capital allocation is organic: R&D at 26% of revenue, no meaningful M&A, minimal dilution. Director and compensation detail is in the 20-F (Item 6). Israel domicile carries disclosed operational risk. Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound, and we do not proxy it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared: R&D-cohort eligibility (+1.23σ composite), survivability floors on positive SBC-adjusted FCF and near-zero dilution, below-band payoff skew, dated catalysts bound at vector time, no kill criterion. Weave ordering places MNDY in the top half of the cleared set; ordinal only, never a return forecast.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks: AI agents shrinking billable seats faster than agent-based pricing replaces them; competition from bundled Microsoft and discounting rivals compressing net retention; SMB exposure making revenue macro-sensitive; GAAP losses persisting and testing sentiment; Israel geopolitical disruption; multi-product bets diluting focus. Pre-registered falsification triggers: SBC-adjusted FCF margin turning negative, annualized dilution above 8%, kill-criterion filing, or survivability floor breach at any sealed rebuild — each mechanically retires the BUY without narrative defense. Monitoring KPIs: net dollar retention, $50k+ customer count, multi-product attach rates, seat growth versus price/mix, and FCF margin trajectory.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "Validated sizing bound (f_max) is zero — the frozen factor premium's confidence interval includes zero and no validated edge is claimed. The construction proxy weight below is a declared relative split among the six cleared BUY theses with a 15% per-name cap; MNDY's higher weave rank reflects its growth-and-band-gap combination, not a probability statement.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Provenance discipline: sealed values from the immutable universe build with claim-level evidence; overlays dated at fetch; licensed consensus from append-only PIT snapshots; narrative authored against the cited 20-F and 6-K filings and independently reviewed before publication. Negative accounting ROIC is reported as-is rather than adjusted. Missing data renders Unknown. The company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

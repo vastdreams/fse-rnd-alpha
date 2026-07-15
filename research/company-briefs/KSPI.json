@@ -1,0 +1,96 @@
+{
+  "citations": [
+    {
+      "cite_id": "A1",
+      "provenance": "analyst",
+      "title": "Joint Stock Company Kaspi.kz Form 20-F FY2025",
+      "locator": "sec:0001985487-26-000008",
+      "as_of_date": "2025-12-31",
+      "available_date": "2026-03-16",
+      "url": "https://www.sec.gov/Archives/edgar/data/1985487/000198548726000008/kspi-20251231.htm"
+    },
+    {
+      "cite_id": "A2",
+      "provenance": "current_overlay",
+      "title": "Company profile overlay (FMP, licensed)",
+      "locator": "fmp:profile:KSPI",
+      "as_of_date": "2026-07-15",
+      "available_date": "2026-07-15"
+    },
+    {
+      "cite_id": "A3",
+      "provenance": "analyst",
+      "title": "Kaspi.kz 6-K — April 2026 (Q1 results period)",
+      "locator": "sec:6-K:KSPI:2026-04-24",
+      "as_of_date": "2026-03-31",
+      "available_date": "2026-04-24",
+      "url": "https://www.sec.gov/Archives/edgar/data/1985487/000198548726000013/kaspi.kz_form_6-k_april_.htm"
+    },
+    {
+      "cite_id": "A4",
+      "provenance": "analyst",
+      "title": "Kaspi.kz Q1 2026 earnings call transcript",
+      "locator": "db:av_transcripts_raw:KSPI:2026Q1",
+      "as_of_date": "2026-03-31",
+      "available_date": "2026-04-15"
+    }
+  ],
+  "sections": {
+    "variant_perception": {
+      "body": "The market applies a Kazakhstan-and-geopolitics discount so deep that Kaspi trades below five times the cash generation of a three-sided super-app with 40%+ revenue growth. The sealed model treats country risk as a floor-tested survivability question, not a reason to ignore an extreme price-to-band gap.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "business_model": {
+      "body": "Kaspi.kz operates Kazakhstan's dominant super-app across three integrated platforms. Payments processes consumer-to-merchant and bill-payment flows; Marketplace spans e-commerce, travel, and classifieds with merchant take-rates; Fintech originates consumer and merchant lending funded largely by on-platform deposits. Each platform feeds the others: payments data underwrites credit, credit finances marketplace purchases, and marketplace activity deepens payments engagement. The model is not a SaaS template — revenue mixes take-rates, interest income, and fees — but the economics rhyme: recurring engagement, negligible marginal cost, and 73% gross margin with a 60% Rule-of-40 print, the strongest of the six cleared names.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "industry_map": {
+      "body": "Within Kazakhstan, Kaspi's payments and marketplace share is quasi-utility scale; practical competition comes from Halyk Bank's ecosystem, regional players, and global entrants with limited local logistics. The expansion story is Türkiye via the Hepsiburada acquisition, which moves Kaspi into a larger, competitive e-commerce market against Trendyol and Amazon. The competitive question the thesis must survive is whether super-app economics export beyond the home market.",
+      "cite_ids": ["A1", "A4"]
+    },
+    "moat": {
+      "body": "Network effects on three sides: consumers (app is default payment/shopping rail), merchants (payments plus marketplace plus credit in one integration), and data (payments history underwrites lending at loss rates competitors cannot match without the flow). Deposit funding lowers the fintech cost of capital structurally. The moat is deep but geographically concentrated — its value outside Kazakhstan is unproven, and the sealed vector's formal moat fields (retention, concentration) are Unknown and rendered as such.",
+      "cite_ids": ["A1"]
+    },
+    "financial_trends": {
+      "body": "Sealed trailing metrics: 43% revenue CAGR — the fastest of the cleared set — 73% gross margin, 16% SBC-adjusted FCF margin, 27% ROIC, and near-zero dilution. R&D intensity of 5% is low in percentage terms but sits atop a large revenue base and a top-quintile R&D composite (+1.47σ).",
+      "cite_ids": ["A1"]
+    },
+    "thesis": {
+      "body": "Repriced × R&D-validated × Survivable at the widest disagreement in the book. Price ($90) sits at roughly 43% of the low internal lens ($208); margin of safety on the sealed band is ~179%, and the payoff gate passes below-band. The R&D composite (+1.47σ) is the highest of the six names, and survivability floors clear on strongly positive cash generation with deposit-funded lending rather than dilutive equity. The bet is explicitly that Kazakhstan/Türkiye execution risk is being priced as if terminal, while filed quarterly numbers keep compounding. Horizon three years; repayment via the validated cohort premium plus band convergence.",
+      "cite_ids": ["A1", "A3"]
+    },
+    "catalysts": {
+      "body": "Dated, filed anchors: April 15, 2026 Q1 earnings call; April 16 and April 24, 2026 6-K filings covering quarterly results and corporate actions; the next scheduled quarterly 6-K in July–August 2026. Hepsiburada integration disclosures inside those filings are the specific numbers that can re-rate the Türkiye expansion narrative.",
+      "cite_ids": ["A3", "A4"]
+    },
+    "consensus_vs_internal": {
+      "body": "Internal underwriting: sealed band $208/$250/$292 against a $90 price. The licensed sell-side snapshot (scenario table) typically carries targets far above spot but below our median — the street haircuts for jurisdiction, ADR flowback, and Türkiye integration; the sealed model prices delivered cash flows and floor-tested survivability. We keep both visible without blending. If the disagreement closes toward the street rather than the band, position review is mechanical: the falsification rules below, not narrative defense, decide.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "estimate_revisions": {
+      "body": "Point-in-time revision history is not yet stored on this platform; the report binds the latest licensed consensus snapshot only, with analyst counts and dispersion shown when the provider supplies them. Absent fields render Unknown. Local-exchange analyst coverage outside the licensed feed is not incorporated.",
+      "cite_ids": ["A2"]
+    },
+    "management_governance": {
+      "body": "Mikheil Lomtadze co-founded the modern Kaspi and has run it as CEO through the 2020 LSE and 2024 Nasdaq listings; headcount is roughly 7,800. Management's capital allocation record — dividends plus disciplined M&A culminating in Hepsiburada — is documented across the 20-F. Governance carries jurisdiction-specific caveats: controlling-shareholder concentration and Kazakhstan legal domicile are disclosed risk factors, not footnotes. Employee sentiment/culture: Unknown — no licensed workforce-sentiment source is bound, and we do not proxy it.",
+      "cite_ids": ["A1", "A2"]
+    },
+    "gates_factor_context": {
+      "body": "All hard gates cleared: top-quintile R&D composite (+1.47σ), survivability floors on positive FCF and near-zero dilution, below-band payoff skew, dated catalysts bound at vector time, and no active kill criterion. Weave ordering ranks KSPI first among the six cleared theses; the weave is ordinal only.",
+      "cite_ids": ["A1"]
+    },
+    "risks_falsification": {
+      "body": "Principal risks, in order: Kazakhstan sovereign/regulatory action including capital controls; Türkiye integration consuming cash and management attention (Hepsiburada); fintech credit cycle — loss rates normalizing above underwriting; sanction-adjacency to Russia flows; ADR liquidity and index exclusion mechanics. Pre-registered falsification triggers: SBC-adjusted FCF margin negative, dilution above 8% annualized, kill-criterion filing (going-concern, restatement, sanctions designation), or survivability floor breach at any sealed rebuild — each mechanically retires the BUY. Monitoring KPIs: payments take-rate, marketplace GMV growth, fintech cost of risk, deposit growth, and Türkiye segment disclosures.",
+      "cite_ids": ["A1"]
+    },
+    "sizing": {
+      "body": "Validated sizing bound (f_max) is zero — the frozen factor premium's confidence interval includes zero, so no validated edge is claimed despite the extreme margin of safety. The construction proxy weight below is a declared relative split among cleared BUYs, capped at 15% per name. Country risk does not enter the proxy formula; it is handled by the survivability gate and falsification rules.",
+      "cite_ids": ["A1"]
+    },
+    "methodology": {
+      "body": "Provenance discipline: sealed values from the immutable universe build; overlays dated at fetch; licensed consensus from append-only PIT snapshots; narrative authored against the cited 20-F and 6-K filings and independently reviewed before publication. Non-GAAP super-app metrics (GMV, take-rates) are company-reported figures from filings, not platform-computed. Missing data renders Unknown. The company page Audit tab resolves any figure to its source claims.",
+      "cite_ids": ["A1", "A2"]
+    }
+  }
+}

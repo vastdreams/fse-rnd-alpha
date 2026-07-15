@@ -60,7 +60,9 @@ backend_integration:
     # historical style backlog. Every Python path is still checked for fatal
     # parse/name errors, while the deployable investor surface is fully linted.
     - ruff check --select E9,F63,F7,F82 backend/app backend/tests scripts deploy/setup_aws.py
-    - ruff check backend/app/api/routes/auth.py backend/app/api/routes/books.py backend/app/api/routes/universe_rank.py backend/app/api/routes/universe_company.py backend/app/api/routes/admin.py backend/app/api/deps.py backend/app/contracts/research.py backend/app/core/config.py backend/app/core/observability.py backend/app/main.py backend/app/services/rank_service backend/app/services/company_meta_service.py backend/app/services/financials_service.py backend/app/services/price_history_service.py backend/app/services/close_call_service.py backend/app/workers/celery_app.py backend/tests/test_auth_authorization.py backend/tests/test_admin_client_redaction.py backend/tests/test_company_dcf_seed.py backend/tests/test_observability.py backend/tests/test_provider_failure_boundaries.py backend/tests/test_research_coverage_report.py scripts/research_coverage_report.py deploy/setup_aws.py
+    - ruff check backend/app/api/routes/auth.py backend/app/api/routes/books.py backend/app/api/routes/universe_rank.py backend/app/api/routes/universe_company.py backend/app/api/routes/company_reports.py backend/app/api/routes/company_report_artifacts.py backend/app/api/routes/admin.py backend/app/api/deps.py backend/app/contracts/research.py backend/app/contracts/company_reports.py backend/app/core/config.py backend/app/core/observability.py backend/app/main.py backend/app/services/rank_service backend/app/services/company_meta_service.py backend/app/services/company_report_builder.py backend/app/services/company_report_metrics.py backend/app/services/consensus scripts/seed_company_briefs.py scripts/validate_company_briefs.py backend/app/services/report_artifact_store.py backend/app/services/financials_service.py backend/app/services/price_history_service.py backend/app/services/close_call_service.py backend/app/workers/celery_app.py backend/tests/test_auth_authorization.py backend/tests/test_admin_client_redaction.py backend/tests/test_company_dcf_seed.py backend/tests/test_company_report_contracts.py backend/tests/test_company_report_builder.py backend/tests/test_consensus_provider.py backend/tests/test_observability.py backend/tests/test_provider_failure_boundaries.py backend/tests/test_research_coverage_report.py scripts/research_coverage_report.py deploy/setup_aws.py
+    # Authored two-page briefs must satisfy report contracts before any deploy.
+    - python scripts/validate_company_briefs.py
     - (cd backend && python -c "import asyncio; from app.db.session import create_tables; asyncio.run(create_tables())")
     - ./scripts/run_migrations.sh
     - ./scripts/run_migrations.sh --verify-only
@@ -125,11 +127,23 @@ frontend_quality:
     # Fail-closed finance gates: first-principles auditors + sealed golden fixture.
     - npm run test:invariants
     - npm run test
+    # PDF renderer is plain Node ESM; parse-check it with the same Node toolchain.
+    - node --check ../services/pdf-renderer/render-report.mjs
     - npm run build
   artifacts:
     paths:
       - frontend/dist/
     expire_in: 7 days
+
+pdf_renderer_contract:
+  stage: verify
+  image: node:${NODE_VERSION}-bookworm
+  script:
+    # Renderer validation helpers are dependency-free; browser rendering runs
+    # post-deploy against the live release (two-page + overflow + page count
+    # invariants are also enforced in-browser by e2e/company-report.spec.ts).
+    - cd services/pdf-renderer
+    - node --test validate.test.mjs
 
 browser_contract:
   stage: verify
@@ -170,6 +184,7 @@ publish_immutable_images:
     - release_contract
     - frontend_quality
     - browser_contract
+    - pdf_renderer_contract
     - compose_rehearsal
   before_script:
     - apk add --no-cache bash

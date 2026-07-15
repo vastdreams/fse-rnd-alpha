@@ -13,6 +13,7 @@ import { ResetPassword } from "@/pages/ResetPassword"
 import { VerifyEmail } from "@/pages/VerifyEmail"
 import { UniversePage } from "@/pages/portfolio/UniversePage"
 import { CompanyResearchPage } from "@/pages/portfolio/CompanyResearchPage"
+import { CompanyReportPage } from "@/pages/portfolio/CompanyReportPage"
 import { BookPage } from "@/pages/portfolio/BookPage"
 
 function LegacyCompanyRedirect() {
@@ -46,6 +47,8 @@ export function DashboardRoutes({ portfolioHost = false }: { portfolioHost?: boo
       <Route path="/app" element={guard(<UniversePage />)} />
       <Route path="/app/universe" element={guard(<UniversePage />)} />
       <Route path="/app/company/:ticker" element={guard(<CompanyResearchPage />)} />
+      <Route path="/app/company/:ticker/report/:snapshotId" element={guard(<CompanyReportPage />)} />
+      <Route path="/app/company/:ticker/report/:snapshotId" element={guard(<CompanyReportPage />)} />
       <Route path="/app/book" element={guard(<BookPage />)} />
 
       {/* Historical URLs retain bookmarks but cannot revive legacy local state. */}

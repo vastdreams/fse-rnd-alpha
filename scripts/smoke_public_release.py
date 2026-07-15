@@ -320,6 +320,33 @@ def main() -> None:
     status, body = request(args.base_url, "GET", "/api/universe/admin/kpis", token=second_token)
     require(403, status, body, "public admin denial")
 
+    # Two-page company briefs: listing must succeed; when a published brief
+    # exists it must fetch with an intact two-page structure.
+    reports_checked = "reports-empty"
+    report_list = require(
+        200,
+        *request(args.base_url, "GET", f"/api/reports/company/{ticker}", token=first_headers),
+        "company report listing",
+    )
+    published = [s for s in report_list.get("snapshots", []) if s.get("status") == "published"]
+    if published:
+        envelope = require(
+            200,
+            *request(
+                args.base_url,
+                "GET",
+                f"/api/reports/{published[0]['snapshot_id']}",
+                token=first_headers,
+            ),
+            "published report fetch",
+        )
+        report = envelope.get("report") or {}
+        if len(report.get("page1") or []) != 7 or len(report.get("page2") or []) != 7:
+            raise RuntimeError("published report does not carry the 7+7 section structure")
+        if len(envelope.get("content_sha256") or "") != 64:
+            raise RuntimeError("published report missing content hash")
+        reports_checked = "reports-published"
+
     require(
         409,
         *request(args.base_url, "DELETE", f"/api/books/{book_id}", token=first_headers),
@@ -345,6 +372,7 @@ def main() -> None:
             "locked-book-retention",
             "two-user-isolation",
             "admin-denial",
+            reports_checked,
         ],
     }
     if args.evidence_file:

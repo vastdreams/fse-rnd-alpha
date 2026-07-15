@@ -23,6 +23,9 @@ RUN pip install --no-cache-dir -r requirements.lock
 # Application code, then sealed contracts used by rank/stance provenance.
 COPY backend/ .
 COPY contracts /app/contracts
+# Operator release tooling + authored company briefs (two-page reports).
+COPY scripts/seed_company_briefs.py /app/scripts/seed_company_briefs.py
+COPY research/company-briefs /app/research/company-briefs
 
 # Create non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
