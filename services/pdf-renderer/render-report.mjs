@@ -71,11 +71,17 @@ await context.route("**/*", (route) => {
   return route.abort()
 })
 
+// The auth guard needs both the JWT and the cached user identity; the app
+// re-validates against /api/auth/me after hydration.
+const userJson =
+  process.env.RENDER_USER_JSON ||
+  JSON.stringify({ id: "renderer", email: "renderer@finsoeasy.com", role: "user" })
 await context.addInitScript(
-  ([key, token]) => {
-    window.localStorage.setItem(key, token)
+  ([token, user]) => {
+    window.localStorage.setItem("fse_research_token", token)
+    window.localStorage.setItem("fse_research_user", user)
   },
-  ["fse_research_token", TOKEN]
+  [TOKEN, userJson]
 )
 
 const page = await context.newPage()
@@ -86,7 +92,21 @@ page.on("console", (msg) => {
 page.on("pageerror", (err) => consoleErrors.push(String(err)))
 
 await page.goto(REPORT_URL, { waitUntil: "networkidle", timeout: 60_000 })
-await page.waitForFunction(() => window.__REPORT_READY__ === true, null, { timeout: 30_000 })
+try {
+  await page.waitForFunction(() => window.__REPORT_READY__ === true, null, { timeout: 30_000 })
+} catch (err) {
+  const state = await page
+    .evaluate(() => ({
+      url: location.href,
+      ready: window.__REPORT_READY__,
+      body: document.body.innerText.slice(0, 300),
+    }))
+    .catch(() => null)
+  fail(
+    `report never signalled ready: ${err.message}; state=${JSON.stringify(state)}; ` +
+      `console=${consoleErrors.join(" | ")}; blocked=${blocked.join(",")}`
+  )
+}
 await page.evaluate(() => document.fonts.ready)
 
 // Structural gates before printing.

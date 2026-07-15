@@ -30,8 +30,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  line-height: 1.32;
-  font-size: 9.2pt;
+  line-height: 1.26;
+  font-size: 8.6pt;
 }
 
 .report-page * {
@@ -49,7 +49,7 @@
 }
 
 .report-h1 {
-  font-size: 17pt;
+  font-size: 15pt;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -64,8 +64,8 @@
 
 .report-section {
   border-top: 1px solid var(--report-line);
-  padding-top: 4px;
-  margin-top: 6px;
+  padding-top: 3px;
+  margin-top: 5px;
   break-inside: avoid;
 }
 
@@ -96,7 +96,7 @@
 .report-metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 3px 10px;
+  gap: 2px 8px;
   margin-top: 3px;
   font-family: system-ui, sans-serif;
 }
@@ -109,7 +109,7 @@
 }
 
 .report-metric .value {
-  font-size: 9.4pt;
+  font-size: 8.8pt;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
