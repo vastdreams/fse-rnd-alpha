@@ -89,6 +89,8 @@ class SmokeHandler(BaseHTTPRequestHandler):
             self._write(200, {"books": []})
         elif path == "/api/universe/admin/kpis":
             self._write(403, {"detail": "admin only"})
+        elif path == "/api/reports/company/FIXT":
+            self._write(200, {"ticker": "FIXT", "snapshots": []})
         else:
             self._write(404, {"detail": f"unexpected GET {path}"})
 
@@ -176,10 +178,11 @@ def main() -> None:
             assert output == evidence
             assert evidence["source_sha"] == SOURCE_SHA
             assert evidence["data_manifest_sha256"] == MANIFEST_SHA
-            assert evidence["checked"][-3:] == [
+            assert evidence["checked"][-4:] == [
                 "locked-book-retention",
                 "two-user-isolation",
                 "admin-denial",
+                "reports-empty",
             ]
     finally:
         server.shutdown()
