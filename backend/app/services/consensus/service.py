@@ -111,7 +111,7 @@ async def latest_stored_consensus(
                      FROM consensus_snapshots
                     WHERE ticker = :t
                       AND kind = 'consensus_bundle'
-                      AND (:cutoff IS NULL OR available_date <= :cutoff)
+                      AND (CAST(:cutoff AS date) IS NULL OR available_date <= CAST(:cutoff AS date))
                     ORDER BY as_of_date DESC, fetched_at DESC
                     LIMIT 1"""
             ),
