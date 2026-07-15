@@ -15,6 +15,9 @@ x-backend-environment: &backend-environment
   # When REDIS_PASSWORD is set, set REDIS_URL to redis://:<password>@redis:6379/0.
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   S3_BUCKET: ${S3_BUCKET:-fse-rnd-alpha-data}
+  # Rendered two-page brief artifacts (content-addressed PDFs); the export
+  # endpoint re-verifies the ledger sha256 on every download.
+  REPORT_ARTIFACT_BUCKET: ${REPORT_ARTIFACT_BUCKET:-}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
   AWS_REGION: ${AWS_REGION:-us-east-1}

@@ -87,7 +87,11 @@ await context.addInitScript(
 const page = await context.newPage()
 const consoleErrors = []
 page.on("console", (msg) => {
-  if (msg.type() === "error") consoleErrors.push(msg.text())
+  // net::ERR_FAILED resource errors are produced by this script's own
+  // network allowlist aborting third-party requests; they are expected.
+  if (msg.type() === "error" && !/net::ERR_FAILED/.test(msg.text())) {
+    consoleErrors.push(msg.text())
+  }
 })
 page.on("pageerror", (err) => consoleErrors.push(String(err)))
 
