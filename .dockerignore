@@ -10,3 +10,8 @@
 !backend/**
 !contracts/
 !contracts/**
+!scripts/
+!scripts/seed_company_briefs.py
+!research/
+!research/company-briefs/
+!research/company-briefs/**
